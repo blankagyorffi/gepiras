@@ -1256,7 +1256,12 @@ async function askApproval(count,total){
   });
 }
 
-function startTest(){
+async function startTest(){
+ if(teacherSettingsPromise){
+  if($('startBtn').disabled)return;
+  $('startBtn').disabled=true;$('startBtn').textContent='Beállítások betöltése…';
+  try{await teacherSettingsPromise;}finally{$('startBtn').disabled=false;$('startBtn').textContent='Teszt indítása';}
+ }
   practiceFactor=selectedPractice()?validPracticeFactor($("practiceTime").value):1;
   practiceSpeechRate=selectedPractice()?Number($("practiceSpeechRate").value)||0:0;
   hideError();
@@ -2987,7 +2992,15 @@ function formattedPdf(){
 </script>
 <div id="teacherUnlockModal" class="modal-bg hidden" role="dialog" aria-modal="true" aria-labelledby="teacherUnlockTitle"><div class="modal"><h2 id="teacherUnlockTitle">Tanári feloldás</h2><label for="teacherUnlockPin">Tanári jelszó</label><input type="password" id="teacherUnlockPin" autocomplete="off"><p id="teacherUnlockError" role="alert"></p><button type="button" id="teacherUnlockSubmit">Feloldás</button> <button type="button" id="teacherUnlockCancel">Mégsem</button></div></div><script>
 // A zárolás csak sikeres szerverválasz után oldható fel. Üres szerveroldali jelszó esetén minden beállítás szabad.
-let teacherPinRequired=null,teacherSettingsPromise=null;
+let teacherPinRequired=null,teacherSettingsPromise=null,bankSettingsApplied=false;
+function applyBankDefaults(settings){
+ if(bankSettingsApplied||!settings||!$('testPanel').classList.contains('hidden')||!$('resultPanel').classList.contains('hidden'))return;
+ const count=Number(settings.taskCount),minutes=Number(settings.capMinutes),repeat=Number(settings.dictationRepeatCount);
+ if(Number.isInteger(count)&&count>=1&&count<=50)$('taskCount').value=String(count);
+ if(Number.isInteger(minutes)&&minutes>=5&&minutes<=120){$('capInput').value=String(minutes);MAX_TOTAL_SEC=minutes*60;$('capMinutes').textContent=String(minutes);}
+ if([2,3,4,5].includes(repeat)){dictationRepeatCount=repeat;syncDictationRepeats();}
+ bankSettingsApplied=true;
+}
 function applyLock(){
  const locked=LOCK_SETTINGS&&teacherPinRequired!==false;
  $('taskCount').readOnly=locked;$('capInput').readOnly=locked;refreshTaskOrderControl();
@@ -3006,7 +3019,7 @@ async function refreshTeacherSettings(){
     r=await jsonp({action:'checkPin',pin:''},10000);
     if(r?.success&&typeof r.ok==='boolean')r.pinRequired=!r.ok;
    }
-   if(r?.success&&typeof r.pinRequired==='boolean'){teacherPinRequired=r.pinRequired;applyLock();$('teacherConfigStatus').textContent='';return true;}
+   if(r?.success&&typeof r.pinRequired==='boolean'){teacherPinRequired=r.pinRequired;applyBankDefaults(r.settings);applyLock();$('teacherConfigStatus').textContent='';return true;}
   }catch(e){}
   $('teacherConfigStatus').textContent='A háttérkód nem válaszolt a beállítások lekérdezésére. Ellenőrizd az internetet, az API-címet és az Apps Script telepített verzióját; ez nem hibás jelszót jelent.';applyLock();return false;
  })();try{return await teacherSettingsPromise;}finally{teacherSettingsPromise=null;}
