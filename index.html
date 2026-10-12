@@ -583,6 +583,8 @@ html.big-text .large-mode-help{display:block}.large-mode-help p{margin:8px 0}
 html.big-text body.screen-test #typingWorkspace #taskText{font-size:max(22px,calc(24px * var(--task-scale,1)))!important;line-height:1.45!important}
 html.big-text body.screen-test #typingWorkspace #answer{font-size:max(22px,calc(24px * var(--answer-scale,1)))!important;line-height:1.45!important}
 body:not(.screen-start) .student-theme-picker{display:none!important}
+.grade-progress{flex-basis:100%;max-width:540px;font-size:.85rem;line-height:1.35;margin:5px 0;padding:7px 9px;background:#e3eee8;border-radius:7px}.top-actions{flex-wrap:wrap}body.high-contrast .grade-progress{background:#111;color:#fff;border:1px solid #fff}
+.progress-mode-actions{display:flex;flex-wrap:wrap;gap:5px;margin:5px 0}.progress-mode-actions button{font-size:.8rem;padding:5px 8px}.progress-mode-actions button[aria-pressed="true"]{outline:2px solid #215347;outline-offset:1px}body.high-contrast .progress-mode-actions button[aria-pressed="true"]{outline-color:#ffeb3b}@media print{.progress-mode-actions{display:none!important}}
 </style>
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#215347">
@@ -695,7 +697,7 @@ body:not(.screen-start) .student-theme-picker{display:none!important}
 </div>
 
 <div id="resultPanel" class="card hidden">
-<div class="row result-top-actions"><h2>Végeredmény</h2><div class="top-actions"><button type="button" id="practiceWeakTop" class="hidden">🎯 Hibás szavak gyakorlása</button><button type="button" id="newTestBtnTop">↻ Új teszt</button></div></div>
+<div class="row result-top-actions"><h2>Végeredmény</h2><div class="top-actions"><button type="button" id="practiceWeakTop" class="hidden">🎯 Hibás szavak gyakorlása</button><button type="button" id="newTestBtnTop">↻ Új teszt</button><p id="gradeProgressTop" class="grade-progress hidden" role="status" aria-live="polite"></p></div></div>
 <div id="sendBar" class="send-bar hidden" role="status"><span id="sendBarText"></span><button type="button" id="sendBarSkip" class="btn-grey">Nem várom meg – új teszt</button></div>
 <section id="resultMeta" class="result-meta" aria-label="Teszt adatai">
   <div class="meta-item meta-main"><span class="meta-label">Diák neve</span><span class="meta-value" id="metaStudentName">–</span></div>
@@ -720,7 +722,7 @@ body:not(.screen-start) .student-theme-picker{display:none!important}
 </div>
 
 <section id="progressSection" class="progress-section" aria-labelledby="progressTitle">
-<h3 id="progressTitle">🌱 Személyes fejlődésed</h3>
+<h3 id="progressTitle">🌱 Személyes fejlődésed</h3><div class="progress-mode-actions" role="group" aria-label="Fejlődési előzmények módja"><button type="button" id="progressModeTest" aria-pressed="false">Éles tesztek</button><button type="button" id="progressModePractice" aria-pressed="false">Gyakorlás</button><button type="button" id="progressModeLegacy" class="hidden" aria-pressed="false">Korábbi vegyes előzmények</button></div>
 <p id="progressIntro" class="muted small">A saját, ezen az eszközön végzett gyakorlataid alakulása. Az adatok helyben, ebben a böngészőben maradnak.</p>
 <div id="achievementBadges" class="achievement-badges" aria-live="polite"></div>
 <div id="progressCharts" class="progress-charts"></div>
@@ -782,7 +784,7 @@ body:not(.screen-start) .student-theme-picker{display:none!important}
 <button type="button" id="dlSave" class="btn-grey">Eredmény letöltése (.json)</button>
 </div>
 <div id="weakBox" class="weak-box hidden"><b>🎯 Gyakorold a hibás szavaidat!</b><br><span id="weakText"></span><br><button type="button" id="practiceWeak">Gyakorlás indítása (nem kerül mentésre)</button></div>
-<button type="button" id="newTestBtn">Új teszt</button>
+<button type="button" id="newTestBtn">Új teszt</button><p id="gradeProgressBottom" class="grade-progress hidden" role="status" aria-live="polite"></p>
 </div>
 
 </div>
@@ -1889,35 +1891,56 @@ function overallFeedback(analyses){
 const HISTORY_KEY="gepiras_progress_history_v1";
 function historyIdentity(data){return String(data.studentName||"").trim().toLocaleLowerCase("hu-HU")+"|"+String(data.studentClass||"").trim().toLocaleLowerCase("hu-HU");}
 function readProgressHistory(){try{const v=JSON.parse(localStorage.getItem(HISTORY_KEY)||"{}");return v&&typeof v==="object"?v:{}}catch(e){return {}}}
-function renderProgress(data){
-  const all=readProgressHistory(), key=historyIdentity(data), history=Array.isArray(all[key])?all[key]:[];
-  const previous=history.length?history[history.length-1]:null;
-  const point={date:new Date().toLocaleDateString("hu-HU"),speed:Number(data.averageSpeed)||0,accuracy:Number(data.averagePercent)||0,score:Number(data.totalScore)||0,grade:Number(data.grade)||0};
-  // Minden befejezett teszt megjelenik, a böngésző legfeljebb 20 legutóbbit őrzi meg.
-  history.push(point); all[key]=history.slice(-20);
-  try{localStorage.setItem(HISTORY_KEY,JSON.stringify(all));}catch(e){}
+function renderProgress(data,viewMode,record=true){
+  const all=readProgressHistory(),key=historyIdentity(data);
+  let entries=Array.isArray(all[key])?all[key].slice():[];
+  const mode=data.practice===true?"practice":"test";
+  const existing=data.testId?entries.findIndex(h=>h.testId===data.testId):-1;
+  const dataPoint={mode,testId:data.testId||"",date:new Date(data.testFinishedAt||Date.now()).toLocaleDateString("hu-HU"),speed:Number(data.averageSpeed)||0,accuracy:Math.max(0,Math.min(100,Number(data.averagePercent)||0)),score:Number(data.totalScore)||0,grade:Number(data.grade)||0};
+  if(record){
+    if(existing>=0)entries[existing]=dataPoint;else entries.push(dataPoint);
+    const counts={};
+    entries=entries.slice().reverse().filter(h=>{const bucket=['practice','test'].includes(h.mode)?h.mode:'legacy';counts[bucket]=(counts[bucket]||0)+1;return counts[bucket]<=20;}).reverse();
+    all[key]=entries;try{localStorage.setItem(HISTORY_KEY,JSON.stringify(all));}catch(e){}
+  }
+  const selected=['practice','test','legacy'].includes(viewMode)?viewMode:mode;
+  const history=entries.filter(h=>selected==='legacy'?!['practice','test'].includes(h.mode):h.mode===selected);
+  const label=selected==='practice'?'Gyakorlás':selected==='test'?'Éles tesztek':'Korábbi vegyes előzmények';
+  ['Test','Practice','Legacy'].forEach((suffix,i)=>{
+    const button=$('progressMode'+suffix),buttonMode=['test','practice','legacy'][i];
+    button.setAttribute('aria-pressed',String(selected===buttonMode));
+    button.onclick=()=>renderProgress(data,buttonMode,false);
+    if(buttonMode==='legacy')button.classList.toggle('hidden',!entries.some(h=>!['practice','test'].includes(h.mode)));
+  });
+  $('progressTitle').textContent='🌱 Személyes fejlődésed – '+label;
+  if(!history.length){$('progressIntro').textContent=label+': még nincs rögzített eredmény ezen az eszközön. A gyakorlás és az éles tesztek külön gyűlnek.';$('achievementBadges').innerHTML='';$('progressCharts').innerHTML='';return;}
+  const point=history[history.length-1],previous=history.length>1?history[history.length-2]:null;
+  const round=v=>Math.round(v*100)/100;
   const badges=[];
   if(previous){
-    const ds=point.speed-previous.speed, da=point.accuracy-previous.accuracy, dp=point.score-previous.score;
-    if(ds>=Math.max(10,previous.speed*.1)) badges.push(["🚀","Rakétasebesség!",`+${ds} leütés/perc`]);
-    if(da>=3) badges.push(["🎯","Pontos mancs!",`+${da} százalékpont`]);
-    if(dp>=Math.max(5,previous.score*.05)) badges.push(["🏆","Pontvadász!",`+${dp} pont`]);
-    if(point.grade>previous.grade) badges.push(["🥳","Szintlépés!","Jobb érdemjegy"]);
-    if(!badges.length && (ds>0||da>0||dp>0)) badges.push(["🌱","Apró lépések, nagy varázslat!","Legalább egy területen javultál"]);
-  } else badges.push(["🐣","Első lépés!","A következő gyakorlásodhoz ez lesz az összehasonlítási alap"]);
+    const ds=round(point.speed-previous.speed),da=round(point.accuracy-previous.accuracy);
+    if(ds>=Math.max(10,previous.speed*.1))badges.push(["🚀","Rakétasebesség!",`+${ds} leütés/perc`]);
+    if(da>=10)badges.push(["🏆","Nagy eredményjavulás!",`+${da} százalékpont`]);
+    else if(da>=3)badges.push(["🎯","Pontos mancs!",`+${da} százalékpont`]);
+    if(point.grade>previous.grade)badges.push(["🥳","Szintlépés!","Jobb érdemjegy"]);
+    if(!badges.length&&(ds>0||da>0))badges.push(["🌱","Apró lépések, nagy varázslat!","Legalább egy területen javultál"]);
+  }else badges.push(["🐣","Első lépés!","A következő eredményedhez ez lesz az összehasonlítási alap"]);
   $("achievementBadges").innerHTML=badges.map(b=>`<div class="achievement"><span class="mascot" aria-hidden="true">${b[0]}</span><span>${esc(b[1])}<br><small>${esc(b[2])}</small></span></div>`).join("");
-  $("progressIntro").textContent=`${history.length} rögzített gyakorlás ezen az eszközön · az utolsó ${history.length} eredmény látható. A név és osztály alapján elkülönítve.`;
-  const metrics=[{key:"speed",title:"⚡ Sebesség",unit:" leütés/perc",color:"#1769aa"},{key:"accuracy",title:"🎯 Pontosság",unit:"%",color:"#13804a"},{key:"score",title:"⭐ Összpontszám",unit:" pont",color:"#8a4db5"}];
+  $("progressIntro").textContent=`${label}: ${history.length} legutóbbi eredmény ezen az eszközön, név és osztály szerint. ${selected==='legacy'?'Ezek régi adatok, amelyeknél a teszt módja nem ismert; nem számítanak bele az új, külön fejlődési sorokba.':'A gyakorlást és az éles teszteket külön hasonlítjuk össze.'} A fejlődést az elért százalék alapján mutatjuk; a százalék változása százalékpontban értendő. Az ötös mozgóátlag az ingadozást simítja, nem a naplójegyet számolja. A feladatok nehézsége és a gyakorlási beállítások az összehasonlítást befolyásolhatják.`;
+  const averages=history.map((h,i)=>{const part=history.slice(Math.max(0,i-4),i+1);return round(part.reduce((sum,p)=>sum+(Number(p.accuracy)||0),0)/part.length);});
+  const metrics=[
+    {title:"🎯 Elért eredmény",unit:"%",deltaUnit:" százalékpont",color:"#13804a",values:history.map(h=>Number(h.accuracy)||0),fixedPercent:true},
+    {title:"🌱 Legutóbbi legfeljebb 5 eredmény átlaga",unit:"%",deltaUnit:" százalékpont",color:"#8a4db5",values:averages,fixedPercent:true},
+    {title:"⚡ Sebesség",unit:" leütés/perc",deltaUnit:" leütés/perc",color:"#1769aa",values:history.map(h=>Number(h.speed)||0)}
+  ];
   $("progressCharts").innerHTML=metrics.map(m=>{
-    const vals=history.map(h=>Math.max(0,Number(h[m.key])||0));
-    const max=Math.max(1,...vals), min=Math.min(0,...vals), span=Math.max(1,max-min);
-    const coords=vals.map((v,i)=>({x:10+(history.length<=1?0:i*180/(history.length-1)),y:48-(v-min)/span*35,v}));
+    const vals=m.values.map(v=>round(Math.max(0,v))),max=m.fixedPercent?100:Math.max(1,...vals);
+    const coords=vals.map((v,i)=>({x:10+(history.length<=1?0:i*180/(history.length-1)),y:48-v/max*35,v}));
     const line=coords.map(c=>`${c.x},${c.y}`).join(" ");
-    const dots=coords.map((c,i)=>`<circle cx="${c.x}" cy="${c.y}" r="${i===coords.length-1?3.4:2}" fill="${m.color}"><title>${i+1}. gyakorlás: ${c.v}${m.unit}</title></circle>`).join("");
-    const latest=vals.length?vals[vals.length-1]:0;
-    const delta=previous?latest-(Number(previous[m.key])||0):0;
-    const change=previous?` · ${delta>0?"▲ +":delta<0?"▼ ":"↔ "}${delta}${m.unit}`:"";
-    return `<div class="progress-chart"><h4>${m.title}</h4><svg viewBox="0 0 200 58" role="img" aria-label="${m.title}, ${history.length} gyakorlás"><path d="M10 48 H190 M10 30 H190 M10 12 H190" stroke="#d9e0e8" stroke-width="1" fill="none"/><polyline points="${line}" fill="none" stroke="${m.color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>${dots}<text x="10" y="57" font-size="6" fill="#5f6368">régebbi</text><text x="190" y="57" text-anchor="end" font-size="6" fill="#5f6368">legutóbbi</text></svg><div class="chart-last">${latest}${m.unit}${change}</div></div>`;
+    const dots=coords.map((c,i)=>`<circle cx="${c.x}" cy="${c.y}" r="${i===coords.length-1?3.4:2}" fill="${m.color}"><title>${i+1}. eredmény: ${c.v}${m.unit}</title></circle>`).join("");
+    const latest=vals[vals.length-1]||0,delta=vals.length>1?round(latest-vals[vals.length-2]):0;
+    const change=vals.length>1?` · ${delta>0?"▲ +":delta<0?"▼ ":"↔ "}${delta}${m.deltaUnit}`:"";
+    return `<div class="progress-chart"><h4>${m.title}</h4><svg viewBox="0 0 200 58" role="img" aria-label="${m.title}, ${history.length} eredmény${m.fixedPercent?', 0–100 százalékos skála':''}"><path d="M10 48 H190 M10 30 H190 M10 12 H190" stroke="#d9e0e8" stroke-width="1" fill="none"/><polyline points="${line}" fill="none" stroke="${m.color}" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>${dots}<text x="10" y="57" font-size="6" fill="#5f6368">régebbi</text><text x="190" y="57" text-anchor="end" font-size="6" fill="#5f6368">legutóbbi</text></svg><div class="chart-last">${latest}${m.unit}${change}</div></div>`;
   }).join("");
 }
 
@@ -2067,7 +2090,8 @@ function finishTest(){
   };
   exportResult=pendingResult;
   exportResult.practice=practiceMode; exportResult.timeMultiplier=practiceFactor;
-  renderProgress(pendingResult);
+  setGradeProgressText(practiceMode?'Gyakorló mód: ez a teszt nem számít jegyszerzéshez.':'A jegyszerzési előrehaladás a mentés ellenőrzése után jelenik meg.');
+  renderProgress({...pendingResult,practice:practiceMode});
   playSound("end");
   updateWeakBox();
   if(practiceMode){
@@ -2133,6 +2157,7 @@ function postViaForm(result){
 async function verifySaved(id){
   try{
     const r=await jsonp({action:"hasResult",id});
+    if(r?.saved)refreshGradeProgress(id);
     if(r&&r.success&&typeof r.saved==="boolean") return r.saved?"yes":"no";
     return "unknown";   // régi script: nincs ellenőrzési lehetőség
   }catch(e){
@@ -2220,6 +2245,7 @@ async function saveResultInner(){
   }
   if(ok){
     savedOk=true;
+    refreshGradeProgress(res.testId);
     lastReal=null;
     clearPending();
     showSaveBanner(false);
@@ -3331,6 +3357,27 @@ function setupStartScreenFit(){
  if(document.fonts?.ready)document.fonts.ready.then(schedule);schedule();
 }
 setupStartScreenFit();
+</script>
+<script>
+function setGradeProgressText(text){
+ ['gradeProgressTop','gradeProgressBottom'].forEach(id=>{const el=$(id);if(el){el.textContent=text;el.classList.toggle('hidden',!text);}});
+}
+function gradeProgressMessage(p){
+ if(!p.enabled)return 'Jegyszerzés: nem. Ez a teszt nem indít új naplóba szánt jegyátlagot.';
+ const mean=p.average===null?'–':Number(p.average).toFixed(2).replace('.',',');
+ if(!p.eligible)return `Ez a teszt nem számít jegyszerzéshez. A következő teljes ${p.size} tesztes csoporthoz még ${p.nextGroupRemaining} befejezett teszt kell.`;
+ if(p.complete)return `✅ Elkészült a ${p.size} tesztes csoport. Jegyátlag: ${mean}; kerekített, naplóba beírható jegy: ${p.roundedGrade}. A következő csoporthoz ${p.size} új teszt kell.`;
+ return `Jegyszerzés: ${p.countInGroup}/${p.size} teszt kész; még legalább ${p.remaining} befejezett teszt kell. Eddigi jegyátlag: ${mean}; jelenleg ${p.roundedGrade}-re kerekülne. Ez még nem végleges naplójegy.`;
+}
+async function refreshGradeProgress(id){
+ if(!id||exportResult?.testId!==id||!$('testPanel').classList.contains('hidden'))return;
+ try{
+  const r=await jsonp({action:'gradeProgress',id},12000);
+  if(exportResult?.testId!==id||!$('testPanel').classList.contains('hidden'))return;
+  if(r?.success&&r.progress?.testId===id)setGradeProgressText(gradeProgressMessage(r.progress));
+  else setGradeProgressText('A jegyszerzési előrehaladás nem kérhető le. Ellenőrizd az Apps Script telepített verzióját.');
+ }catch(e){if(exportResult?.testId===id)setGradeProgressText('Az eredmény mentésétől függetlenül a jegyszerzési előrehaladás most nem kérhető le.');}
+}
 </script>
 </body>
 </html>
