@@ -1,6 +1,6 @@
 'use strict';
 // Minden közzétett programváltozatnál módosítsd a VERSION értékét.
-const VERSION='2026-10-12-02';
+const VERSION='2026-10-12-05';
 const PREFIX='gepiras-static-'+encodeURIComponent(self.registration.scope)+'-';
 const CACHE=PREFIX+VERSION;
 const ASSETS=['./index.html','./manifest.webmanifest','./pwa.js','./icons/icon-192.png','./icons/icon-512.png','./icons/icon-maskable-512.png'];
