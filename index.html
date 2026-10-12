@@ -585,6 +585,22 @@ html.big-text body.screen-test #typingWorkspace #answer{font-size:max(22px,calc(
 body:not(.screen-start) .student-theme-picker{display:none!important}
 .grade-progress{flex-basis:100%;max-width:540px;font-size:.85rem;line-height:1.35;margin:5px 0;padding:7px 9px;background:#e3eee8;border-radius:7px}.top-actions{flex-wrap:wrap}body.high-contrast .grade-progress{background:#111;color:#fff;border:1px solid #fff}
 .progress-mode-actions{display:flex;flex-wrap:wrap;gap:5px;margin:5px 0}.progress-mode-actions button{font-size:.8rem;padding:5px 8px}.progress-mode-actions button[aria-pressed="true"]{outline:2px solid #215347;outline-offset:1px}body.high-contrast .progress-mode-actions button[aria-pressed="true"]{outline-color:#ffeb3b}@media print{.progress-mode-actions{display:none!important}}
+
+@media screen{
+ .result-top-actions{flex-direction:column;align-items:stretch!important;gap:8px}.result-top-actions .top-actions{width:100%;display:flex;flex-wrap:wrap;gap:8px}
+ .grade-progress{max-width:none!important;box-sizing:border-box;width:100%;flex-basis:100%;font-size:1.08rem!important;font-weight:600;line-height:1.5;padding:14px!important;border:3px solid #215347;background:#d4e9dc!important;color:#173e32;box-shadow:0 3px 10px #21534722}
+ .send-bar{font-size:1.02rem!important;line-height:1.45;padding:14px!important;border-width:2px!important;display:flex;align-items:center;gap:12px}.send-bar #sendBarText{flex:1}
+ .send-bar.is-saving{background:#fff3cd!important;border-color:#b97800!important;color:#5b3900}
+ .send-bar.is-saving::before{content:'';width:24px;height:24px;flex:0 0 24px;border:4px solid #e7c46e;border-top-color:#805000;border-radius:50%;animation:resultSaveSpin 1s linear infinite}
+ .send-bar.warning,.result-save-gate{background:#fff3cd;color:#5b3900;border:2px solid #b97800;border-radius:8px;padding:12px}
+ .result-save-gate{display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:8px 0}.result-save-gate strong{flex:1;min-width:180px}.result-save-gate button{background:#805000}
+ #newTestBtn:disabled,#newTestBtnTop:disabled,#sendBarSkip:disabled{opacity:.5;cursor:not-allowed}
+ body.high-contrast .grade-progress,body.high-contrast .send-bar,body.high-contrast .result-save-gate{background:#111!important;color:#fff!important;border-color:#ffeb3b!important}
+}
+@keyframes resultSaveSpin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){.send-bar.is-saving::before{animation:none!important}}
+@media print{#resultSaveGate{display:none!important}.grade-progress{box-shadow:none!important}}
+
 </style>
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#215347">
@@ -698,7 +714,7 @@ body:not(.screen-start) .student-theme-picker{display:none!important}
 
 <div id="resultPanel" class="card hidden">
 <div class="row result-top-actions"><h2>Végeredmény</h2><div class="top-actions"><button type="button" id="practiceWeakTop" class="hidden">🎯 Hibás szavak gyakorlása</button><button type="button" id="newTestBtnTop">↻ Új teszt</button><p id="gradeProgressTop" class="grade-progress hidden" role="status" aria-live="polite"></p></div></div>
-<div id="sendBar" class="send-bar hidden" role="status"><span id="sendBarText"></span><button type="button" id="sendBarSkip" class="btn-grey">Nem várom meg – új teszt</button></div>
+<div id="sendBar" class="send-bar hidden" role="status" aria-live="polite"><span id="sendBarText"></span><button type="button" id="sendBarSkip" class="btn-grey">Nem várom meg – új teszt</button></div><div id="resultSaveGate" class="result-save-gate hidden" role="status"><strong id="resultSaveGateText"></strong><button type="button" id="resultGateCsv">⬇ CSV-biztonsági másolat</button></div>
 <section id="resultMeta" class="result-meta" aria-label="Teszt adatai">
   <div class="meta-item meta-main"><span class="meta-label">Diák neve</span><span class="meta-value" id="metaStudentName">–</span></div>
   <div class="meta-item meta-main"><span class="meta-label">Osztály</span><span class="meta-value" id="metaStudentClass">–</span></div>
@@ -874,6 +890,8 @@ let testFinishedAt=null;
 let pendingResult=null;
 let exportResult=null;
 let savedOk=false;
+let gradingEnabledSetting=true;
+const confirmedResultIds=new Set(),csvBackupIds=new Set();
 const skippedIdx=new Set();
 
 const $=id=>document.getElementById(id);
@@ -1259,6 +1277,7 @@ async function askApproval(count,total){
 }
 
 async function startTest(){
+ if(!allowLeavingResult())return;
  if(teacherSettingsPromise){
   if($('startBtn').disabled)return;
   $('startBtn').disabled=true;$('startBtn').textContent='Beállítások betöltése…';
@@ -2090,6 +2109,8 @@ function finishTest(){
   };
   exportResult=pendingResult;
   exportResult.practice=practiceMode; exportResult.timeMultiplier=practiceFactor;
+  exportResult.gradingRequired=!practiceMode&&gradingEnabledSetting;
+  syncResultSaveGate();
   setGradeProgressText(practiceMode?'Gyakorló mód: ez a teszt nem számít jegyszerzéshez.':'A jegyszerzési előrehaladás a mentés ellenőrzése után jelenik meg.');
   renderProgress({...pendingResult,practice:practiceMode});
   playSound("end");
@@ -2157,7 +2178,7 @@ function postViaForm(result){
 async function verifySaved(id){
   try{
     const r=await jsonp({action:"hasResult",id});
-    if(r?.saved)refreshGradeProgress(id);
+    if(r?.success&&r.saved){confirmedResultIds.add(id);syncResultSaveGate();refreshGradeProgress(id);}
     if(r&&r.success&&typeof r.saved==="boolean") return r.saved?"yes":"no";
     return "unknown";   // régi script: nincs ellenőrzési lehetőség
   }catch(e){
@@ -2213,9 +2234,9 @@ function scheduleAutoRetry(){
 }
 async function saveResult(){
   if(saving) return;
-  saving=true;
+  saving=true;syncResultSaveGate();
   const attempted=pendingResult||lastReal;
-  try{ await saveResultInner(); } finally{ saving=false; if(pendingResult && pendingResult.testId!==attempted?.testId) saveResult(); }
+  try{ await saveResultInner(); } finally{ saving=false;syncResultSaveGate(); if(pendingResult && pendingResult.testId!==attempted?.testId) saveResult(); }
 }
 async function saveResultInner(){
   clearTimeout(autoRetryTimer);
@@ -2225,7 +2246,7 @@ async function saveResultInner(){
   $("saveActions").classList.add("hidden");
   showSaveBanner(false);
   backupPending(res);
-  $("sendBar").className="send-bar"; $("sendBarSkip").classList.remove("hidden");
+  $("sendBar").className="send-bar"; $("sendBarSkip").classList.remove("hidden");syncResultSaveGate();
   const mirror={set textContent(v){ $("saveStatus").textContent=v; $("sendBarText").textContent="⏳ Az eredmény küldése folyamatban a háttérben ("+v.replace(/\.\.\.$/,"")+"). Várd meg a ✅ jelet, utána biztonságosan indíthatsz új tesztet."; }};
   if(firstAutoSend){
     firstAutoSend=false;
@@ -2244,12 +2265,14 @@ async function saveResultInner(){
     return;
   }
   if(ok){
-    savedOk=true;
+    savedOk=ok==="yes";
+    if(savedOk){confirmedResultIds.add(res.testId);lastReal=null;clearPending();}
+    else{lastReal=res;backupPending(res);scheduleAutoRetry();}
     refreshGradeProgress(res.testId);
-    lastReal=null;
-    clearPending();
     showSaveBanner(false);
     $("sendBar").className="send-bar ok"; $("sendBarText").textContent="✅ Az eredmény biztonságban elküldve – új tesztet indíthatsz."; $("sendBarSkip").classList.add("hidden");
+    if(ok!=="yes"){$('sendBar').className='send-bar warning';$('sendBarText').textContent='⚠️ A küldés megtörtént, de a táblázatba mentés még nincs visszaigazolva. Várj az ellenőrzésre, vagy ments CSV-biztonsági másolatot.';}
+    syncResultSaveGate();
     $("saveStatus").textContent=ok==="yes"
       ?"✅ Az eredmény el lett mentve a Google Táblázatba."
       :"✅ Az eredmény el lett küldve. (Az automatikus ellenőrzés ezen az eszközön nem működött; ha kétséges, szólj a tanárnak, vagy töltsd le az eredményt.)";
@@ -2304,6 +2327,7 @@ function downloadCsv(){
   const rows=exportRows(data),width=Math.max(...rows.map(r=>r.length));
   const csv='\ufeff'+rows.map(row=>Array.from({length:width},(_,i)=>csvCell(row[i]??'')).join(';')).join('\r\n');
   triggerDownload(new Blob([csv],{type:'text/csv;charset=utf-8;'}),exportFilename(data,'csv'));
+  if(data.testId){csvBackupIds.add(data.testId);syncResultSaveGate();}
 }
 
 function downloadPdf(){
@@ -2388,6 +2412,7 @@ $("stopConfirm").addEventListener("click",emergencyStop);
 
 $("retrySave").addEventListener("click",()=>{firstAutoSend=false;saveResult();});
 $("sendBarSkip").addEventListener("click",()=>{
+  if(!allowLeavingResult())return;
   if(!confirm("A mentés még nincs igazolva. Az eredmény biztonsági másolata megmarad, a folyamatban lévő küldés folytatódik. Biztosan visszatérsz az új teszthez?")) return;
   clearTimeout(autoRetryTimer); if(lastReal||pendingResult) backupPending(lastReal||pendingResult); testActive=false;
   resetStartScreen();
@@ -2408,6 +2433,7 @@ $("progressExportCsv").addEventListener("click",downloadCsv);
 $("progressExportPdf").addEventListener("click",downloadPdf);
 $("dlSave").addEventListener("click",downloadResult);
 function beginNewTest(){
+  if(!allowLeavingResult())return;
   if((lastReal||(pendingResult&&!savedOk))&&!confirm((saving?"Az eredmény küldése még folyamatban van a háttérben. ":"")+"Az eredmény még nincs elküldve. Biztosan új tesztet kezdesz? (Az el nem küldött eredmény elvész, ha előtte nem töltöd le.)")) return;
   if(lastReal||pendingResult) backupPending(lastReal||pendingResult);
   testActive=false;
@@ -2613,6 +2639,7 @@ function updateWeakBox(){
   $("weakBox").classList.remove("hidden");
 }
 function startWeakPractice(){
+  if(!allowLeavingResult())return;
   const words=shuffle(weakList).slice(0,16);
   const list=[];
   for(let i=0;i<words.length;i+=4){
@@ -3020,6 +3047,7 @@ function formattedPdf(){
 // A zárolás csak sikeres szerverválasz után oldható fel. Üres szerveroldali jelszó esetén minden beállítás szabad.
 let teacherPinRequired=null,teacherSettingsPromise=null,bankSettingsApplied=false;
 function applyBankDefaults(settings){
+ if(typeof settings?.gradingEnabled==='boolean')gradingEnabledSetting=settings.gradingEnabled;
  if(bankSettingsApplied||!settings||!$('testPanel').classList.contains('hidden')||!$('resultPanel').classList.contains('hidden'))return;
  const count=Number(settings.taskCount),minutes=Number(settings.capMinutes),repeat=Number(settings.dictationRepeatCount);
  if(Number.isInteger(count)&&count>=1&&count<=50)$('taskCount').value=String(count);
@@ -3374,10 +3402,35 @@ async function refreshGradeProgress(id){
  try{
   const r=await jsonp({action:'gradeProgress',id},12000);
   if(exportResult?.testId!==id||!$('testPanel').classList.contains('hidden'))return;
-  if(r?.success&&r.progress?.testId===id)setGradeProgressText(gradeProgressMessage(r.progress));
+  if(r?.success&&r.progress?.testId===id){confirmedResultIds.add(id);savedOk=true;if(lastReal?.testId===id){lastReal=null;clearPending();}if(exportResult)exportResult.gradingRequired=r.progress.enabled===true;$('sendBar').className='send-bar ok';$('sendBarText').textContent='✅ A Google-táblázatba mentés visszaigazolva – új tesztet indíthatsz.';$('saveStatus').textContent='✅ Az eredmény mentése visszaigazolva.';syncResultSaveGate();setGradeProgressText(gradeProgressMessage(r.progress));}
   else setGradeProgressText('A jegyszerzési előrehaladás nem kérhető le. Ellenőrizd az Apps Script telepített verzióját.');
  }catch(e){if(exportResult?.testId===id)setGradeProgressText('Az eredmény mentésétől függetlenül a jegyszerzési előrehaladás most nem kérhető le.');}
 }
+</script>
+<script>
+function resultSaveBlocked(){
+ const data=exportResult;
+ return !!(data&&!data.practice&&data.gradingRequired!==false&&!confirmedResultIds.has(data.testId)&&!csvBackupIds.has(data.testId));
+}
+function syncResultSaveGate(){
+ const data=exportResult,blocked=resultSaveBlocked();
+ ['newTestBtn','newTestBtnTop','sendBarSkip','practiceWeak','practiceWeakTop'].forEach(id=>{
+  const el=$(id);if(!el)return;
+  el.disabled=blocked;el.title=blocked?'Jegyszerzéshez előbb meg kell várnod a mentés visszaigazolását, vagy CSV-másolatot kell letöltened.':'';
+ });
+ const gate=$('resultSaveGate');if(gate){gate.classList.toggle('hidden',!blocked);$('resultSaveGateText').textContent='🔒 Jegyszerzés: új teszt csak visszaigazolt mentés vagy CSV-biztonsági másolat után indítható.';}
+ const bar=$('sendBar');if(bar){const pending=!!(data&&!data.practice&&!confirmedResultIds.has(data.testId));bar.classList.toggle('is-saving',pending&&saving);bar.setAttribute('aria-busy',String(pending&&saving));}
+ if(data&&csvBackupIds.has(data.testId)&&!confirmedResultIds.has(data.testId)){
+  if(gate){gate.classList.remove('hidden');$('resultSaveGateText').textContent='📁 A CSV letöltését elindítottad; új teszt indítható. Ellenőrizd, hogy a fájl valóban elmentődött, és ha kell, add át a tanárnak. A szerveres mentés még ellenőrzésre vár.';}
+ }
+}
+function allowLeavingResult(){
+ if(!resultSaveBlocked())return true;
+ syncResultSaveGate();$('resultSaveGate').scrollIntoView({behavior:'smooth',block:'center'});
+ alert('Jegyszerzésnél előbb várd meg a Google-táblázatba mentés visszaigazolását, vagy töltsd le az eredményt CSV-ben.');return false;
+}
+$('resultGateCsv').addEventListener('click',downloadCsv);
+syncResultSaveGate();
 </script>
 </body>
 </html>
