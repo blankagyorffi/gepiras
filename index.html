@@ -643,6 +643,17 @@ body:not(.screen-start) .student-theme-picker{display:none!important}
 }
 
 #resultSaveGate,#saveBanner,#saveStatus,#saveActions,#csvTeacherReminder,#sendBarSkip,#csvTeacherHanded{display:none!important}#saveHandoffHint{display:block;flex-basis:100%;font-size:.95rem;line-height:1.4;font-weight:700;margin-top:5px}#saveHandoffHint:empty{display:none}
+@media screen{
+ #resultPanel .result-primary-actions{flex-wrap:nowrap;gap:6px}
+ #resultPanel .result-primary-actions>button{font-size:.85rem!important;padding:8px 10px!important;white-space:nowrap;flex:0 0 auto}
+ #resultPanel .result-primary-actions #exportActions{flex-wrap:nowrap;flex:0 1 auto;min-width:0;gap:5px}
+ #resultPanel .result-primary-actions #exportActions button{font-size:.8rem!important;padding:8px 9px!important;white-space:nowrap}
+ #sendBar #sendBarText{flex:0 1 auto!important}
+ #newTestBtnSaved{background:#6a2fc1!important;color:#fff!important;border:2px solid #452080!important;font-weight:800;font-size:.95rem;padding:9px 12px;white-space:nowrap}
+ #newTestBtnSaved:disabled{opacity:.5;cursor:not-allowed}
+ body.high-contrast #newTestBtnSaved{background:#ffeb3b!important;color:#000!important;border-color:#fff!important}
+}
+@media screen and (max-width:760px){#resultPanel .result-primary-actions{flex-wrap:wrap}#resultPanel .result-primary-actions #exportActions{justify-content:flex-end;margin-left:auto!important}#resultPanel .result-primary-actions #exportActions button{font-size:.75rem!important;padding:7px!important}}
 </style>
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#215347">
@@ -3493,7 +3504,7 @@ function resultSaveBlocked(){
 }
 function syncResultSaveGate(){
  const data=exportResult,blocked=resultSaveBlocked();
- ['newTestBtn','newTestBtnTop','sendBarSkip','practiceWeak','practiceWeakTop'].forEach(id=>{
+ ['newTestBtn','newTestBtnTop','newTestBtnSaved','sendBarSkip','practiceWeak','practiceWeakTop'].forEach(id=>{
   const el=$(id);if(!el)return;
   el.disabled=blocked;el.title=blocked?'Jegyszerzéshez előbb meg kell várnod a mentés visszaigazolását, vagy CSV-másolatot kell letöltened.':'';
  });
@@ -3600,6 +3611,7 @@ function renderSimpleSaveStatus(){
   return;
  }
  const confirmed=confirmedResultIds.has(data.testId),csv=csvBackupIds.has(data.testId)&&csvDownloadAllowed(data);
+ const savedButton=$('newTestBtnSaved');if(savedButton)savedButton.classList.toggle('hidden',!(confirmed||csv));
  bar.classList.remove('hidden');
  let message;
  if(confirmed){bar.className='send-bar ok';message='✅ Eredmény mentve – új teszt indítható.';}
@@ -3615,6 +3627,16 @@ function renderSimpleSaveStatus(){
 const originalShowCsvTeacherReminder=showCsvTeacherReminder;
 showCsvTeacherReminder=function(){originalShowCsvTeacherReminder();renderSimpleSaveStatus();};
 syncResultSaveGate();
+</script>
+<script>
+(function compactResultButtons(){
+ const exportRow=$('exportActions');
+ const xlsx=exportRow.querySelector('button[onclick]');if(xlsx){xlsx.title='Formázott Excel letöltése (XLSX)';xlsx.setAttribute('aria-label',xlsx.title);xlsx.textContent='⬇ Excel (XLSX)';}
+ $('exportCsv').title='Eredmény letöltése CSV-ben';$('exportCsv').setAttribute('aria-label',$('exportCsv').title);$('exportCsv').textContent='⬇ CSV';
+ $('exportPdf').title='PDF mentése / nyomtatása';$('exportPdf').setAttribute('aria-label',$('exportPdf').title);$('exportPdf').textContent='🖨 PDF / nyomtatás';
+ const button=document.createElement('button');button.type='button';button.id='newTestBtnSaved';button.className='hidden';button.textContent='↻ Új teszt';button.addEventListener('click',beginNewTest);
+ $('sendBarText').after(button);syncResultSaveGate();
+})();
 </script>
 </body>
 </html>
