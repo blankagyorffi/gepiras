@@ -613,6 +613,20 @@ body:not(.screen-start) .student-theme-picker{display:none!important}
 }
 
 .csv-teacher-reminder{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin:12px 0;padding:18px;border:4px solid #a32316;background:#fff0db;color:#75180e;font-size:1.15rem;line-height:1.5}.csv-teacher-reminder strong{flex:1;min-width:200px}.csv-teacher-reminder button{background:#75180e}body.high-contrast .csv-teacher-reminder{background:#111;color:#fff;border-color:#ffeb3b}@media print{#csvTeacherHanded{display:none!important}}
+
+@media screen{
+ #sendBar.send-bar.ok{background:#134fb1!important;color:#fff!important;border:4px solid #073477!important;border-left-width:14px!important;box-shadow:0 5px 18px #134fb155;font-size:clamp(1rem,1.5vw,1.15rem)!important;animation:savedConfirmEnter .45s ease-out,savedConfirmGlow 1.3s ease-in-out .45s 2}
+ #sendBar.send-bar.ok #sendBarText{color:#fff!important;font-weight:800;line-height:1.5}
+ #sendBar.send-bar.ok::before{content:'✓';display:flex;align-items:center;justify-content:center;flex:0 0 38px;width:38px;height:38px;border-radius:50%;background:#fff;color:#134fb1;font-size:28px;font-weight:900;animation:savedConfirmTick .5s ease-out;border:0}
+ body.high-contrast #sendBar.send-bar.ok{background:#000!important;color:#9dffb0!important;border-color:#9dffb0!important;box-shadow:none}
+ body.high-contrast #sendBar.send-bar.ok #sendBarText{color:#9dffb0!important}
+ body.high-contrast #sendBar.send-bar.ok::before{background:#9dffb0;color:#000}
+}
+@keyframes savedConfirmEnter{from{opacity:.65;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+@keyframes savedConfirmGlow{0%,100%{box-shadow:0 5px 18px #134fb155}50%{box-shadow:0 0 0 5px #134fb133,0 5px 22px #134fb177}}
+@keyframes savedConfirmTick{from{transform:scale(.75)}to{transform:scale(1)}}
+@media(prefers-reduced-motion:reduce){#sendBar.send-bar.ok,#sendBar.send-bar.ok::before{animation:none!important}}
+
 </style>
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#215347">
