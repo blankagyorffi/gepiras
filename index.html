@@ -715,7 +715,7 @@ body:not(.screen-start) .student-theme-picker{display:none!important}
 <p id="timeLimitHelp" class="setting-help">A teszt hamarabb is befejezhető; a tervezett idő maximum. A teszt teljes időkerete legfeljebb <span id="capMinutes">35</span> perc. A feladatszám és az időkeret módosításához kattints a Tanári feloldás gombra.</p>
 <div id="taskOrderField"><label for="taskOrder">Feladatok sorrendje</label><select id="taskOrder" aria-describedby="taskOrderHelp"><option value="random">Véletlen feladatkeverés</option><option value="bank">Feladatbank sorrendje</option></select><p id="taskOrderHelp" class="setting-help"><b>Feladatbank sorrendje:</b> az osztályhoz és a választott szövegcsoporthoz megfelelő feladatok a feladatbank elejétől, keverés nélkül következnek. Ez a teszt alapbeállítása. <b>Véletlen keverés:</b> a program a tanári típusarányok szerint választ, majd összekeveri a feladatokat. Saját arányok nélkül a korábbi kiegyensúlyozott választás működik. Bekapcsolt típusarányoknál a feladatbank sorrendjét is ezek szerint szűri. A sorrendet tesztben csak tanári feloldással, gyakorló módban a diák is módosíthatja.</p></div>
 <section id="contentBankSection" class="content-bank-section"><h3 id="contentBankTitle">Feladatbank</h3><div id="contentBankPractice" class="hidden"><label for="practiceBankStart">Gyakorlás feladatbankja</label><select id="practiceBankStart" disabled><option value="bank1">Feladatbank 1</option><option value="bank2">Feladatbank 2</option><option value="bank3">Feladatbank 3</option></select></div><div id="contentBankTeacher"><label for="testContentBank">Tanár által kijelölt bank</label><select id="testContentBank" disabled></select></div><p id="contentBankHelp" class="muted small"></p><p id="contentBankStatus" class="small" role="status"></p></section>
-<label class="chk"><input type="checkbox" id="practiceMode"> Gyakorló mód (az eredmény nem kerül a táblázatba)</label><div id="practiceOptions"><label for="practiceTextKind">Gyakorló feladatok</label><select id="practiceTextKind" disabled><option value="all">Mindenféle szöveg</option><option value="short">Rövid szavak és kifejezések</option><option value="long">Hosszabb mondatok és szövegek</option></select><label for="practiceTime">Gyakorlási idő</label><select id="practiceTime" disabled><option value="0.5">Fele idő – nehezítés (0,5×)</option><option value="0.75">25%-kal kevesebb idő (0,75×)</option><option value="1" selected>Tanári idő (1×)</option><option value="1.5">50%-kal több idő (1,5×)</option><option value="2">Kétszeres idő (2×)</option></select><label for="practiceSpeechRate">Felolvasás tempója</label><select id="practiceSpeechRate" disabled><option value="0">Tanári felolvasási tempó</option><option value="0.5">Lassú (0,5×)</option><option value="0.75">Nyugodt (0,75×)</option><option value="1">Normál (1×)</option><option value="1.25">Gyorsabb (1,25×)</option><option value="1.5">Gyors (1,5×)</option></select><p class="muted">A szövegválasztás csak gyakorló módban, indulás előtt állítható. Rövid: legfeljebb 8 szó és 80 karakter; hosszabb: az ennél hosszabb szövegek. A gyakorlási idő és a felolvasási tempó gyakorló módban, menet közben is módosítható.</p></div>
+<label class="chk"><input type="checkbox" id="practiceMode"> Gyakorló mód (az eredmény nem kerül a táblázatba)</label><div id="practiceOptions"><label for="practiceTextKind">Gyakorló feladatok</label><select id="practiceTextKind" disabled><option value="all">Mindenféle szöveg</option><option value="short">Rövid szavak és kifejezések</option><option value="long">Hosszabb mondatok és szövegek</option><option value="szo">Szavak</option><option value="kifejezes">Kifejezések</option><option value="mondat">Mondatok</option><option value="szoveg">Szövegek</option></select><label for="practiceTime">Gyakorlási idő</label><select id="practiceTime" disabled><option value="0.5">Fele idő – nehezítés (0,5×)</option><option value="0.75">25%-kal kevesebb idő (0,75×)</option><option value="1" selected>Tanári idő (1×)</option><option value="1.5">50%-kal több idő (1,5×)</option><option value="2">Kétszeres idő (2×)</option></select><label for="practiceSpeechRate">Felolvasás tempója</label><select id="practiceSpeechRate" disabled><option value="0">Tanári felolvasási tempó</option><option value="0.5">Lassú (0,5×)</option><option value="0.75">Nyugodt (0,75×)</option><option value="1">Normál (1×)</option><option value="1.25">Gyorsabb (1,25×)</option><option value="1.5">Gyors (1,5×)</option></select><p class="muted">A szövegválasztás csak gyakorló módban, indulás előtt állítható. Rövid: legfeljebb 8 szó és 80 karakter; hosszabb: az ennél hosszabb szövegek. A gyakorlási idő és a felolvasási tempó gyakorló módban, menet közben is módosítható.</p></div>
 <label class="chk"><input type="checkbox" id="soundOn"> 🔊 Hangjelzés (lejárt idő, kész feladat)</label>
 <div id="connChip" class="conn small" role="status" title="Kattints az újraellenőrzéshez">Kapcsolat ellenőrzése…</div>
 
@@ -958,6 +958,7 @@ const CSV_FALLBACK_AFTER=3;
 const skippedIdx=new Set();
 
 const $=id=>document.getElementById(id);
+function requiredControl(id){const control=$(id);if(!control)throw new Error('A felület egyik szükséges mezője hiányzik: '+id+'. Töltsd újra az oldalt.');return control;}
 const sleep=ms=>new Promise(r=>setTimeout(r,ms));
 function formatExactDateTime(value){
   if(!value) return "–";
@@ -991,7 +992,7 @@ function fmtClock(sec){
 /* ---------- Osztály kiválasztása ---------- */
 
 function syncClassFields(){
- const other=$('studentGrade').value==='__other';
+ const other=requiredControl('studentGrade').value==='__other';
  $('studentLetter').classList.toggle('hidden',other);$('studentLetter').hidden=other;$('studentLetter').disabled=other;
  $('studentClassOther').classList.toggle('hidden',!other);$('studentClassOther').hidden=!other;
 }
@@ -1002,7 +1003,7 @@ function initClassSelect(){
   $("studentLetter").innerHTML=LETTERS.map(l=>
     `<option value="${esc(l)}"${l===DEFAULT_LETTER?" selected":""}>${esc(l)}</option>`).join("");
 
-  $("studentGrade").addEventListener("change",()=>{syncClassFields();if($("studentGrade").value==='__other')$("studentClassOther").focus();});
+  $("studentGrade").addEventListener("change",()=>{syncClassFields();if(requiredControl("studentGrade").value==='__other')$("studentClassOther").focus();});
   $("studentGrade").addEventListener("input",syncClassFields);
   syncClassFields();
 }
@@ -1014,8 +1015,8 @@ function normalizeClass(s){
 }
 
 function getClass(){
-  if($("studentGrade").value==="__other") return normalizeClass($("studentClassOther").value);
-  return `${$("studentGrade").value}.${$("studentLetter").value}`;
+  if(requiredControl("studentGrade").value==="__other") return normalizeClass(requiredControl("studentClassOther").value);
+  return `${requiredControl("studentGrade").value}.${requiredControl("studentLetter").value}`;
 }
 
 /* ---------- Betűméret (1 óráig megmarad) ---------- */
@@ -1030,11 +1031,11 @@ function applyScale(task,answer){
   task=clampScale(task); answer=clampScale(answer);
   document.documentElement.style.setProperty("--task-scale",task/100);
   document.documentElement.style.setProperty("--answer-scale",answer/100);
-  $("sizeTask").value=task;      $("sizeTaskVal").textContent=task+"%";
-  $("sizeAnswer").value=answer;  $("sizeAnswerVal").textContent=answer+"%";
+  requiredControl("sizeTask").value=task;      $("sizeTaskVal").textContent=task+"%";
+  requiredControl("sizeAnswer").value=answer;  $("sizeAnswerVal").textContent=answer+"%";
 }
 
-function fontNameKey(){ return ($("studentName").value||"").trim().replace(/\s+/g," ").toLowerCase(); }
+function fontNameKey(){ return (requiredControl("studentName").value||"").trim().replace(/\s+/g," ").toLowerCase(); }
 function restoreFont(){
   const mobile=window.matchMedia("(max-width:760px)").matches;
   let t=mobile?95:DEFAULT_TASK_SCALE,a=mobile?95:DEFAULT_ANSWER_SCALE;
@@ -1052,8 +1053,8 @@ function saveFont(){
   try{
     localStorage.setItem(FONT_KEY,JSON.stringify({
       mobile:window.matchMedia("(max-width:760px)").matches,
-      task:clampScale($("sizeTask").value),
-      answer:clampScale($("sizeAnswer").value),
+      task:clampScale(requiredControl("sizeTask").value),
+      answer:clampScale(requiredControl("sizeAnswer").value),
       name:fontNameKey(),
       ts:Date.now()
     }));
@@ -1065,7 +1066,7 @@ function saveFont(){
 function restoreName(){
   try{
     const o=JSON.parse(localStorage.getItem(NAME_KEY)||"null");
-    if(o&&o.name&&Date.now()-o.ts<NAME_TTL_MS) $("studentName").value=o.name;
+    if(o&&o.name&&Date.now()-o.ts<NAME_TTL_MS) requiredControl("studentName").value=o.name;
   }catch(e){}
 }
 
@@ -1105,19 +1106,20 @@ function jsonp(params,timeoutMs){
 let gradingMinEvaluatedPercentSetting=70;
 let teacherBankSessionToken='';
 let activeTestContentBank='bank1',currentPracticeContentBank='bank1',bankSwitchSerial=0,contentBankCatalog=null;
-function requestedContentContext(bankOverride){const practice=testActive?practiceMode:selectedPractice();return {practice,bank:bankOverride||(practice?$('practiceBankStart').value:activeTestContentBank)};}
+function requestedContentContext(bankOverride){const practice=testActive?practiceMode:selectedPractice();return {practice,bank:bankOverride||(practice?requiredControl('practiceBankStart').value:activeTestContentBank)};}
 function refreshContentBankControls(settings){
  if(settings?.activeBank)activeTestContentBank=settings.activeBank;
  if(Array.isArray(settings?.banks))contentBankCatalog=settings.banks;
  const banks=contentBankCatalog||[{id:'bank1',label:'Feladatbank 1',available:true},{id:'bank2',label:'Feladatbank 2',available:true},{id:'bank3',label:'Feladatbank 3',available:true}];
  ['practiceBankStart','practiceBankLive'].forEach(id=>{const select=$(id);if(!select)return;const previous=select.value;select.replaceChildren(...banks.map(b=>{const o=document.createElement('option');o.value=b.id;o.textContent=b.label+(b.available?'':' – üres / nincs létrehozva');o.disabled=!b.available;return o;}));select.value=banks.some(b=>b.id===previous&&b.available)?previous:activeTestContentBank;});
  $('practiceBankStart').disabled=!selectedPractice();
- $('practiceBankLive').closest('label').classList.toggle('hidden',!practiceMode||!testActive);
+ const liveBank=$('practiceBankLive');
+ if(liveBank){const label=liveBank.closest('label');if(label)label.classList.toggle('hidden',!practiceMode||!testActive);}
 }
 async function changeLivePracticeBank(){
  if(!practiceMode||!testActive)return;
- const chosen=$('practiceBankLive').value,idx=currentIndex,epoch=taskEpoch,serial=++bankSwitchSerial;
- $('practiceBankStart').value=chosen;
+ const chosen=requiredControl('practiceBankLive').value,idx=currentIndex,epoch=taskEpoch,serial=++bankSwitchSerial;
+ requiredControl('practiceBankStart').value=chosen;
  const status=$('practiceBankStatus');
  if(currentIndex>=tasks.length-1||enabledFlag(tasks[currentIndex]?.dictation)){status.textContent='Bankváltás a következő gyakorló teszttől: az új bankot akkor használjuk; a mostani utolsó feladatrészek megmaradnak.';return;}
  status.textContent='Az új bank feladatainak betöltése…';
@@ -1125,9 +1127,9 @@ async function changeLivePracticeBank(){
   const res=await loadTasksRobust(chosen);if(serial!==bankSwitchSerial)return;
   if(!testActive||!practiceMode||idx!==currentIndex||epoch!==taskEpoch){status.textContent='Közben új feladat kezdődött. Az új bank a következő tesztnél érvényes; a mostani sor nem változott.';return;}
   const grade=parseInt(studentClassVal,10);let all=res.tasks;
-  if(Number.isFinite(grade)){const filtered=all.filter(t=>gradeMatch(t.grades,grade));if(filtered.length)all=filtered;}
-  const kind=$('practiceTextKind').value;
-  if(kind!=='all')all=all.filter(t=>practiceTextMatches(t,kind));
+  if(Number.isFinite(grade)){const filtered=all.filter(t=>gradeMatch(t.grades,grade));all=filtered;}
+  const kind=requiredControl('practiceTextKind').value;
+  all=all.filter(t=>practiceTextMatches(t,kind));
   all=all.filter(t=>!(t.sourceBank===tasks[idx].sourceBank&&String(t.id)===String(tasks[idx].id)&&String(t.text)===String(tasks[idx].text)));
   if(!all.length)throw new Error('Ebben a bankban nincs az aktuális gyakorlási szűréshez megfelelő új feladat.');
   let n=Math.min(tasks.length-idx-1,all.length),selection=selectTasksInOrder(all,n,practiceTaskOrder);
@@ -1137,7 +1139,7 @@ async function changeLivePracticeBank(){
   tasks=tasks.slice(0,idx+1).concat(dictationLast(selection.list));currentPracticeContentBank=chosen;
   $('totalLen').textContent=fmtDur(totalTime(tasks));$('progressText').textContent=`${idx+1} / ${tasks.length}`;updateTimer();
   status.textContent='Bankváltás kész: a jelenlegi feladat megmaradt, a következő már az új bankból jön.';
- }catch(e){status.textContent=e.message;$('practiceBankLive').value=currentPracticeContentBank;}
+ }catch(e){status.textContent=e.message;requiredControl('practiceBankLive').value=currentPracticeContentBank;}
 }
 
 const TASK_CACHE_KEY="gepiras_tasks_cache";
@@ -1232,10 +1234,14 @@ function shuffle(arr){
   return a;
 }
 
-function practiceTextMatches(task,kind){
+function practiceTextMatches(task,kind,deliveryOverride){
  const text=String(task.text||'').trim().replace(/\s+/g,' ');
  const short=text.length<=80&&text.split(' ').filter(Boolean).length<=8;
- return kind==='short'?short:kind==='long'?!short:true;
+ const type=String(task.type||'szöveg').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim();
+ const typeOK=kind==='all'||(kind==='short'?short:kind==='long'?!short:type===kind);
+ const mode=deliveryOverride||$('practiceDelivery')?.value||'all';
+ const dictation=enabledFlag(task.dictation),read=enabledFlag(task.readAloud);
+ return typeOK&&(mode==='all'||mode==='dictation'&&dictation||mode==='read'&&!dictation&&read||mode==='copy'&&!dictation&&!read);
 }
 
 // Diákonkénti szövegelőzmény: az új, majd a régebben látott szövegek kerülnek előre.
@@ -1382,7 +1388,7 @@ async function askApproval(count,total){
   return new Promise(resolve=>{
     $("approveText").innerHTML=
       `A kért <b>${count}</b> feladat összesen kb. <b>${fmtDur(total)}</b>, ez meghaladja a megengedett <b>${fmtDur(MAX_TOTAL_SEC)}</b> időkeretet.`;
-    $("approvePin").value="";
+    requiredControl("approvePin").value="";
     $("approveErr").classList.add("hidden");
     $("pinRow").classList.toggle("hidden",teacherPinRequired===false);
     $("approveModal").classList.remove("hidden");
@@ -1396,7 +1402,7 @@ async function askApproval(count,total){
     };
     $("approveYes").onclick=async()=>{
       $("approveYes").disabled=true;
-      const st=teacherPinRequired===false?"ok":await checkPinServer($("approvePin").value);
+      const st=teacherPinRequired===false?"ok":await checkPinServer(requiredControl("approvePin").value);
       $("approveYes").disabled=false;
       if(st!=="ok"){
         $("approveErr").textContent=pinMessage(st);
@@ -1412,7 +1418,7 @@ async function askApproval(count,total){
 async function verifyCurrentRealBank(){
  const r=await jsonp({action:'getSettings'},12000);
  if(!r?.success||!r.settings?.activeBank||typeof r.pinRequired!=='boolean')throw new Error('A tanári bankbeállítás nem ellenőrizhető. Éles teszt előtt internetkapcsolat és frissített Apps Script szükséges; gyakorló módban folytathatsz.');
- teacherPinRequired=r.pinRequired;applyBankDefaults(r.settings);applyLock();return true;
+ teacherPinRequired=r.pinRequired;applyBankDefaults(r.settings);applyLock();renderSettingsSyncStatus(settingsSyncMessage(r),!r.settingsSource||r.settingsSource==='default');return true;
 }
 async function startTest(){
  syncPracticeAccess();
@@ -1426,8 +1432,8 @@ async function startTest(){
   $('startBtn').disabled=true;$('startBtn').textContent='Beállítások betöltése…';
   try{await teacherSettingsPromise;}finally{$('startBtn').disabled=false;$('startBtn').textContent='Teszt indítása';}
  }
-  practiceFactor=selectedPractice()?validPracticeFactor($("practiceTime").value):1;
-  practiceSpeechRate=selectedPractice()?Number($("practiceSpeechRate").value)||0:0;
+  practiceFactor=selectedPractice()?validPracticeFactor(requiredControl("practiceTime").value):1;
+  practiceSpeechRate=selectedPractice()?Number(requiredControl("practiceSpeechRate").value)||0:0;
   hideError();
   initAudio();
   // Új teszt indulásakor a korábbi mentési figyelmeztetések végleg eltűnnek.
@@ -1439,17 +1445,17 @@ async function startTest(){
 
   const practice=$("practiceMode").checked;
   const taskOrder=practice?practiceTaskOrder:testTaskOrder;
-  const practiceTextKind=practice?$("practiceTextKind").value:"all";
-  let name=$("studentName").value.trim().replace(/\s+/g," ")||(practice?"Gyakorló":"");
+  const practiceTextKind=practice?requiredControl("practiceTextKind").value:"all";
+  let name=requiredControl("studentName").value.trim().replace(/\s+/g," ")||(practice?"Gyakorló":"");
   const cls=getClass();
-  const count=Math.max(1,Math.min(500,Number($("taskCount").value)||5));
+  const count=Math.max(1,Math.min(500,Number(requiredControl("taskCount").value)||5));
 
   if(!name&&!practice){
     showError("Írd be a tanuló nevét.");
     return;
   }
   if(!cls){
-    showError($("studentGrade").value==="__other"?"Írd be az osztályt.":"Válaszd ki az osztályt.");
+    showError(requiredControl("studentGrade").value==="__other"?"Írd be az osztályt.":"Válaszd ki az osztályt.");
     return;
   }
   // Névsor-ellenőrzés (ha a táblázatban van "Nevek" munkalap az adott osztályhoz)
@@ -1457,7 +1463,7 @@ async function startTest(){
     const list=rosterFor(cls);
     if(list.length){
       const hit=list.find(n=>normName(n)===normName(name));
-      if(hit){ $("studentName").value=hit; name=hit; }
+      if(hit){ requiredControl("studentName").value=hit; name=hit; }
       else if(!confirm(`„${name}” nem szerepel a(z) ${cls} osztály névsorában. Biztosan így írod a nevedet? (Elírás esetén a Mégsem gombbal javíthatod.)`)) return;
     }
   }
@@ -1479,13 +1485,13 @@ async function startTest(){
     let all=res.tasks;
     if(Number.isFinite(gNum)){
       const f=all.filter(t=>gradeMatch(t.grades,gNum));
-      if(f.length) all=f;
+      if(practice||f.length) all=f;
     }
     if(!all.length) throw new Error("Nincs aktív feladat a Feladatbank munkalapon.");
 
-    if(practice&&practiceTextKind!=="all"){
+    if(practice){
       all=all.filter(t=>practiceTextMatches(t,practiceTextKind));
-      if(!all.length)throw new Error('A feladatbankban nincs az évfolyamnak megfelelő '+(practiceTextKind==='short'?'rövid szó vagy kifejezés':'hosszabb mondat vagy szöveg')+'. Válaszd a Mindenféle szöveg lehetőséget, vagy a másik szövegcsoportot.');
+      if(!all.length)throw new Error('A választott bankban és évfolyamon nincs a gyakorlási szűrőknek megfelelő feladat. Válassz másik típust vagy feladatmódot.');
     }
     loadVarietyHistory(name,cls);
     const wanted=Math.min(count,all.length);
@@ -1525,7 +1531,7 @@ async function startTest(){
     studentNameVal=name;
     studentClassVal=cls;
     practiceMode=practice;
-    currentPracticeContentBank=tasks[0]?.sourceBank||$('practiceBankStart').value;$('practiceBankLive').value=currentPracticeContentBank;
+    currentPracticeContentBank=tasks[0]?.sourceBank||requiredControl('practiceBankStart').value;ensureLiveBankControls().value=currentPracticeContentBank;
     refreshContentBankControls();
     $("practiceTag").classList.toggle("hidden",!practice);
     testId=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():(Date.now().toString(36)+Math.random().toString(36).slice(2));
@@ -1552,7 +1558,7 @@ async function startTest(){
     $("loadingOverlay").classList.add("hidden");
     $("startBtn").disabled=false;
     $("startBtn").textContent="Teszt indítása";
-    showError(err.message,err.detail);
+    showError(err.message,err.detail||err.stack);
   });
 }
 
@@ -1606,7 +1612,7 @@ function showTask(graceMs){
   graceActive=graceMs>0;
 
   // Azonnal lehet írni, nincs zárolás: így nem vész el az első betű.
-  $("answer").value="";
+  requiredControl("answer").value="";
   $("answer").disabled=false;
   $("nextBtn").disabled=true;
   $("autoMsg").className="auto-msg";
@@ -1705,7 +1711,7 @@ function wordEvaluation(expected,answer){
 function isMobileTyping(){return window.matchMedia('(max-width:760px)').matches;}
 function calculate(){
   const expected=tasks[currentIndex].text||"";
-  const answer=$("answer").value;
+  const answer=requiredControl("answer").value;
 
   // A két szöveget egymáshoz igazítjuk, így egy kihagyott vagy beszúrt betű nem
   // csúsztatja el az utána következő karakterek értékelését.
@@ -2150,7 +2156,7 @@ function updateModeLabel(){
  const running=!$('testPanel').classList.contains('hidden')||!$('resultPanel').classList.contains('hidden');
  const practice=running?practiceMode:selectedPractice();
  $('appModeTitle').textContent=practice?'Gépírás – Gyakorló módban':'Gépírás teszt';
- ['newTestBtn','newTestBtnTop','newTestBtnSaved'].forEach(id=>{const button=$(id);if(button){button.textContent=practice?'↻ Új gyakorló teszt':'↻ Új éles teszt';button.title=practice?'Új teszt indítása gyakorló módban':'Új éles teszt indítása';}});
+ ['newTestBtn','newTestBtnTop','newTestBtnSaved'].forEach(id=>{const button=$(id);if(button){button.textContent='↻ Új teszt';button.title='Vissza a kezdőlapra – ott választhatsz éles tesztet vagy gyakorlást';}});
  document.body.dataset.typingMode=practice?'practice':'test';
  $('practiceTag').textContent=practice?'Gyakorló mód':'Éles teszt';$('practiceTag').classList.remove('hidden');
 }
@@ -2677,7 +2683,7 @@ function emergencyStop(){
   clearTimeout(advanceTimer);
 
   // A már elkezdett feladat addig számít, ameddig a diák eljutott.
-  if(!finished&&$("answer").value.length>0){
+  if(!finished&&requiredControl("answer").value.length>0){
     finishCurrentTask(false);
     results[results.length-1].interrupted=true;   // elkezdett, de nem fejezett feladat
   }
@@ -2761,7 +2767,7 @@ $("answer").addEventListener("keydown",e=>{
   if(!finished&&!practicePaused&&!graceActive&&(e.key==="Backspace"||e.key==="Delete")) mistakes++;
 });
 $('answer').addEventListener('input',()=>{
- if(finished&&results.length){$('answer').value=results[results.length-1].answer||'';return;}
+ if(finished&&results.length){requiredControl('answer').value=results[results.length-1].answer||'';return;}
  updateStats();
 });
 $("answer").addEventListener("paste",blockPaste);
@@ -2817,7 +2823,7 @@ function checkDraftOnLoad(){
     studentNameVal=d.name; studentClassVal=d.cls; practiceMode=false;
     resumeCount=(d.resumes||0)+1;
     testId=d.testId; testStartedAt=d.startedAt?new Date(d.startedAt):new Date(); testFinishedAt=null; testActive=true;
-    $("studentName").value=d.name;
+    requiredControl("studentName").value=d.name;
     $("practiceTag").classList.add("hidden");
     $("totalLen").textContent=fmtDur(totalTime(tasks));
     $("capNote").textContent="↩ Folytatott teszt: a megszakadt feladat elölről indult.";
@@ -2869,7 +2875,7 @@ loadRoster();
 
 /* ---------- Tanári zár ---------- */
 $("capInput").addEventListener("input",()=>{
-  const m=Math.max(5,Math.min(120,Number($("capInput").value)||35));
+  const m=Math.max(5,Math.min(120,Number(requiredControl("capInput").value)||35));
   MAX_TOTAL_SEC=m*60;
   $("capMinutes").textContent=m;
 });
@@ -2972,8 +2978,8 @@ $("capMinutes").textContent=Math.round(MAX_TOTAL_SEC/60);
 initClassSelect();
 restoreName();
 restoreFont();
-$("sizeTask").addEventListener("input",()=>{applyScale($("sizeTask").value,$("sizeAnswer").value);saveFont();});
-$("sizeAnswer").addEventListener("input",()=>{applyScale($("sizeTask").value,$("sizeAnswer").value);saveFont();});
+$("sizeTask").addEventListener("input",()=>{applyScale(requiredControl("sizeTask").value,requiredControl("sizeAnswer").value);saveFont();});
+$("sizeAnswer").addEventListener("input",()=>{applyScale(requiredControl("sizeTask").value,requiredControl("sizeAnswer").value);saveFont();});
 $("sizeReset").addEventListener("click",()=>{applyScale(window.matchMedia("(max-width:760px)").matches?95:DEFAULT_TASK_SCALE,window.matchMedia("(max-width:760px)").matches?95:DEFAULT_ANSWER_SCALE);try{localStorage.removeItem(FONT_KEY);}catch(e){}});
 $("studentName").addEventListener("focus",e=>e.target.select());
 $("studentName").addEventListener("change",restoreFont);
@@ -2999,7 +3005,7 @@ let testTaskOrder=savedPracticePrefs.testTaskOrder==='random'?'random':'bank';
 let practiceTaskOrder=savedPracticePrefs.practiceTaskOrder==='bank'?'bank':'random';
 function refreshTaskOrderControl(){
  const practice=selectedPractice();$('taskOrder').disabled=!practice&&$('taskCount').readOnly;
- $('taskOrder').value=practice?practiceTaskOrder:testTaskOrder;
+ requiredControl('taskOrder').value=practice?practiceTaskOrder:testTaskOrder;
 }
 $('taskOrder').addEventListener('change',e=>{
  const practice=selectedPractice();if(!practice&&$('taskCount').readOnly){refreshTaskOrderControl();return;}
@@ -3010,13 +3016,13 @@ let preferredVoiceURI=String(savedPracticePrefs.voiceURI||'');
 let dictationRepeatCount=[2,3,4,5].includes(savedPracticePrefs.repeatCount)?savedPracticePrefs.repeatCount:3;
 function rememberPracticePrefs(){
  savedPracticePrefs={testTaskOrder,practiceTaskOrder,expiresAt:Date.now()+PRACTICE_PREFS_TTL,voiceURI:preferredVoiceURI,repeatCount:dictationRepeatCount,
-  practiceMode:$('practiceMode').checked,textKind:$('practiceTextKind').value,timeFactor:Number($('practiceTime').value),speechRate:Number($('practiceSpeechRate').value)};
+  practiceMode:$('practiceMode').checked,textKind:requiredControl('practiceTextKind').value,timeFactor:Number(requiredControl('practiceTime').value),speechRate:Number(requiredControl('practiceSpeechRate').value),delivery:$('practiceDelivery')?.value||'all'};
  try{localStorage.setItem(PRACTICE_PREFS_KEY,JSON.stringify(savedPracticePrefs));}catch(e){}
 }
 function dictationReadingNotice(){return `🎧 Tollbamondás: minden mondat ${dictationRepeatCount} alkalommal hangzik el. Hallgasd a felolvasást, és gépeld be a szöveget.`;}
 function dictationWaitingNotice(){return `🎧 Tollbamondás következik: minden mondat ${dictationRepeatCount} alkalommal hangzik el. Saját tempóbeállítás nélkül a felolvasás 10%-kal lassabb. Az idő csak a felolvasás indulásakor kezdődik. Indítsd el a felolvasást, vagy válassz kihagyást. Technikai akadályt külön jelezhetsz; az így kihagyott feladat nem számít bele az értékelésbe.`;}
 function syncDictationRepeats(){
- ['dictationRepeatStart','dictationRepeatLive'].forEach(id=>$(id).value=String(dictationRepeatCount));
+ ['dictationRepeatStart','dictationRepeatLive'].forEach(id=>{const control=$(id);if(control)control.value=String(dictationRepeatCount);});
  const notice=$('dictationNotice');if(notice)notice.textContent=dictationWaitingNotice();
  else if(!finished&&enabledFlag(tasks[currentIndex]?.dictation))$('taskText').textContent=dictationReadingNotice();
 }
@@ -3141,7 +3147,8 @@ function resetStartScreen(){
  if(typeof exportResult!=='undefined') exportResult=null;
  ['resultPanel','testPanel','loadingOverlay','stopModal','approveModal','sendBar','saveBanner'].forEach(id=>document.getElementById(id)?.classList.add('hidden'));
  $('startPanel').classList.remove('hidden'); $('startBtn').disabled=false; $('startBtn').textContent='Teszt indítása';
- $('answer').value=''; window.scrollTo(0,0); $('studentName').focus();
+ $('practiceMode').checked=false;$('practiceMode').dispatchEvent(new Event('change',{bubbles:true}));
+ requiredControl('answer').value=''; window.scrollTo(0,0); $('studentName').focus();
 }
 function pdfLines(data){
  const lines=['Gépírás teszt – eredmény',`Tanuló: ${data.studentName} | Osztály: ${data.studentClass} | Feladatok: ${data.taskCount}`,
@@ -3239,7 +3246,7 @@ function setupMobileWorkspace(){
   const clock=timerRow.querySelector('#timerBeside,#mobileTimer,strong');
   if(clock)clock.after(nextButton);else timerRow.prepend(nextButton);
   if(oldRow&&!oldRow.children.length)oldRow.remove();
-  const pause=document.createElement('button');pause.id='practicePauseBtn';pause.type='button';pause.textContent='⏸ Szünet';pause.className='hidden';pause.setAttribute('aria-pressed','false');pause.addEventListener('click',togglePracticePause);nextButton.after(pause);
+  const pause=document.createElement('button');pause.id='practicePauseBtn';pause.type='button';pause.textContent='⏸ Szünet';pause.className='hidden';pause.setAttribute('aria-pressed','false');pause.addEventListener('click',()=>togglePracticePause());nextButton.after(pause);
  }
  const live=document.createElement('div');live.innerHTML='<div id="livePracticeOptions" class="hidden"><label for="livePracticeTime">🧪 Gyakorlási idő</label><select id="livePracticeTime"><option value="0.5">Fele idő – nehezítés (0,5×)</option><option value="0.75">25%-kal kevesebb idő (0,75×)</option><option value="1" selected>Tanári idő (1×)</option><option value="1.5">50%-kal több idő (1,5×)</option><option value="2">Kétszeres idő (2×)</option></select><label for="livePracticeSpeechRate">Felolvasás tempója</label><select id="livePracticeSpeechRate"><option value="0">Tanári felolvasási tempó</option><option value="0.5">Lassú (0,5×)</option><option value="0.75">Nyugodt (0,75×)</option><option value="1">Normál (1×)</option><option value="1.25">Gyorsabb (1,25×)</option><option value="1.5">Gyors (1,5×)</option></select><span id="practiceChangeStatus" role="status" aria-live="polite"></span></div>';workspace.append(live.firstElementChild);
  const extras=document.createElement('div');extras.id='mobileExtraControls';workspace.after(extras);
@@ -3282,7 +3289,7 @@ function practiceControls(){
  const time=$('livePracticeTime');if(time){time.disabled=!on;time.value=String(practiceFactor);}
  const rate=$('practiceSpeechRate');if(rate)rate.disabled=!on||running;
  const liveRate=$('livePracticeSpeechRate');if(liveRate){liveRate.disabled=!on;liveRate.value=String(practiceSpeechRate);}
- if(!running){practiceFactor=validPracticeFactor($('practiceTime').value);practiceSpeechRate=Number($('practiceSpeechRate').value)||0;}
+ if(!running){practiceFactor=validPracticeFactor(requiredControl('practiceTime').value);practiceSpeechRate=Number(requiredControl('practiceSpeechRate').value)||0;}
 }
 function configuredTime(t){
  if(Number.isFinite(t._allowedSeconds))return t._allowedSeconds;
@@ -3297,7 +3304,7 @@ function changePracticeTime(value){
   const t=tasks[currentIndex],old=t._allowedSeconds??configuredTime(t),allow=Math.ceil((Number(t.time)||60)*next);
   remaining=Math.max(0,remaining+allow-old);t._allowedSeconds=allow;
  }
- practiceFactor=next;$('practiceTime').value=String(next);$('livePracticeTime').value=String(next);
+ practiceFactor=next;requiredControl('practiceTime').value=String(next);requiredControl('livePracticeTime').value=String(next);
  if(running){
   updateTimer();if(document.getElementById('totalLen'))$('totalLen').textContent=fmtDur(totalTime(tasks));
   $('practiceChangeStatus').textContent=`Gyakorlási idő: ${next}×. ${finished?'A következő feladattól érvényes.':'Az eltelt idő megmaradt.'}`;
@@ -3307,15 +3314,15 @@ function changePracticeTime(value){
 function changePracticeSpeechRate(value){
  const running=!$('testPanel').classList.contains('hidden');if(!(running?activePractice():selectedPractice()))return;
  practiceSpeechRate=[0,.5,.75,1,1.25,1.5].includes(Number(value))?Number(value):0;
- $('practiceSpeechRate').value=String(practiceSpeechRate);$('livePracticeSpeechRate').value=String(practiceSpeechRate);
+ requiredControl('practiceSpeechRate').value=String(practiceSpeechRate);requiredControl('livePracticeSpeechRate').value=String(practiceSpeechRate);
  if(running&&!finished&&(enabledFlag(tasks[currentIndex]?.readAloud)||enabledFlag(tasks[currentIndex]?.dictation)))readTask();
 }
 function initPracticeSettings(){
  const prefs=savedPracticePrefs;
- $('practiceMode').checked=prefs.practiceMode===true;
- if(['all','short','long'].includes(prefs.textKind))$('practiceTextKind').value=prefs.textKind;
- $('practiceTime').value=String(validPracticeFactor(prefs.timeFactor));
- $('practiceSpeechRate').value=String([0,.5,.75,1,1.25,1.5].includes(prefs.speechRate)?prefs.speechRate:0);
+ $('practiceMode').checked=false;
+ if(['all','short','long','szo','kifejezes','mondat','szoveg'].includes(prefs.textKind))requiredControl('practiceTextKind').value=prefs.textKind;
+ requiredControl('practiceTime').value=String(validPracticeFactor(prefs.timeFactor));
+ requiredControl('practiceSpeechRate').value=String([0,.5,.75,1,1.25,1.5].includes(prefs.speechRate)?prefs.speechRate:0);
  ['practiceMode','practiceTextKind','practiceTime','practiceSpeechRate','livePracticeTime','livePracticeSpeechRate'].forEach(id=>$(id).addEventListener('change',()=>{
   // Persist after the control's own handler has synchronized start/live values.
   queueMicrotask(rememberPracticePrefs);
@@ -3382,6 +3389,21 @@ function formattedPdf(){
 <div id="teacherUnlockModal" class="modal-bg hidden" role="dialog" aria-modal="true" aria-labelledby="teacherUnlockTitle"><div class="modal"><h2 id="teacherUnlockTitle">Tanári feloldás</h2><label for="teacherUnlockPin">Tanári jelszó</label><input type="password" id="teacherUnlockPin" autocomplete="off"><p id="teacherUnlockError" role="alert"></p><button type="button" id="teacherUnlockSubmit">Feloldás</button> <button type="button" id="teacherUnlockCancel">Mégsem</button></div></div><script>
 // A zárolás csak sikeres szerverválasz után oldható fel. Üres szerveroldali jelszó esetén minden beállítás szabad.
 let teacherPinRequired=null,teacherSettingsPromise=null,bankSettingsApplied=false,teacherSessionUnlocked=false;
+let bankFieldsLocallyEdited=false,practiceFieldsLocallyEdited=false,forceBankFieldsRefresh=false;
+
+function settingsSyncMessage(r){
+ const x=r.settings,bank=(x.banks||[]).find(b=>b.id===x.activeBank)?.label||x.activeBank||'Feladatbank';
+ const values=x.taskCount+' feladat · '+x.capMinutes+' perc gépelési keret · '+bank;
+ if(r.settingsSource==='default')return 'Nincs Feladatbank-programbeállítási blokk: alapértékek érkeztek ('+values+'). A Sheet menüjében hozd létre / bővítsd a beállításokat.';
+ const source=r.settingsSource&&r.settingsSource!=='default'?'Sheetből betöltve: ':'A háttérkódtól érkezett, régebbi verzióból: ';
+ const local=selectedPractice()?practiceFieldsLocallyEdited:bankFieldsLocallyEdited;
+ return source+values+(local?' · A kézzel módosított mezőidet megtartottuk; a Frissítés gombbal visszatölthetők a Sheet értékei.':'')+(r.settingsVersion?'':' · Telepítsd az új háttérkódot a forrás ellenőrizhetőségéhez.');
+}
+function renderSettingsSyncStatus(message,warning=false){
+ const box=$('teacherConfigStatus'),text=document.createElement('span'),button=document.createElement('button');text.textContent=message;button.type='button';button.id='reloadSheetSettings';button.textContent='↻ Beállítások frissítése';button.style.cssText='font-size:.75rem;padding:4px 7px;margin-left:7px';
+ button.addEventListener('click',async()=>{button.disabled=true;forceBankFieldsRefresh=true;bankFieldsLocallyEdited=false;practiceFieldsLocallyEdited=false;try{await refreshTeacherSettings();}finally{forceBankFieldsRefresh=false;button.disabled=false;}});
+ box.replaceChildren(text,button);box.classList.toggle('settings-sync-warning',warning);
+}
 function applyBankDefaults(settings){
  if(Number.isInteger(settings?.minEvaluatedPercent))gradingMinEvaluatedPercentSetting=settings.minEvaluatedPercent;
  refreshContentBankControls(settings);
@@ -3395,11 +3417,12 @@ function applyBankDefaults(settings){
 
  if(typeof settings?.gradingEnabled==='boolean')gradingEnabledSetting=settings.gradingEnabled;
  if(Number.isInteger(settings?.gradeGroupSize))gradingGroupSizeSetting=settings.gradeGroupSize;
- if(bankSettingsApplied||!settings||!$('testPanel').classList.contains('hidden')||!$('resultPanel').classList.contains('hidden'))return;
+ if(!settings||!$('testPanel').classList.contains('hidden')||!$('resultPanel').classList.contains('hidden'))return;
+ if(!forceBankFieldsRefresh&&((selectedPractice()&&practiceFieldsLocallyEdited)||(!selectedPractice()&&bankFieldsLocallyEdited)))return;
  if(['bank','random'].includes(settings.taskOrder)){testTaskOrder=settings.taskOrder;refreshTaskOrderControl();}
  const count=Number(settings.taskCount),minutes=Number(settings.capMinutes),repeat=Number(settings.dictationRepeatCount);
- if(Number.isInteger(count)&&count>=1&&count<=500)$('taskCount').value=String(count);
- if(Number.isInteger(minutes)&&minutes>=5&&minutes<=120){$('capInput').value=String(minutes);MAX_TOTAL_SEC=minutes*60;$('capMinutes').textContent=String(minutes);}
+ if(Number.isInteger(count)&&count>=1&&count<=500)requiredControl('taskCount').value=String(count);
+ if(Number.isInteger(minutes)&&minutes>=5&&minutes<=120){requiredControl('capInput').value=String(minutes);MAX_TOTAL_SEC=minutes*60;$('capMinutes').textContent=String(minutes);}
  if([2,3,4,5].includes(repeat)){dictationRepeatCount=repeat;syncDictationRepeats();}
  if(practiceTeacherSnapshot&&selectedPractice())practiceTeacherSnapshot=capturePracticeTeacherValues();
  bankSettingsApplied=true;
@@ -3417,26 +3440,26 @@ async function refreshTeacherSettings(){
  if(teacherSettingsPromise)return teacherSettingsPromise;
  teacherSettingsPromise=(async()=>{
   try{
-   let r=null;
-   try{r=await jsonp({action:'getSettings'},10000);}catch(e){}
+   let r=null,settingsError='';
+   try{r=await jsonp({action:'getSettings'},10000);settingsError=r?.error||'';}catch(e){settingsError=e.message;}
    if(!r?.success||typeof r.pinRequired!=='boolean'){
     r=await jsonp({action:'checkPin',pin:''},10000);
     if(r?.success&&typeof r.ok==='boolean')r.pinRequired=!r.ok;
    }
-   if(r?.success&&typeof r.pinRequired==='boolean'){teacherPinRequired=r.pinRequired;applyBankDefaults(r.settings);applyLock();$('teacherConfigStatus').textContent='';return true;}
-  }catch(e){}
-  $('teacherConfigStatus').textContent='A háttérkód nem válaszolt a beállítások lekérdezésére. Ellenőrizd az internetet, az API-címet és az Apps Script telepített verzióját; ez nem hibás jelszót jelent.';applyLock();return false;
+   if(r?.success&&typeof r.pinRequired==='boolean'){teacherPinRequired=r.pinRequired;if(!r.settings||!Number.isInteger(Number(r.settings.taskCount))||!Number.isInteger(Number(r.settings.capMinutes))){renderSettingsSyncStatus(settingsError||'A telepített háttérkód nem küldte el a Feladatbank programbeállításait. Telepítsd az új scriptverziót; a kezdőlapon most még alapértékek látszanak.',true);applyLock();return false;}applyBankDefaults(r.settings);applyLock();renderSettingsSyncStatus(settingsSyncMessage(r),!r.settingsSource||r.settingsSource==='default');return true;}
+  }catch(e){renderSettingsSyncStatus('A tanári beállítások betöltése megszakadt: '+(e.message||String(e))+'. Nyomd meg a Beállítások frissítése gombot.',true);applyLock();return false;}
+  renderSettingsSyncStatus('A beállítások nem tölthetők be. Ellenőrizd az internetet és az Apps Script telepített verzióját; a kezdőlap alapértékei nem tekinthetők friss Sheet-beállításnak.',true);applyLock();return false;
  })();try{return await teacherSettingsPromise;}finally{teacherSettingsPromise=null;}
 }
 function openTeacherUnlock(){
  if(teacherPinRequired===false){applyLock();return;}
  if(teacherPinRequired!==true){refreshTeacherSettings();return;}
- $('teacherUnlockModal').classList.remove('hidden');$('teacherUnlockError').textContent='';$('teacherUnlockPin').value='';$('teacherUnlockPin').focus();
+ $('teacherUnlockModal').classList.remove('hidden');$('teacherUnlockError').textContent='';requiredControl('teacherUnlockPin').value='';$('teacherUnlockPin').focus();
 }
 async function submitTeacherUnlock(){
  $('teacherUnlockSubmit').disabled=true;
- try{const status=await checkPinServer($('teacherUnlockPin').value);if(status!=='ok'){$('teacherUnlockError').textContent=pinMessage(status);return;}
- teacherSessionUnlocked=true; $('teacherUnlockPin').value='';updateBankSection(); $('teacherUnlockModal').classList.add('hidden');$('taskCount').readOnly=false;$('capInput').readOnly=false;refreshTaskOrderControl();['dictationRepeatStart','dictationRepeatLive'].forEach(id=>{$(id).disabled=false;$(id).title='Mondatonkénti felolvasások száma';});$('teacherOpts').classList.remove('hidden');$('unlockBtn').classList.remove('hidden');$('unlockBtn').disabled=true;$('unlockBtn').title='A tanári beállítások már módosíthatók';
+ try{const status=await checkPinServer(requiredControl('teacherUnlockPin').value);if(status!=='ok'){$('teacherUnlockError').textContent=pinMessage(status);return;}
+ teacherSessionUnlocked=true; requiredControl('teacherUnlockPin').value='';updateBankSection(); $('teacherUnlockModal').classList.add('hidden');$('taskCount').readOnly=false;$('capInput').readOnly=false;refreshTaskOrderControl();['dictationRepeatStart','dictationRepeatLive'].forEach(id=>{$(id).disabled=false;$(id).title='Mondatonkénti felolvasások száma';});$('teacherOpts').classList.remove('hidden');$('unlockBtn').classList.remove('hidden');$('unlockBtn').disabled=true;$('unlockBtn').title='A tanári beállítások már módosíthatók';
  }finally{$('teacherUnlockSubmit').disabled=false;}
 }
 $('unlockBtn').addEventListener('click',openTeacherUnlock);
@@ -3510,12 +3533,12 @@ function applyRosterClass(value){
  const grade=$('studentGrade'),letter=$('studentLetter');
  const g=parts&&Array.from(grade.options).find(o=>String(o.value)===parts[1]);
  const l=parts&&Array.from(letter.options).find(o=>String(o.value).toLocaleLowerCase('hu-HU')===parts[2].toLocaleLowerCase('hu-HU'));
- if(g&&l){grade.value=g.value;letter.value=l.value;$('studentClassOther').value='';letter.classList.remove('hidden');$('studentClassOther').classList.add('hidden');}
- else{grade.value='__other';$('studentClassOther').value=cls;letter.classList.add('hidden');$('studentClassOther').classList.remove('hidden');}
+ if(g&&l){grade.value=g.value;letter.value=l.value;requiredControl('studentClassOther').value='';letter.classList.remove('hidden');$('studentClassOther').classList.add('hidden');}
+ else{grade.value='__other';requiredControl('studentClassOther').value=cls;letter.classList.add('hidden');$('studentClassOther').classList.remove('hidden');}
  syncClassFields();refreshNameList();
 }
 function syncNameClass(){
- const key=nameChoiceKey($('studentName').value);if(!key||key===lastMatchedName)return;
+ const key=nameChoiceKey(requiredControl('studentName').value);if(!key||key===lastMatchedName)return;
  const matches=ROSTER.filter(r=>nameChoiceKey(r.n)===key);
  if(!matches.length){lastMatchedName='';$('nameClassStatus').textContent='';return;}
  const classes=Array.from(new Set(matches.map(r=>normCls(normalizeClass(r.c)))));
@@ -3582,7 +3605,7 @@ function namePartSimilarity(query,name){
 }
 function closeNameSuggestions(){ $('nameSuggestions').classList.add('hidden');$('studentName').setAttribute('aria-expanded','false');nameSuggestionIndex=-1;$('studentName').removeAttribute('aria-activedescendant'); }
 function chooseNameSuggestion(row){
- nameSuggestionTyped=false; $('studentName').value=String(row.n||'');applyRosterClass(row.c);lastMatchedName=nameChoiceKey(row.n);
+ nameSuggestionTyped=false; requiredControl('studentName').value=String(row.n||'');applyRosterClass(row.c);lastMatchedName=nameChoiceKey(row.n);
  $('nameClassStatus').textContent=`Névsor szerinti osztály: ${normalizeClass(row.c)}. A név és az osztály is módosítható.`;
  restoreFont();closeNameSuggestions();$('studentName').focus();
 }
@@ -3637,7 +3660,7 @@ if(activeStartTheme!=='original')buildVisualVariant();
 const themeField=document.createElement('div');themeField.className='student-theme-picker';
 themeField.innerHTML='<label for="studentTheme">Vzhled začátku</label><select id="studentTheme"><option value="original">Eredeti felület</option><option value="cards">Színes tanulókártyák</option><option value="blue">Kék irányítópult</option><option value="notebook">Meleg színű füzet</option><option value="mint">Mentazöld fókusz</option></select>';
 themeField.querySelector('label').textContent='Kezdőlap témája';
-document.querySelector('.app-heading h1').after(themeField);$('studentTheme').value=activeStartTheme;document.body.dataset.startTheme=activeStartTheme;themeField.querySelector('label').textContent='Téma';
+document.querySelector('.app-heading h1').after(themeField);requiredControl('studentTheme').value=activeStartTheme;document.body.dataset.startTheme=activeStartTheme;themeField.querySelector('label').textContent='Téma';
 const optimizedThemeStyle=document.createElement('style');optimizedThemeStyle.textContent="\n@media screen{\n .app-heading{display:grid!important;grid-template-columns:auto minmax(180px,1fr) auto;align-items:center;gap:14px!important}\n .app-heading h1{font-size:1.65rem!important;font-weight:800!important;letter-spacing:-.025em;line-height:1.15}\n .app-heading .student-theme-picker{margin:0;justify-self:end;display:flex;gap:8px;align-items:center}\n .app-heading .student-theme-picker label{font-size:.85rem!important;margin:0!important}\n .app-heading .student-theme-picker select{font-size:16px!important;width:220px!important;max-width:100%!important;padding:7px 9px!important}\n body.screen-test .student-theme-picker{display:none}\n body.screen-test .app-heading{grid-template-columns:1fr auto}\n body.screen-start:not([data-start-theme=\"original\"]) .wrap{max-width:1280px;padding:6px}\n body.screen-start:not([data-start-theme=\"original\"]) .wrap>.card:first-child{padding:10px;border-radius:14px}\n body.screen-start:not([data-start-theme=\"original\"]) .app-heading{padding-bottom:7px;margin-bottom:7px}\n body.screen-start:not([data-start-theme=\"original\"]) .variant-layout{gap:8px}\n body.screen-start:not([data-start-theme=\"original\"]) .v-panel{padding:9px;border-radius:10px}\n body.screen-start:not([data-start-theme=\"original\"]) .v-panel h2{font-size:1.05rem!important;margin:0 0 7px!important}\n body.screen-start:not([data-start-theme=\"original\"]) .v-caption{font-size:.9rem;line-height:1.35;margin-bottom:7px}\n body.screen-start:not([data-start-theme=\"original\"]) .v-panel .start-field{margin-bottom:6px}\n body.screen-start:not([data-start-theme=\"original\"]) #startPanel label{font-size:1rem!important}\n body.screen-start:not([data-start-theme=\"original\"]) #startPanel input,body.screen-start:not([data-start-theme=\"original\"]) #startPanel select{font-size:17px!important;padding:7px 9px!important}\n body.screen-start:not([data-start-theme=\"original\"]) .setting-help,body.screen-start:not([data-start-theme=\"original\"]) #taskOrderHelp,body.screen-start:not([data-start-theme=\"original\"]) #browserRecommendation,body.screen-start:not([data-start-theme=\"original\"]) #practiceOptions p,body.screen-start:not([data-start-theme=\"original\"]) .settings-memory{font-size:.92rem!important;line-height:1.3!important}\n body.screen-start:not([data-start-theme=\"original\"]) #browserRecommendation{padding:7px 9px}\n body.screen-start:not([data-start-theme=\"original\"]) #browserRecommendation strong{font-size:.95rem}\n body.screen-start:not([data-start-theme=\"original\"]) #practiceOptions{padding:6px;gap:4px;margin:3px 0}\n body.screen-start:not([data-start-theme=\"original\"]) .settings-memory{margin:4px 0;padding:5px 8px}\n body.screen-start:not([data-start-theme=\"original\"]) .v-footer{padding:7px 9px}\n body.screen-start[data-start-theme=\"blue\"] .variant-layout,body.screen-start[data-start-theme=\"mint\"] .variant-layout{grid-template-columns:minmax(260px,.85fr) minmax(0,2fr)}\n body.screen-start[data-start-theme=\"mint\"] .v-teacher,body.screen-start[data-start-theme=\"mint\"] .v-audio,body.screen-start[data-start-theme=\"mint\"] .v-order,body.screen-start[data-start-theme=\"mint\"] .v-practice{padding:6px 0}\n body.screen-start[data-start-theme=\"cards\"] .variant-layout{grid-template-columns:1fr 1fr 1.2fr;gap:8px}\n body.screen-start[data-start-theme=\"cards\"] .v-teacher .start-settings-row{display:grid;grid-template-columns:1fr 1fr;gap:6px}\n body.screen-start[data-start-theme=\"cards\"] .v-teacher .start-unlock-field{grid-column:1/-1}\n body.screen-start[data-start-theme=\"cards\"] .v-teacher .start-unlock-field button{width:100%}\n html.big-text body.screen-start:not([data-start-theme=\"original\"]) #startPanel label{font-size:1.25rem!important}\n html.big-text body.screen-start:not([data-start-theme=\"original\"]) #startPanel input,html.big-text body.screen-start:not([data-start-theme=\"original\"]) #startPanel select{font-size:21px!important}\n}\n@media(max-width:760px){\n .app-heading{grid-template-columns:auto minmax(0,1fr) auto;gap:5px!important}\n .app-heading h1{font-size:1.2rem!important;max-width:100px}\n .app-heading .student-theme-picker label{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}\n .app-heading .student-theme-picker{min-width:0;width:100%}\n .app-heading .student-theme-picker select{width:100%!important;min-width:0;padding:6px!important;font-size:14px!important}\n .app-heading .top-actions{gap:3px}\n .app-heading .mobile-settings-open{padding:6px;font-size:.78rem;min-height:34px}\n body.screen-start:not([data-start-theme=\"original\"]) .wrap{padding:4px}\n}\n";document.head.append(optimizedThemeStyle);const fullScreenTypeStyle=document.createElement("style");fullScreenTypeStyle.textContent="\n@media screen and (min-width:761px){\n body.screen-start:not([data-start-theme=\"original\"]) .wrap{max-width:none!important;width:100%;padding:6px!important}\n body.screen-start:not([data-start-theme=\"original\"]) .wrap>.card:first-child{width:100%;padding:10px!important;box-sizing:border-box}\n body.screen-start:not([data-start-theme=\"original\"]) .variant-layout{width:100%;gap:8px!important}\n body.screen-start:not([data-start-theme=\"original\"]) #startPanel label,body.screen-start:not([data-start-theme=\"original\"]) #startPanel input,body.screen-start:not([data-start-theme=\"original\"]) #startPanel select,body.screen-start:not([data-start-theme=\"original\"]) #startPanel button{font-size:var(--alt-font,20px)!important}\n body.screen-start:not([data-start-theme=\"original\"]) .v-panel h2{font-size:calc(var(--alt-font,20px)*1.04)!important}\n body.screen-start:not([data-start-theme=\"original\"]) .setting-help,body.screen-start:not([data-start-theme=\"original\"]) #taskOrderHelp,body.screen-start:not([data-start-theme=\"original\"]) #practiceOptions p,body.screen-start:not([data-start-theme=\"original\"]) .settings-memory,body.screen-start:not([data-start-theme=\"original\"]) .v-caption,body.screen-start:not([data-start-theme=\"original\"]) #browserRecommendation{font-size:calc(var(--alt-font,20px)*.84)!important;line-height:1.3!important}\n body.screen-start:not([data-start-theme=\"original\"]) #browserRecommendation strong{font-size:calc(var(--alt-font,20px)*.94)!important}\n body.screen-start:not([data-start-theme=\"original\"]) #startPanel input,body.screen-start:not([data-start-theme=\"original\"]) #startPanel select{padding:7px 9px!important}\n body.screen-start:not([data-start-theme=\"original\"]) .v-panel{padding:8px!important}\n body.screen-start:not([data-start-theme=\"original\"]) .v-panel .start-field{margin-bottom:5px!important}\n body.screen-start:not([data-start-theme=\"original\"]) .v-identity{grid-row:auto!important}\n body.screen-start[data-start-theme=\"blue\"] .variant-layout,body.screen-start[data-start-theme=\"mint\"] .variant-layout{grid-template-columns:1fr 1.3fr!important}\n body.screen-start[data-start-theme=\"blue\"] .v-identity,body.screen-start[data-start-theme=\"mint\"] .v-identity{grid-column:1;grid-row:1/3!important}\n body.screen-start[data-start-theme=\"blue\"] .v-audio,body.screen-start[data-start-theme=\"mint\"] .v-audio{grid-column:1!important;grid-row:3!important}\n body.screen-start[data-start-theme=\"blue\"] .v-teacher,body.screen-start[data-start-theme=\"mint\"] .v-teacher{grid-column:2;grid-row:1!important}\n body.screen-start[data-start-theme=\"blue\"] .v-order,body.screen-start[data-start-theme=\"mint\"] .v-order{grid-column:2;grid-row:2!important}\n body.screen-start[data-start-theme=\"blue\"] .v-practice,body.screen-start[data-start-theme=\"mint\"] .v-practice{grid-column:2;grid-row:3!important}\n}\n@media(max-width:760px){\n body.screen-start:not([data-start-theme=\"original\"]) #startPanel input,body.screen-start:not([data-start-theme=\"original\"]) #startPanel select{font-size:18px!important}\n body.screen-start:not([data-start-theme=\"original\"]) .v-panel h2{font-size:1.1rem!important}\n}\n";document.head.append(fullScreenTypeStyle);const actualLargeTextStyle=document.createElement("style");actualLargeTextStyle.textContent="\n@media screen and (min-width:761px){\n html.big-text body.screen-start:not([data-start-theme=\"original\"]) #startPanel label,\n html.big-text body.screen-start:not([data-start-theme=\"original\"]) #startPanel input,\n html.big-text body.screen-start:not([data-start-theme=\"original\"]) #startPanel select,\n html.big-text body.screen-start:not([data-start-theme=\"original\"]) #startPanel button{font-size:calc(var(--alt-font,24px)*1.25)!important}\n html.big-text body.screen-start:not([data-start-theme=\"original\"]) .v-panel h2{font-size:calc(var(--alt-font,24px)*1.3)!important}\n html.big-text body.screen-start:not([data-start-theme=\"original\"]) #browserRecommendation{font-size:calc(var(--alt-font,24px)*1.1)!important}\n html.big-text body.screen-start:not([data-start-theme=\"original\"]) #browserRecommendation strong{font-size:calc(var(--alt-font,24px)*1.2)!important}\n body.screen-start:not([data-start-theme=\"original\"]) .v-panel{height:auto;min-height:0}\n body.screen-start:not([data-start-theme=\"original\"]) .v-identity{display:flex!important;flex-direction:column;justify-content:center;gap:8px}\n body.screen-start[data-start-theme=\"notebook\"] .v-identity{display:grid!important;grid-template-columns:1fr 1fr;gap:8px}\n body.screen-start:not([data-start-theme=\"original\"]) .v-identity .start-field{width:100%}\n body.screen-start:not([data-start-theme=\"original\"]) .start-footer #startBtn{padding:10px 20px!important}\n body.screen-start:not([data-start-theme=\"original\"]) #nameClassStatus,\n body.screen-start:not([data-start-theme=\"original\"]) #rosterLoadStatus,\n body.screen-start:not([data-start-theme=\"original\"]) .start-footer .conn{font-size:calc(var(--alt-font,22px)*.8)!important;line-height:1.25}\n}\n";document.head.append(actualLargeTextStyle);
 const largeHelp=document.createElement('details');largeHelp.className='large-mode-help';const helpSummary=document.createElement('summary');helpSummary.textContent='Beállítások részletes magyarázata';largeHelp.append(helpSummary);['voiceHelp','repeatHelp','timeLimitHelp','taskOrderHelp'].forEach(id=>{const p=document.createElement('p');p.textContent=$(id).textContent;largeHelp.append(p);});$('startPanel').prepend(largeHelp);
 try{const input=JSON.parse(sessionStorage.getItem('themeSwitchInputs')||'null');if(input){['studentName','studentGrade','studentLetter','studentClassOther'].forEach(id=>{if(typeof input[id]==='string')$(id).value=input[id];});syncClassFields();sessionStorage.removeItem('themeSwitchInputs');}}catch(e){}
@@ -3867,13 +3890,13 @@ function togglePracticePause(){
 })();
 </script>
 <script>
-function capturePracticeTeacherValues(){return {count:$('taskCount').value,cap:$('capInput').value,repeat:dictationRepeatCount};}
+function capturePracticeTeacherValues(){return {count:requiredControl('taskCount').value,cap:requiredControl('capInput').value,repeat:dictationRepeatCount};}
 function syncPracticeAccess(){
  if(testActive&&!$('testPanel').classList.contains('hidden'))return;
  if(selectedPractice()){
   if(!practiceTeacherSnapshot)practiceTeacherSnapshot=capturePracticeTeacherValues();
  }else if(practiceTeacherSnapshot){
-  $('taskCount').value=practiceTeacherSnapshot.count;$('capInput').value=practiceTeacherSnapshot.cap;
+  requiredControl('taskCount').value=practiceTeacherSnapshot.count;requiredControl('capInput').value=practiceTeacherSnapshot.cap;
   MAX_TOTAL_SEC=Number(practiceTeacherSnapshot.cap)*60;$('capMinutes').textContent=practiceTeacherSnapshot.cap;
   dictationRepeatCount=practiceTeacherSnapshot.repeat;syncDictationRepeats();practiceTeacherSnapshot=null;
  }
@@ -4029,11 +4052,24 @@ function renderGradeGroupResults(progress){
 }
 </script>
 <script>
+function ensureLiveBankControls(){
+ const container=$('livePracticeOptions');
+ if(!container)throw new Error('A menet közbeni gyakorlási beállítások nem jöttek létre (livePracticeOptions).');
+ let select=$('practiceBankLive');
+ if(!select){
+  const label=document.createElement('label');label.textContent='Feladatbank: ';
+  select=document.createElement('select');select.id='practiceBankLive';
+  const banks=contentBankCatalog||[{id:'bank1',label:'Feladatbank 1',available:true},{id:'bank2',label:'Feladatbank 2',available:true},{id:'bank3',label:'Feladatbank 3',available:true}];
+  banks.forEach(bank=>{const option=document.createElement('option');option.value=bank.id;option.textContent=bank.label;option.disabled=!bank.available;select.append(option);});
+  label.append(select);container.append(label);
+ }
+ if(!select.dataset.bankListener){select.addEventListener('change',changeLivePracticeBank);select.dataset.bankListener='yes';}
+ select.title='A jelenlegi feladat megmarad; a következő feladatok cserélődnek. Utolsó feladatnál vagy megkezdett tollbamondásnál csak a következő tesztre érvényes.';
+ if(!$('practiceBankStatus')){const status=document.createElement('span');status.id='practiceBankStatus';status.setAttribute('role','status');container.append(status);}
+ return select;
+}
 (function setupBankControls(){
- const label=document.createElement('label');label.innerHTML='Feladatbank: <select id="practiceBankLive"><option value="bank1">Feladatbank 1</option><option value="bank2">Feladatbank 2</option><option value="bank3">Feladatbank 3</option></select>';
- const status=document.createElement('span');status.id='practiceBankStatus';status.setAttribute('role','status');
- $('livePracticeOptions').append(label,status);$('practiceBankLive').title='A jelenlegi feladat megmarad; a következő feladatok cserélődnek. Utolsó feladatnál vagy megkezdett tollbamondásnál csak a következő tesztre érvényes.';
- $('practiceBankLive').addEventListener('change',changeLivePracticeBank);
+ ensureLiveBankControls();
  $('practiceMode').addEventListener('change',()=>refreshContentBankControls());
  new MutationObserver(()=>refreshContentBankControls()).observe($('testPanel'),{attributes:true,attributeFilter:['class']});
  refreshContentBankControls();
@@ -4059,7 +4095,7 @@ function updateBankSection(){
  $('contentBankHelp').textContent=practice?'Bármelyik feltöltött bankból gyakorolhatsz. A többi beállítás közös.':locked?'Módosításhoz használd a feladatszám mellett lévő Tanári feloldás gombot.':'A bankválasztás automatikusan mentődik, és minden új éles tesztben érvényes.';
 }
 async function saveUnlockedBankChoice(){
- const bank=$('testContentBank').value;$('testContentBank').disabled=true;
+ const bank=requiredControl('testContentBank').value;$('testContentBank').disabled=true;
  try{
   const r=await jsonp({action:'setActiveBank',bank,bankToken:teacherPinRequired===false?'':teacherBankSessionToken},15000);
   if(!r?.success)throw new Error(r?.error||'A bankválasztás mentése nem sikerült.');
@@ -4109,6 +4145,258 @@ body.high-contrast #practiceOptions .practice-mode-heading{background:#000!impor
 #practiceTeacherBankReference{flex:0 0 100%;font-size:.8rem!important;line-height:1.35}
 #contentBankPractice label{font-weight:700}
 #contentBankPractice select{min-width:140px;width:auto;max-width:100%}
+</style>
+<style>#teacherConfigStatus{margin:5px 0;line-height:1.35;font-size:.78rem}#teacherConfigStatus.settings-sync-warning{color:#8a4d00;background:#fff2d9;padding:5px 7px;border-radius:5px}body.high-contrast #teacherConfigStatus{color:#ffeb3b!important}</style>
+<script>
+(function keepSheetSettingsCurrent(){
+ ['taskCount','capInput','dictationRepeatStart','taskOrder'].forEach(id=>$(id).addEventListener('change',()=>{if(selectedPractice())practiceFieldsLocallyEdited=true;else bankFieldsLocallyEdited=true;}));
+ $('practiceMode').addEventListener('change',()=>{practiceFieldsLocallyEdited=false;});
+ window.addEventListener('focus',()=>{if(!testActive&&$('resultPanel').classList.contains('hidden')&&!teacherSettingsPromise)refreshTeacherSettings();});
+})();
+</script>
+<style>
+#practiceSharedSettings,#practiceAuxiliarySettings,#practiceStartActions{grid-column:1/-1;min-width:0}
+#practiceSharedSettings{display:grid;grid-template-columns:minmax(0,1fr);gap:6px;width:100%}
+#practiceSharedSettings .start-settings-row,#practiceSharedSettings .start-audio-row{width:100%;grid-column:1/-1;margin:0!important}
+#practiceSharedSettings .start-settings-row{grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important}
+#practiceSharedSettings .start-unlock-field,#practiceSharedSettings #timeLimitHelp{display:none!important}
+#practiceSharedSettings #taskOrderField{grid-column:1/-1;width:100%;display:block!important}
+#practiceSharedSettings #taskOrderHelp{margin-top:4px!important}
+#practiceSharedNotice{grid-column:1/-1;margin:2px 0 5px!important}
+#practiceAuxiliarySettings{display:flex;align-items:center;flex-wrap:wrap;gap:7px;padding-top:7px;border-top:1px solid #d8bb7e}
+#practiceAuxiliarySettings .student-theme-picker{display:flex!important;align-items:center;gap:6px;min-width:0}
+#practiceAuxiliarySettings .student-theme-picker select{max-width:220px;width:auto}
+#practiceStartActions{display:flex;justify-content:flex-end;margin-top:6px}
+#practiceOptions.all-practice-settings{width:100%;box-sizing:border-box}
+@media(max-width:760px){#practiceSharedSettings .start-settings-row,#practiceSharedSettings .start-audio-row{display:grid!important;grid-template-columns:minmax(0,1fr)!important}#practiceAuxiliarySettings .student-theme-picker{width:100%}#practiceAuxiliarySettings .student-theme-picker select{flex:1;max-width:100%}}
+</style>
+<script>
+(function groupSelectablePracticeSettings(){
+ const frame=$('practiceOptions'),shared=document.createElement('div');shared.id='practiceSharedSettings';
+ const auxiliary=document.createElement('div');auxiliary.id='practiceAuxiliarySettings';
+ const actions=document.createElement('div');actions.id='practiceStartActions';
+ const notice=document.createElement('p');notice.id='practiceSharedNotice';notice.className='muted small';notice.textContent='Gyakorlásban a feladatszám, az időkeret és a felolvasás ismétlése is szabadon állítható. Éles módra visszaváltva a tanári beállítások érvényesek.';
+ const firstPracticeLabel=frame.querySelector('label[for="practiceTextKind"]');if(firstPracticeLabel)firstPracticeLabel.before(shared);else frame.append(shared);
+ shared.append(notice);frame.append(auxiliary,actions);
+ const records=[];
+ function register(node,target){if(!node)return;const marker=document.createComment('beállítás eredeti helye');node.before(marker);records.push({node,target,marker,grouped:false});}
+ register(document.querySelector('.start-settings-row'),shared);
+ register(document.querySelector('.start-audio-row'),shared);
+ register($('taskOrderField'),shared);
+ register($('teacherConfigStatus'),shared);
+ register(document.querySelector('.settings-memory'),shared);
+ register($('soundOn').closest('label'),auxiliary);
+ register(document.querySelector('.student-theme-picker'),auxiliary);
+ register($('bigTextToggle'),auxiliary);
+ register($('contrastToggle'),auxiliary);
+ // Az indítógombot a közös személyes adatok sorában tartjuk.
+
+ let queued=false;
+ function update(){
+  queued=false;
+  const grouping=$('testPanel').classList.contains('hidden')&&$('resultPanel').classList.contains('hidden');
+  frame.classList.toggle('all-practice-settings',grouping);
+  shared.classList.toggle('hidden',!grouping);auxiliary.classList.toggle('hidden',!grouping);actions.classList.toggle('hidden',!grouping);
+  for(const record of records){
+   const {node,target,marker}=record;
+   if(grouping){
+    if(node.parentNode!==target){
+     // Egy téma- vagy mobilváltás új eredeti helyet adhatott a vezérlőnek.
+     if(marker.parentNode!==node.parentNode||marker.nextSibling!==node)node.before(marker);
+     target.append(node);
+    }
+    record.grouped=true;
+   }else if(record.grouped){
+    // Ha egy másik elrendezéskezelő már kivette, annak új helyét tartjuk meg.
+    if(node.parentNode===target){if(marker.parentNode)marker.after(node);}
+    else if(marker.parentNode!==node.parentNode||marker.nextSibling!==node)node.before(marker);
+    record.grouped=false;
+   }else if(node.parentNode!==target&&(marker.parentNode!==node.parentNode||marker.nextSibling!==node))node.before(marker);
+  }
+ }
+ function schedule(){if(queued)return;queued=true;requestAnimationFrame(update);}
+ $('practiceMode').addEventListener('change',schedule);
+ window.addEventListener('resize',schedule);
+ const layoutObserver=new MutationObserver(schedule);layoutObserver.observe(document.body,{childList:true,subtree:true});
+ const phaseObserver=new MutationObserver(schedule);['testPanel','resultPanel','startPanel'].forEach(id=>phaseObserver.observe($(id),{attributes:true,attributeFilter:['class']}));
+ update();
+})();
+</script>
+
+<style>#practiceDeliveryField{display:flex;align-items:center;gap:6px;flex-wrap:wrap}#practiceAvailability{grid-column:1/-1;margin:4px 0}#practiceOutsideSettings{display:grid;grid-template-columns:auto minmax(130px,1fr) auto minmax(130px,1fr);gap:7px;align-items:center;margin:8px 0}#practiceOutsideSettings p{grid-column:1/-1}@media(max-width:650px){#practiceOutsideSettings{grid-template-columns:auto minmax(0,1fr)}} </style>
+<script>
+(function practiceDeliveryAndPlacement(){
+ const frame=$('practiceOptions'),outside=document.createElement('div');outside.id='practiceOutsideSettings';
+ const heading=$('practiceMode').closest('label');const boundary=heading.closest('.practice-mode-heading')||heading;
+ boundary.parentNode.before(outside);
+ const nodes=Array.from(frame.children).filter(n=>n.matches('label[for="practiceTextKind"],#practiceTextKind,label[for="practiceTime"],#practiceTime,label[for="practiceSpeechRate"],#practiceSpeechRate,p.muted'));
+ const delivery=document.createElement('label');delivery.id='practiceDeliveryField';delivery.innerHTML='Feladat módja <select id="practiceDelivery"><option value="all">Minden feladatmód</option><option value="copy">Másolás felolvasás nélkül</option><option value="read">Felolvasott szövegek (nem tollbamondás)</option><option value="dictation">Tollbamondás</option></select>';
+ const status=document.createElement('p');status.id='practiceAvailability';status.className='muted small';
+ frame.append(delivery,status);nodes.push(delivery,status);if(['all','copy','read','dictation'].includes(savedPracticePrefs.delivery))requiredControl('practiceDelivery').value=savedPracticePrefs.delivery;$('practiceDelivery').addEventListener('change',rememberPracticePrefs);
+ const help=nodes.find(n=>n.tagName==='P');if(help)help.textContent='A szövegtípus és a feladat módja együtt szűrhető. A választott bank és az osztály évfolyama alapján elérhető feladatok jelennek meg. A gyakorlási idő és tempó menet közben is állítható.';
+ const bankPools=new Map();let serial=0;
+ function place(){const on=selectedPractice(),target=frame;for(const n of nodes)if(n.parentNode!==target)target.append(n);$('practiceDelivery').disabled=!on;outside.classList.add('hidden');}
+ async function availability(){place();if(!selectedPractice())return;const id=++serial;status.textContent='Elérhető gyakorló feladatok ellenőrzése…';try{const bank=requiredControl('practiceBankStart').value;let res=bankPools.get(bank);if(!res){res=await loadTasks(1000,{practice:true,bank});bankPools.set(bank,res);}if(id!==serial||!selectedPractice())return;let list=res||[];const grade=parseInt(getClass(),10);if(Number.isFinite(grade))list=list.filter(t=>gradeMatch(t.grades,grade));let matching=0;
+ for(const o of $('practiceTextKind').options){const count=list.filter(t=>practiceTextMatches(t,o.value)).length;o.disabled=o.value!=='all'&&count===0;if(o.value===requiredControl('practiceTextKind').value)matching=count;}
+ for(const o of $('practiceDelivery').options)o.disabled=o.value!=='all'&&!list.some(t=>practiceTextMatches(t,requiredControl('practiceTextKind').value,o.value));
+ status.textContent=matching+' elérhető feladat a kiválasztott típushoz és feladatmódhoz.';
+ }catch(e){if(id===serial)status.textContent='Az elérhetőség most nem ellenőrizhető. Indításkor a program újra ellenőrzi a bankot.';}}
+ ['practiceMode','practiceBankStart','practiceTextKind','practiceDelivery','studentGrade','studentLetter','studentClassOther'].forEach(id=>$(id)?.addEventListener('change',availability));
+ $('studentClassOther')?.addEventListener('input',availability);
+ place();if(selectedPractice())availability();
+})();
+</script>
+
+<style>
+@media screen{
+ body.screen-start .wrap{max-width:1240px!important;padding:12px!important}
+ body.screen-start .wrap>.card:first-child{zoom:1!important;min-height:0!important;padding:16px!important;border-radius:14px}
+ body.screen-start #startPanel{font-size:15px;line-height:1.4}
+ body.screen-start #startPanel label{font-size:14px!important;font-weight:650;margin-bottom:5px!important}
+ body.screen-start #startPanel input,body.screen-start #startPanel select{font-size:16px!important;padding:8px 10px!important;min-height:39px;box-sizing:border-box}
+ body.screen-start .start-grid{gap:12px!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;margin:12px 0!important}
+ body.screen-start .start-settings-row,body.screen-start .start-audio-row{gap:12px!important}
+ body.screen-start #contentBankSection{padding:10px 12px!important;display:flex;align-items:center;flex-wrap:wrap;gap:8px 18px;margin:8px 0}
+ body.screen-start #contentBankSection h3{font-size:15px;margin:0!important}
+ body.screen-start #contentBankTeacher{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+ body.screen-start #contentBankSection p{margin:0!important;font-size:13px!important;flex-basis:100%}
+ body.screen-start #taskOrderField{display:grid!important;grid-template-columns:minmax(180px,1fr) 2fr;gap:5px 12px;align-items:center}
+ body.screen-start #taskOrderField>label{grid-column:1}body.screen-start #taskOrderField>select{grid-column:1}
+ body.screen-start #taskOrderField>.start-extra-help{grid-column:2;grid-row:1/3}
+ body.screen-start #practiceOutsideSettings{grid-template-columns:auto minmax(0,1fr) auto minmax(0,1fr)!important;gap:8px 12px;padding:10px 12px;background:#f3f6f5;border:1px solid #ccd8d2;border-radius:9px}
+ body.screen-start #practiceOptions{padding:12px!important;gap:9px 12px!important;margin:12px 0!important}
+ body.screen-start #practiceOptions::before{display:none!important}
+ body.screen-start #practiceOptions .practice-mode-heading{display:block!important;background:transparent!important;border:0!important;padding:0!important;margin:0!important;grid-column:1/-1}
+ #practiceMode{display:none!important}
+ #modeSwitchButton{display:flex;align-items:center;justify-content:center;width:100%;min-height:54px;padding:12px 18px!important;border:2px solid #946114;border-radius:10px;background:#fff0bd;color:#634007;font-size:17px!important;font-weight:750;line-height:1.35;cursor:pointer}
+ #modeSwitchButton[aria-pressed="true"]{background:#266a58;color:white;border-color:#1c5143}
+ #modeSwitchButton:focus-visible{outline:3px solid #1769aa;outline-offset:3px}
+ body.screen-start .setting-help,body.screen-start .settings-memory,body.screen-start #practiceOptions p,body.screen-start #practiceOutsideSettings p{font-size:13px!important;line-height:1.45!important}
+ .start-extra-help{font-size:13px!important;margin:3px 0;min-width:0}.start-extra-help summary{cursor:pointer;color:#315d50;font-weight:600;padding:3px 0}.start-extra-help p{margin:5px 0!important}
+ body.screen-start #browserRecommendation{font-size:13px!important;padding:9px!important}body.screen-start #browserRecommendation strong{font-size:13px!important}
+ body.screen-start .start-footer{gap:12px;margin-top:12px!important}body.screen-start #startBtn{font-size:17px!important;padding:12px 24px!important;min-height:48px}
+ body.screen-start #teacherConfigStatus{font-size:13px!important;padding:9px!important;line-height:1.4}
+ body.high-contrast #practiceOutsideSettings,body.high-contrast #modeSwitchButton{background:#000!important;color:#fff!important;border-color:#fff!important}
+ @media(max-width:700px){body.screen-start .wrap{padding:6px!important}body.screen-start .wrap>.card:first-child{padding:10px!important}body.screen-start #taskOrderField{display:block!important}body.screen-start #practiceOutsideSettings{grid-template-columns:auto minmax(0,1fr)!important}body.screen-start .start-settings-row{grid-template-columns:repeat(2,minmax(0,1fr))!important}.start-unlock-field{grid-column:1/-1}#modeSwitchButton{font-size:16px!important}body.screen-start .start-audio-row{grid-template-columns:1fr!important}}
+}
+</style>
+<script>
+(function redesignStartControls(){
+ const checkbox=$('practiceMode'),label=checkbox.closest('label');
+ // A meglévő állapotot és change eseményeket megtartjuk minden funkció számára.
+ for(const node of Array.from(label.childNodes))if(node!==checkbox)node.remove();
+ const button=document.createElement('button');button.type='button';button.id='modeSwitchButton';button.setAttribute('aria-controls','practiceOptions');label.append(button);
+ function sync(){const on=checkbox.checked;button.setAttribute('aria-pressed',String(on));button.textContent=on?'ÉLES TESZT MÓDRA VÁLTÁS – gyakorlás kikapcsolása':'Gyakorló mód BEKAPCSOLÁSA (az eredmény nem kerül a táblázatba)';}
+ button.addEventListener('click',event=>{event.preventDefault();event.stopPropagation();checkbox.checked=!checkbox.checked;checkbox.dispatchEvent(new Event('change',{bubbles:true}));sync();});checkbox.addEventListener('change',sync);sync();
+ function fold(id,title){const node=$(id);if(!node)return;const details=document.createElement('details');details.className='start-extra-help';const summary=document.createElement('summary');summary.textContent=title;node.before(details);details.append(summary,node);}
+ fold('browserRecommendation','Böngésző és felolvasás – ajánlások');fold('voiceHelp','Segítség a hangválasztáshoz');fold('repeatHelp','Hogyan ismétel a tollbamondás?');fold('taskOrderHelp','Mit jelent a választott sorrend?');
+})();
+</script>
+
+<style>
+@media screen{
+ #startModeTabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 12px}
+ #startModeTabs button{min-height:48px;font-size:17px!important;font-weight:750;border:2px solid #b7c8c0;background:#f4f7f5;color:#36534a;border-radius:10px;padding:9px!important}
+ #startModeTabs button[aria-pressed="true"]{background:#215e80;border-color:#215e80;color:white;box-shadow:0 2px 6px #0002}
+ #startModeTabs #practiceModeTab[aria-pressed="true"]{background:#ad7518;border-color:#ad7518}
+ #startModeTabs button:focus-visible{outline:3px solid #237cb4;outline-offset:2px}
+ #startModeDescription{margin:0 0 8px;font-size:14px!important;font-weight:600}
+ body.screen-start .start-grid{grid-template-columns:minmax(0,1.4fr) minmax(0,1fr) auto!important;align-items:end}
+ #startIdentityActions{display:flex;align-items:center;justify-content:flex-end}
+ #practiceOptions .practice-mode-heading,#practiceStartActions,#practiceOutsideSettings{display:none!important}
+ body.screen-start #practiceOptions{background:#eaf3f8!important;border:2px solid #95b7ca!important;grid-template-columns:auto minmax(0,1fr) auto minmax(0,1fr)!important;gap:7px 10px!important;padding:10px!important;margin:8px 0!important}
+ body.screen-start #practiceOptions.practice-view{background:#fff5dc!important;border-color:#d8b56d!important}
+ #practiceSharedNotice{display:none!important}
+ #practiceSharedSettings{display:contents!important}
+ #practiceOptions .start-settings-row,#practiceOptions .start-audio-row,#practiceOptions #taskOrderField,#practiceOptions #teacherConfigStatus,#practiceOptions .settings-memory,#unifiedBankSlot,#practiceAuxiliarySettings{grid-column:1/-1}
+ #practiceOptions .start-settings-row{grid-template-columns:1fr 1fr auto!important}
+ #practiceOptions:not(.practice-view) .start-unlock-field{display:block!important}
+ #practiceOptions.practice-view .start-unlock-field{display:none!important}
+ #practiceOptions #timeLimitHelp{display:none!important}
+ #practiceOptions .settings-memory{margin:0!important;padding:4px 7px!important;font-size:12px!important}
+ #unifiedBankSlot{min-width:0}#unifiedBankSlot #contentBankSection.hidden,#unifiedBankSlot #contentBankPractice.hidden{display:none!important}#unifiedBankSlot #contentBankSection{margin:0!important;padding:7px 9px!important}
+ #unifiedBankSlot #contentBankPractice{margin:0!important;padding:7px 9px!important;border:1px solid #d8b56d;border-radius:8px}
+ #unifiedBankSlot #contentBankPractice label{display:inline!important;margin-right:8px}
+ #unifiedBankSlot #contentBankPractice select{width:auto;max-width:100%}
+ #practiceTeacherBankReference{margin:2px 0!important;font-size:12px!important}
+ body.screen-start #practiceOptions p{font-size:12px!important;line-height:1.3!important;margin:2px 0!important}
+ #practiceAuxiliarySettings{display:flex!important;align-items:center;flex-wrap:wrap;gap:8px!important;margin:0!important}
+ body.screen-start #practiceOptions #practiceDeliveryField{display:flex;grid-column:1/-1}#practiceDeliveryField select{flex:1;min-width:130px}
+ body.screen-start #practiceOptions #practiceAvailability{min-height:16px}
+ body.screen-start .wrap>.card:first-child{padding:12px!important}body.screen-start .start-grid{margin:8px 0!important;gap:9px!important}
+ body.screen-start #startBtn{padding:10px 18px!important;min-height:43px}
+ body.high-contrast #practiceOptions,body.high-contrast #startModeTabs button{background:#000!important;color:#fff!important;border-color:#fff!important}
+ @media(max-width:700px){body.screen-start .start-grid{grid-template-columns:1fr 1fr!important}#startIdentityActions{grid-column:1/-1}#startIdentityActions #startBtn{width:100%}body.screen-start #practiceOptions{grid-template-columns:auto minmax(0,1fr)!important}#practiceOptions .start-settings-row{grid-template-columns:1fr 1fr!important}#startModeTabs button{font-size:15px!important}#unifiedBankSlot #contentBankPractice select{width:100%}}
+}
+</style>
+<script>
+(function unifiedStartModes(){
+ const start=$('startPanel'),frame=$('practiceOptions'),checkbox=$('practiceMode');
+ const tabs=document.createElement('div');tabs.id='startModeTabs';tabs.setAttribute('role','group');tabs.setAttribute('aria-label','Gépírás módja');
+ tabs.innerHTML='<button type="button" id="realModeTab" aria-pressed="true">Gépírás – ÉLES TESZT</button><button type="button" id="practiceModeTab" aria-pressed="false">Gépírás – GYAKORLÁS</button>';
+ const description=document.createElement('p');description.id='startModeDescription';description.setAttribute('aria-live','polite');start.prepend(tabs,description);
+ const grid=start.querySelector('.start-grid'),actions=document.createElement('div');actions.id='startIdentityActions';grid.append(actions);actions.append($('startBtn'));
+ grid.after(frame);
+ const bank=document.createElement('div');bank.id='unifiedBankSlot';frame.prepend(bank);bank.append($('contentBankSection'),$('contentBankPractice'));
+ // Azonos helyen van a bankválasztó; az eredeti jogosultságkezelés marad érvényes.
+ function sync(){const practice=selectedPractice();frame.classList.toggle('practice-view',practice);$('realModeTab').setAttribute('aria-pressed',String(!practice));$('practiceModeTab').setAttribute('aria-pressed',String(practice));$('realModeTab').textContent=practice?'Váltás ÉLES TESZTRE':'✓ AKTÍV: ÉLES TESZT';$('practiceModeTab').textContent=practice?'✓ AKTÍV: GYAKORLÁS':'Váltás GYAKORLÁSRA';description.textContent=practice?'Gyakorló mód – az eredmény nem kerül a táblázatba.':'Éles teszt – a tanár beállításaival, az eredmény mentésével.';const status=$('practiceAvailability');if(!practice)status.textContent='A letiltott mezőket éles tesztben a tanári beállítások határozzák meg.';}
+ function choose(practice){if(checkbox.checked!==practice){checkbox.checked=practice;checkbox.dispatchEvent(new Event('change',{bubbles:true}));}sync();}
+ $('realModeTab').addEventListener('click',()=>choose(false));$('practiceModeTab').addEventListener('click',()=>choose(true));checkbox.addEventListener('change',sync);
+ sync();
+})();
+</script>
+
+<style>
+#modeSwitchButton{display:none!important}
+@media screen{
+ body.screen-start #unifiedBankSlot{display:flex!important;flex-wrap:nowrap;align-items:flex-start;gap:12px;grid-column:1/-1}
+ body.screen-start #unifiedBankSlot>#contentBankSection,body.screen-start #unifiedBankSlot>#contentBankPractice{flex:1 1 350px;min-width:0}
+ body.screen-start #unifiedBankSlot>#practiceAuxiliarySettings{display:flex!important;flex:0 1 auto;flex-wrap:nowrap!important;align-items:center;gap:8px!important;padding:8px 0;min-width:0;margin:0!important}
+ body.screen-start #unifiedBankSlot #practiceAuxiliarySettings label,body.screen-start #unifiedBankSlot #practiceAuxiliarySettings button,body.screen-start #unifiedBankSlot #practiceAuxiliarySettings select{font-size:13px!important;line-height:1.25!important;margin:0!important}
+ body.screen-start #unifiedBankSlot #practiceAuxiliarySettings button{padding:7px 8px!important;min-height:34px;white-space:nowrap}
+ body.screen-start #unifiedBankSlot #practiceAuxiliarySettings select{width:145px!important;min-width:0!important;padding:5px!important;min-height:34px}
+ body.screen-start #unifiedBankSlot #practiceAuxiliarySettings .student-theme-picker{display:flex;flex-wrap:nowrap;gap:5px;align-items:center}
+ body.screen-start #unifiedBankSlot #practiceAuxiliarySettings>label{display:flex;align-items:center;gap:5px;white-space:nowrap}
+ body.screen-start #unifiedBankSlot #practiceAuxiliarySettings input[type=checkbox]{width:16px!important;height:16px!important;min-height:0!important;flex:0 0 16px}
+ #startModeTabs button[aria-pressed="false"]{background:#f4f6f5!important;color:#50635d!important;border-color:#c0cbc6!important;box-shadow:none!important}
+ #startModeTabs #realModeTab[aria-pressed="true"]{background:#125174!important;color:white!important;border:3px solid #083c58!important;box-shadow:0 0 0 2px #c0e4f7!important}
+ #startModeTabs #practiceModeTab[aria-pressed="true"]{background:#895708!important;color:white!important;border:3px solid #654005!important;box-shadow:0 0 0 2px #ffdf96!important}
+ body.high-contrast #startModeTabs button[aria-pressed="true"]{background:#fff!important;color:#000!important;border-color:#ffeb3b!important}
+ @media(max-width:1000px){body.screen-start #unifiedBankSlot{flex-wrap:wrap!important}body.screen-start #unifiedBankSlot>#practiceAuxiliarySettings{flex:1 1 100%;justify-content:flex-end;padding:0!important}}
+ @media(max-width:560px){body.screen-start #unifiedBankSlot>#practiceAuxiliarySettings{flex-wrap:wrap!important;justify-content:flex-start}body.screen-start #unifiedBankSlot #practiceAuxiliarySettings select{width:120px!important}}
+}
+</style>
+<script>
+(function bankSideToolbar(){const bank=$('unifiedBankSlot'),toolbar=$('practiceAuxiliarySettings');if(bank&&toolbar)bank.append(toolbar);})();
+</script>
+
+<style>#startBottomActions{display:flex;justify-content:flex-end;align-items:center;gap:10px;width:100%;margin-top:10px;padding-top:10px;border-top:1px solid #b8c9c0}#startBtnBottom{font-size:17px!important;padding:10px 20px!important;min-height:44px;background:#286a58;color:white;border-radius:8px}@media(max-width:700px){#startBtnBottom{width:100%}}</style>
+<script>
+(function bottomStartButton(){
+ const original=$('startBtn'),row=document.createElement('div');row.id='startBottomActions';
+ const button=document.createElement('button');button.type='button';button.id='startBtnBottom';row.append(button);$('startPanel').append(row);
+ function sync(){const text=original.textContent;if(button.textContent!==text)button.textContent=text;button.disabled=original.disabled;}
+ button.addEventListener('click',()=>{if(!original.disabled)original.click();});
+ new MutationObserver(sync).observe(original,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['disabled']});$('practiceMode').addEventListener('change',sync);sync();
+})();
+</script>
+
+<style>
+@media screen{
+ body[data-typing-mode="practice"]{background:#fff8e8!important}
+ body[data-typing-mode="practice"] .app-heading{border-color:#b47c21!important}
+ body[data-typing-mode="practice"] #appModeTitle{color:#76500c!important}
+ body[data-typing-mode="practice"] #testPanel>.card,body[data-typing-mode="practice"] #resultPanel>.card{background:#fffbf1!important;border:2px solid #d6b16b!important}
+ body[data-typing-mode="practice"] #typingWorkspace{background:#fff4d9!important;border-color:#d6b16b!important}
+ body[data-typing-mode="practice"] #taskText{background:#fff9eb!important;border-color:#dbbd86!important}
+ body[data-typing-mode="practice"] #answer{background:#fffef8!important;border-color:#b68b3e!important}
+ body[data-typing-mode="practice"] #practiceTag,body[data-typing-mode="practice"] #liveTestHistory,body[data-typing-mode="practice"] .result-history{background:#fff0bd!important;color:#725013!important;border-color:#d6b16b!important}
+ body[data-typing-mode="practice"] #resultPanel .result-highlight,body[data-typing-mode="practice"] #resultPanel .progress-section{background:#fff5d9!important;border-color:#d6b16b!important}
+ body[data-typing-mode="practice"] #nextBtn,body[data-typing-mode="practice"] #newTestBtn,body[data-typing-mode="practice"] #newTestBtnTop,body[data-typing-mode="practice"] #newTestBtnSaved{background:#946419!important;color:white!important}
+ body.high-contrast[data-typing-mode="practice"]{background:#000!important}
+ body.high-contrast[data-typing-mode="practice"] #testPanel>.card,body.high-contrast[data-typing-mode="practice"] #resultPanel>.card,body.high-contrast[data-typing-mode="practice"] #typingWorkspace,body.high-contrast[data-typing-mode="practice"] #taskText,body.high-contrast[data-typing-mode="practice"] #answer,body.high-contrast[data-typing-mode="practice"] .result-history,body.high-contrast[data-typing-mode="practice"] #resultPanel .result-highlight,body.high-contrast[data-typing-mode="practice"] #resultPanel .progress-section{background:#000!important;color:#fff!important;border-color:#ffda75!important}
+ body.high-contrast[data-typing-mode="practice"] #appModeTitle{color:#ffda75!important}
+}
 </style>
 </body>
 </html>
