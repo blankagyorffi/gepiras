@@ -793,9 +793,9 @@ body:not(.screen-start) .student-theme-picker{display:none!important}
 </div>
 
 <section id="progressSection" class="progress-section" aria-labelledby="progressTitle">
-<h3 id="progressTitle">🌱 Személyes fejlődésed</h3><div class="progress-mode-actions" role="group" aria-label="Fejlődési előzmények módja"><button type="button" id="progressModeTest" aria-pressed="false">Éles tesztek</button><button type="button" id="progressModePractice" aria-pressed="false">Gyakorlás</button><button type="button" id="progressModeLegacy" class="hidden" aria-pressed="false">Korábbi vegyes előzmények</button></div>
+<div class="progress-header"><div class="progress-header-info"><h3 id="progressTitle">🌱 Személyes fejlődésed</h3><div class="progress-mode-actions" role="group" aria-label="Fejlődési előzmények módja"><button type="button" id="progressModeTest" aria-pressed="false">Éles tesztek</button><button type="button" id="progressModePractice" aria-pressed="false">Gyakorlás</button><button type="button" id="progressModeLegacy" class="hidden" aria-pressed="false">Korábbi vegyes előzmények</button></div>
 <details id="progressExplanation" class="progress-explanation"><summary>Mit mutatnak a fejlődési adatok?</summary><p id="progressIntro" class="muted small">A saját, ezen az eszközön végzett gyakorlataid alakulása. Az adatok helyben, ebben a böngészőben maradnak.</p></details>
-<div id="achievementBadges" class="achievement-badges" aria-live="polite"></div>
+</div><div id="achievementBadges" class="achievement-badges" aria-live="polite"></div></div>
 <div id="progressCharts" class="progress-charts"></div>
 <div class="export-actions progress-export-actions" aria-label="Eredmények letöltése">
   <button type="button" onclick="downloadXlsx()">⬇ Formázott Excel (XLSX)</button>
@@ -3750,5 +3750,14 @@ syncResultSaveGate();
 })();
 </script>
 <style>.progress-explanation{margin:8px 0;font-size:.92rem}.progress-explanation summary{cursor:pointer;color:var(--primary,#1769aa);font-weight:600}.progress-explanation p{margin:8px 0;line-height:1.45}</style>
+<style>
+.progress-header{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,auto);align-items:center;gap:8px 18px;margin-bottom:10px}
+.progress-header-info{min-width:0}
+.progress-header .achievement-badges{justify-content:flex-end;align-content:center;margin:0;max-width:480px}
+.progress-header .achievement{padding:6px 10px;font-size:.85rem;line-height:1.25}
+.progress-header .achievement .mascot{font-size:1.2rem}
+@media(max-width:760px){.progress-header{grid-template-columns:minmax(0,1fr);gap:6px}.progress-header .achievement-badges{justify-self:end;max-width:100%}}
+@media print{.progress-header{gap:4pt;margin-bottom:3pt}.progress-header .achievement{padding:1pt 3pt!important;font-size:7pt!important}}
+</style>
 </body>
 </html>
