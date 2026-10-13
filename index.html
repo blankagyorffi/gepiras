@@ -654,6 +654,8 @@ body:not(.screen-start) .student-theme-picker{display:none!important}
  body.high-contrast #newTestBtnSaved{background:#ffeb3b!important;color:#000!important;border-color:#fff!important}
 }
 @media screen and (max-width:760px){#resultPanel .result-primary-actions{flex-wrap:wrap}#resultPanel .result-primary-actions #exportActions{justify-content:flex-end;margin-left:auto!important}#resultPanel .result-primary-actions #exportActions button{font-size:.75rem!important;padding:7px!important}}
+#dictationStartControls{display:flex;flex-wrap:wrap;gap:6px;padding:5px;flex:0 0 auto;background:#fff3cd;border:2px solid #805000;border-radius:6px}#dictationStartControls button{padding:7px 10px;font-size:.85rem}.task-more{margin:8px 0}.task-more summary{cursor:pointer;font-weight:700}#simpleCsvFallback{background:#805000;color:#fff;font-weight:800}@media(max-width:760px){body.screen-start .wrap>.card:first-child{zoom:1!important}body.screen-start input,body.screen-start select,body.screen-start textarea{font-size:16px!important}body.screen-test #answer{font-size:16px;scroll-margin:0}}
+@media(max-width:760px){body.screen-start{font-size:16px!important}.keyboard-open #typingWorkspace{min-height:80px!important}.keyboard-open #answer,.keyboard-open #taskText{min-height:36px!important}#dictationStartControls button{font-size:.8rem;padding:6px}#dictationStartControls{position:relative;z-index:2}}
 </style>
 <link rel="manifest" href="./manifest.webmanifest">
 <meta name="theme-color" content="#215347">
@@ -792,7 +794,7 @@ body:not(.screen-start) .student-theme-picker{display:none!important}
 
 <section id="progressSection" class="progress-section" aria-labelledby="progressTitle">
 <h3 id="progressTitle">🌱 Személyes fejlődésed</h3><div class="progress-mode-actions" role="group" aria-label="Fejlődési előzmények módja"><button type="button" id="progressModeTest" aria-pressed="false">Éles tesztek</button><button type="button" id="progressModePractice" aria-pressed="false">Gyakorlás</button><button type="button" id="progressModeLegacy" class="hidden" aria-pressed="false">Korábbi vegyes előzmények</button></div>
-<p id="progressIntro" class="muted small">A saját, ezen az eszközön végzett gyakorlataid alakulása. Az adatok helyben, ebben a böngészőben maradnak.</p>
+<details id="progressExplanation" class="progress-explanation"><summary>Mit mutatnak a fejlődési adatok?</summary><p id="progressIntro" class="muted small">A saját, ezen az eszközön végzett gyakorlataid alakulása. Az adatok helyben, ebben a böngészőben maradnak.</p></details>
 <div id="achievementBadges" class="achievement-badges" aria-live="polite"></div>
 <div id="progressCharts" class="progress-charts"></div>
 <div class="export-actions progress-export-actions" aria-label="Eredmények letöltése">
@@ -803,7 +805,7 @@ body:not(.screen-start) .student-theme-picker{display:none!important}
 </section>
 <div id="overallFeedback" class="fb-box"></div>
 
-<details class="explain" open>
+<details class="explain">
 <summary>Mit jelentenek ezek a számok?</summary>
 <dl>
 <dt>Pontos karakter („X / Y”)</dt>
@@ -812,12 +814,12 @@ body:not(.screen-start) .student-theme-picker{display:none!important}
 <dd>A tévesztések száma: másik karaktert írtál (elütés, hiányzó ékezet vagy nagybetű), kihagytál egy karaktert, vagy feleslegesen beírtál egyet. A szöveg végéből még be nem írt rész nem hibának, hanem hiányzó résznek számít.</dd>
 <dt>Ékezethiba, kis-/nagybetű hiba, elütés</dt>
 <dd>A tévesztéseket három csoportra bontjuk: <b>ékezethiba</b> (ugyanaz a betű, rossz vagy hiányzó ékezettel, pl. a/á, o/ö/ő), <b>kis-/nagybetű hiba</b> (ugyanaz a betű, rossz méretben) és <b>elütés</b> (egészen más karaktert ütöttél).</dd>
-<dt>Rontás</dt>
-<dd>Hányszor nyomtad meg a törlő billentyűt (Backspace vagy Delete). Azt mutatja, hányszor javítottál, nem a végén megmaradt hibákat.</dd>
+<dt>Javítás / törlés (korábban: rontás)</dt>
+<dd>Hányszor nyomtad meg a törlő billentyűt (Backspace vagy Delete). Azt mutatja, hányszor javítottál, nem a végén megmaradt hibákat. Önmagában nem jár pontlevonással; a kijavított helyes szó teljes értékű.</dd>
 <dt>Leütés</dt>
 <dd>A beírt karakterek száma a feladat végén.</dd>
 <dt>Eredmény (százalék)</dt>
-<dd>Pontos karakterek ÷ (az írandó szöveg hossza + a felesleges karakterek) × 100. Ha nem írtad be a teljes szöveget, a hiányzó rész is csökkenti a százalékot.</dd>
+<dd>80% karakterpontosság + 20% szópontosság. A teljesen helyes szavak sorrendben számítanak; a kis-/nagybetű és az ékezet a szónál is számít. Az írásjeleket a karakterpontosság értékeli. A még be nem írt szavak és a felesleges szavak csökkentik az eredményt.</dd>
 <dt>Pont</dt>
 <dd>A feladat maximális pontszáma × a százalék ÷ 100, egészre kerekítve. Az összpontszám („elért / elérhető”) a feladatok pontjainak összege, az elérhető a feladatok maximális pontjainak összege.</dd>
 <dt>Sebesség</dt>
@@ -830,7 +832,8 @@ body:not(.screen-start) .student-theme-picker{display:none!important}
 </details>
 
 <h3>Feladatonkénti részletek</h3>
-<div class="legend">
+
+<details id="taskDetails" class="explain"><summary>Részletes eredmények feladatonként</summary><div class="legend">
 <span><span class="mono e-sub">a</span> írandó karakter, amit elütöttél</span>
 <span><span class="mono e-acc">á</span> → <span class="mono t-acc">a</span> ékezethiba</span>
 <span><span class="mono e-case">A</span> → <span class="mono t-case">a</span> kis-/nagybetű hiba</span>
@@ -839,8 +842,7 @@ body:not(.screen-start) .student-theme-picker{display:none!important}
 <span><span class="mono t-ins">a</span> felesleges karakter</span>
 <span><span class="mono ph-red">-</span> itt hiányzik valami</span>
 <span><span class="mono ph">␣</span> szóköz, ↵ sortörés a kiemelt helyeken</span>
-</div>
-<div id="detail"></div>
+</div><div id="detail"></div></details>
 
 <p id="saveStatus" class="muted">Eredmény mentése...</p>
 <div class="export-actions" id="exportActions">
@@ -900,7 +902,7 @@ const LETTERS = ["ny","a","b","c","n","bn","g"]; // választható betűjelek
 const DEFAULT_LETTER = "ny";                     // alapértelmezett betűjel
 const GRACE_FIRST_MS = 7000;  // az első feladat előtt ennyit vár az időmérés (a betűméret beállításához is)
 const GRACE_NEXT_MS = 2000;   // feladatváltás után ennyit vár az időmérés
-const GRADE_LIMITS = [[86,5],[76,4],[56,3],[36,2],[0,1]];  // modulzáró vizsga: [legalább ennyi %, érdemjegy]
+let GRADE_LIMITS = [[86,5],[76,4],[56,3],[36,2],[0,1]];  // modulzáró vizsga: [legalább ennyi %, érdemjegy]
 const SPEED_LIMIT = 900;     // ennél gyorsabb gépelés (leütés/perc) gyanús
 const AWAY_LIMIT = 3;        // ennyi ablakelhagyás fölött a teszt gyanús
 const NAME_KEY = "gepiras_last_name";
@@ -945,7 +947,7 @@ let testFinishedAt=null;
 let pendingResult=null;
 let exportResult=null;
 let savedOk=false;
-let gradingEnabledSetting=true;
+let gradingEnabledSetting=true,gradingGroupSizeSetting=5;
 const confirmedResultIds=new Set(),csvBackupIds=new Set();
 const failedSaveAttempts=new Map();
 const CSV_FALLBACK_AFTER=3;
@@ -1571,6 +1573,18 @@ function updateTimer(){
   $("totalLeft").textContent=fmtClock(Math.max(0,remaining)+later);
 }
 
+function wordEvaluation(expected,answer){
+ const tokens=text=>String(text||'').normalize('NFC').match(/[\p{L}\p{N}]+(?:[-’'][\p{L}\p{N}]+)*/gu)||[];
+ const a=tokens(expected),b=tokens(answer);let prefix=0;
+ while(prefix<a.length&&prefix<b.length&&a[prefix]===b[prefix])prefix++;
+ let suffix=0;while(suffix<a.length-prefix&&suffix<b.length-prefix&&a[a.length-1-suffix]===b[b.length-1-suffix])suffix++;
+ const aa=a.slice(prefix,a.length-suffix),bb=b.slice(prefix,b.length-suffix);
+ let row=new Uint32Array(bb.length+1);
+ for(const word of aa){const next=new Uint32Array(bb.length+1);for(let j=1;j<=bb.length;j++)next[j]=word===bb[j-1]?row[j-1]+1:Math.max(row[j],next[j-1]);row=next;}
+ const correctWords=prefix+suffix+row[bb.length],denom=Math.max(a.length,b.length);
+ return {correctWords,totalWords:a.length,typedWords:b.length,wordPercent:denom?100*correctWords/denom:null};
+}
+function isMobileTyping(){return window.matchMedia('(max-width:760px)').matches;}
 function calculate(){
   const expected=tasks[currentIndex].text||"";
   const answer=$("answer").value;
@@ -1591,11 +1605,14 @@ function calculate(){
   const elapsed=Math.max(.001,((practicePaused?practicePausedAt:performance.now())-startTime)/1000);
   const speed=Math.round(totalTyped/Math.max(elapsed/60,1/60));
   const denom=expected.length+ins;
-  const percent=denom?Math.max(0,Math.min(100,Math.round(correct/denom*100))):0;
+  const characterPercent=denom?Math.max(0,Math.min(100,100*correct/denom)):0;
+  const words=wordEvaluation(expected,answer);
+  const wordPercent=words.wordPercent===null?characterPercent:words.wordPercent;
+  const percent=Math.round(.8*characterPercent+.2*wordPercent);
   const pointsMax=Number(tasks[currentIndex].points)||100;
   const score=Math.round(pointsMax*percent/100);
 
-  return {expected,answer,correct,wrong,totalTyped,elapsed,speed,percent,score,mistakes};
+  return {expected,answer,correct,wrong,totalTyped,elapsed,speed,percent,score,mistakes,ops,...words,characterPercent,wordPercent};
 }
 
 function updateStats(){
@@ -1607,6 +1624,7 @@ function updateStats(){
   $("wrong").textContent=c.wrong;
   $("mistakes").textContent=c.mistakes;
   $("totalTyped").textContent=c.totalTyped;
+  autoScrollTaskText(c);
   $("score").textContent=c.score;
   $("percent").textContent=c.percent+"%";
   $("speed").textContent=c.speed;
@@ -1622,6 +1640,7 @@ function updateStats(){
 }
 
 function finishCurrentTask(timedOut){
+ $('dictationStartControls')?.classList.add('hidden');
   endPracticePause(false);
   dictationWaiting=false;dictationBegin=null;
   stopReading();
@@ -1645,6 +1664,7 @@ function finishCurrentTask(timedOut){
     correct:c.correct,
     wrong:c.wrong,
     mistakes:c.mistakes,
+    correctWords:c.correctWords,totalWords:c.totalWords,characterPercent:c.characterPercent,wordPercent:c.wordPercent,scoringVersion:"char80_word20_v2",
     totalTyped:c.totalTyped,
     score:c.score,
     percent:c.percent,
@@ -1660,7 +1680,7 @@ function finishCurrentTask(timedOut){
     pastes:pasteCount
   });
 
-  $("answer").disabled=true;
+  $("answer").disabled=!isMobileTyping();
   $("nextBtn").disabled=false;
   playSound(timedOut?"timeout":"done");
   saveDraft();
@@ -1927,7 +1947,7 @@ function gradeFor(percent){
   return 1;
 }
 
-function overallFeedback(analyses){
+function detailedOverallFeedback(analyses){
   const n=results.length;
   if(!n) return "";
   const avgP=Math.round(results.reduce((s,r)=>s+r.percent,0)/n);
@@ -1949,7 +1969,7 @@ function overallFeedback(analyses){
   else if(avgP>=85) level="Szép, megbízható eredmény.";
   else if(avgP>=70) level="Közepes eredmény, van még mit gyakorolni.";
   else level="Ez még gyakorlást igényel, de jó úton vagy.";
-  p.push(`<b>${level}</b> Átlagosan ${avgP}%-os pontossággal és ${avgS} leütés/perc sebességgel dolgoztál (${speedWord(avgS)}).`);
+  p.push(`<b>${level}</b> Átlagosan ${avgP}%-os összesített eredménnyel és ${avgS} leütés/perc sebességgel dolgoztál (${speedWord(avgS)}).`);
   p.push(`${n} feladatból ${perfect} lett hibátlan${timedOut?`, ${timedOut} feladatnál lejárt az idő`:""}.`);
 
   const tot=sub+del+ins;
@@ -1967,6 +1987,21 @@ function overallFeedback(analyses){
   if(corrections===0&&tot>0) p.push("Tipp: a törlést is használd: ha elütöd, azonnal javítsd, és akkor nem marad hiba a szövegben.");
 
   return p.map(x=>`<p>${x}</p>`).join("");
+}
+
+function overallFeedback(analyses){
+ const n=results.length;if(!n)return '';
+ const pct=Math.round(results.reduce((a,r)=>a+r.percent,0)/n);
+ const done=results.filter((r,i)=>!skippedIdx.has(i));
+ const speed=done.length?Math.round(done.reduce((a,r)=>a+r.speed,0)/done.length):0;
+ const perfect=results.filter(r=>r.percent===100&&r.wrong===0).length;
+ const timeout=results.filter(r=>r.timedOut).length;
+ const counts=[['Kihagyott karakter',analyses.reduce((a,r)=>a+r.cnt.del,0)],['Felesleges karakter',analyses.reduce((a,r)=>a+r.cnt.ins,0)],['Ékezethiba',analyses.reduce((a,r)=>a+r.cnt.accent,0)],['Kis-/nagybetű hiba',analyses.reduce((a,r)=>a+r.cnt.case,0)],['Elütés',analyses.reduce((a,r)=>a+r.cnt.typo,0)]].sort((a,b)=>b[1]-a[1]);
+ const main=counts[0];
+ const level=pct>=95?'Kiváló eredmény!':pct>=85?'Szép eredmény!':pct>=70?'Jó alap, gyakorolj tovább!':'Gyakorolj tovább, lépésről lépésre!';
+ let tip=pct>=95?'Tartsd meg a pontosságot, és fokozatosan gyorsíts.':main[0]==='Kihagyott karakter'&&main[1]>0?'Figyelj, hogy ne maradjon ki betű; az elütéseket javítsd.':main[0]==='Ékezethiba'&&main[1]>0?'Figyelj az ékezetekre, és javítsd az elütéseket.':'Gépeld pontosan a szöveget, és javítsd az elütéseket.';
+ if(pct<90&&speed>=200)tip='Próbálj kissé lassítani, és közben javítani az elütéseket.';
+ return `<div class="feedback-compact"><strong>${level}</strong><div class="feedback-metrics"><span><b>${pct}%</b> eredmény</span><span><b>${speed}</b> leütés/perc</span><span><b>${perfect}/${n}</b> hibátlan feladat</span>${timeout?`<span><b>${timeout}</b> időlejárat</span>`:''}</div>${main[1]>0?`<p>Leggyakoribb hiba: <b>${main[0].toLocaleLowerCase('hu-HU')}</b> (${main[1]} db).</p>`:''}<p class="feedback-tip">💡 ${tip}</p><details><summary>Bővebb értékelés</summary>${detailedOverallFeedback(analyses)}</details></div>`;
 }
 
 /* ---------- Befejezés ---------- */
@@ -1996,6 +2031,7 @@ function renderProgress(data,viewMode,record=true){
     if(buttonMode==='legacy')button.classList.toggle('hidden',!entries.some(h=>!['practice','test'].includes(h.mode)));
   });
   $('progressTitle').textContent='🌱 Személyes fejlődésed – '+label;
+  $('progressExplanation').open=false;
   if(!history.length){$('progressIntro').textContent=label+': még nincs rögzített eredmény ezen az eszközön. A gyakorlás és az éles tesztek külön gyűlnek.';$('achievementBadges').innerHTML='';$('progressCharts').innerHTML='';return;}
   const point=history[history.length-1],previous=history.length>1?history[history.length-2]:null;
   const round=v=>Math.round(v*100)/100;
@@ -2073,7 +2109,7 @@ function finishTest(){
 
   const analyses=results.map(analyze);
   const notWritten=results.reduce((s,r,i)=>s+(skippedIdx.has(i)?String(r.text||"").length:(analyses[i].rest||0)),0);
-  $("scoreExplain").innerHTML=`Az írandó <b>${totalExpected}</b> karakterből <b>${totalCorrect}</b> karaktert ütöttél be pontosan. A többi hibás (${totalWrong}), vagy nem lett beírva (${notWritten}), ezért nem számít pontosnak, és a százalékot is csökkenti. Elért pont: <b>${totalScore}</b> a lehetséges <b>${maxTotal}</b>-ból.`;
+  $('scoreExplain').innerHTML=`Az eredmény 80%-ban a karakterpontosságot, 20%-ban a teljesen helyes szavakat értékeli. Helyes szavak: <b>${results.reduce((sum,r)=>sum+(r.correctWords||0),0)} / ${results.reduce((sum,r)=>sum+(r.totalWords||0),0)}</b>. A kijavított, végül helyes szó teljes értékű; a törlésekért nincs külön pontlevonás. A pontszám legfeljebb a feladatbankban megadott maximumpont.`;
   const doneN=results.filter((r,i)=>!skippedIdx.has(i)&&!r.interrupted).length;
   const intrN=results.filter(r=>r.interrupted).length;
   const stopBanner=stopped
@@ -2105,18 +2141,20 @@ function finishTest(){
         <b>${i+1}. feladat${r.type?` · ${esc(r.type)}`:""}</b>
         <span class="pill">${r.percent}% · ${r.score} / ${maxPoints} pont${r.interrupted?" · megszakítva":""}</span>
       </div>
-      <div class="mini">
+      ${diffHtml||(a.rest===0?`<div class="ok-line">Nincs eltérés az írandó és a beírt szöveg között.</div>`:"")}
+      ${restHtml}
+
+      <details class="task-more"><summary>További részletek és értékelés</summary>      <div class="mini">
         <div>Pontos<b>${r.correct}/${r.text.length}</b></div>
         <div>Hibás<b>${r.wrong}</b></div>
-        <div>Rontás<b>${r.mistakes}</b></div>
+        <div>Javítás / törlés<b>${r.mistakes}</b></div><div>Helyes szavak<b>${r.correctWords??wordEvaluation(r.text,r.answer).correctWords}/${r.totalWords??wordEvaluation(r.text,r.answer).totalWords}</b></div>
         <div>Ékezethiba<b>${a.cnt.accent}</b></div>
         <div>Leütés<b>${r.totalTyped}</b></div>
         <div>Sebesség<b>${r.speed}</b></div>
         <div>Idő<b>${r.timeSpent} mp</b></div>
       </div>
       <div class="fb">${taskFeedback(r,a,maxPoints)}</div>
-      ${diffHtml||(a.rest===0?`<div class="ok-line">Nincs eltérés az írandó és a beírt szöveg között.</div>`:"")}
-      ${restHtml}
+</details>
     </div>`;
   }).join("");
 
@@ -2145,6 +2183,7 @@ function finishTest(){
     taskCount:results.length,
     testStartedAt:startedAtIso,
     testFinishedAt:finishedAtIso,
+    gradeLimits:GRADE_LIMITS.map(pair=>pair.slice()),
     testStartedAtLocal:formatExactDateTime(testStartedAt),
     testFinishedAtLocal:formatExactDateTime(testFinishedAt),
     awayCount:awayTotal,
@@ -2170,11 +2209,15 @@ function finishTest(){
     plannedSeconds:totalTime(tasks),
     maxScore:maxTotal,
     totalExpected,
+    scoringVersion:"char80_word20_v2",
+    totalCorrectWords:results.reduce((sum,r)=>sum+(r.correctWords||0),0),
+    totalWords:results.reduce((sum,r)=>sum+(r.totalWords||0),0),
     tasks:results
   };
   exportResult=pendingResult;
   exportResult.practice=practiceMode; exportResult.timeMultiplier=practiceFactor;
   exportResult.gradingRequired=!practiceMode&&gradingEnabledSetting;
+  exportResult.gradeGroupSize=gradingGroupSizeSetting;
   syncResultSaveGate();
   showCsvTeacherReminder();
   setGradeProgressText(practiceMode?'Gyakorló mód: ez a teszt nem számít jegyszerzéshez.':'A jegyszerzési előrehaladás a mentés ellenőrzése után jelenik meg.');
@@ -2204,9 +2247,14 @@ function clearPending(){
 
 // Küldés rejtett űrlappal és iframe-mel: mobilon (iPhone/Safari, beépített böngészők)
 // megbízhatóbb, mint a fetch, és nem függ a CORS-tól vagy az átirányítástól.
+async function postDirect(result){
+ const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),8000);
+ try{await fetch(API_URL,{method:'POST',mode:'no-cors',credentials:'omit',body:new URLSearchParams({data:JSON.stringify(result)}),signal:controller.signal,redirect:'follow'});}finally{clearTimeout(timeout);}
+}
 function postViaForm(result){
   return new Promise(resolve=>{
     const name="saveFrame_"+Date.now()+"_"+Math.random().toString(36).slice(2);
+    const nonce=crypto.randomUUID?crypto.randomUUID():name;
     const iframe=document.createElement("iframe");
     iframe.name=name;
     iframe.style.display="none";
@@ -2223,12 +2271,18 @@ function postViaForm(result){
     input.name="data";
     input.value=JSON.stringify(result);
     form.appendChild(input);
-
+    for(const [key,value]of Object.entries({replyNonce:nonce,replyOrigin:location.origin})){const field=document.createElement('input');field.type='hidden';field.name=key;field.value=value;form.append(field);}
     let done=false;
+    const acknowledge=event=>{
+      const payload=event.data;let host;try{host=new URL(event.origin).hostname;}catch(e){return;}
+      if(!(host==='script.google.com'||host.endsWith('.googleusercontent.com'))||payload?.type!=='gepiras-save-ack'||payload.nonce!==nonce||payload.testId!==result.testId||payload.success!==true)return;
+      confirmedResultIds.add(result.testId);syncResultSaveGate();finish();
+    };
+    window.addEventListener('message',acknowledge);
     const finish=()=>{
       if(done) return;
       done=true;
-      setTimeout(()=>{form.remove();iframe.remove();},500);
+      setTimeout(()=>{window.removeEventListener('message',acknowledge);form.remove();iframe.remove();},60000);
       resolve();
     };
     iframe.addEventListener("load",finish);
@@ -2242,6 +2296,7 @@ function postViaForm(result){
 
 // A táblázatban ellenőrzi, hogy az eredmény tényleg megérkezett-e.
 async function verifySaved(id){
+  if(confirmedResultIds.has(id))return 'yes';
   try{
     const r=await jsonp({action:"hasResult",id});
     if(r?.success&&r.saved){confirmedResultIds.add(id);syncResultSaveGate();refreshGradeProgress(id);}
@@ -2262,8 +2317,9 @@ async function sendResult(result,statusEl){
   for(let attempt=1;attempt<=3;attempt++){
     let posted=false;
     try{
-      await postViaForm(result);
-      posted=true;
+      await postDirect(result).catch(()=>{});
+      if(await verifySaved(result.testId)==='yes')return 'yes';
+      await postViaForm(result);posted=true;
     }catch(e){}
 
     if(posted){
@@ -2381,7 +2437,7 @@ function exportRows(data){
     ["Teszt befejezése (helyi idő, másodperc pontossággal)",data.testFinishedAtLocal||formatExactDateTime(data.testFinishedAt)],
     ["Teszt kezdete (ISO időbélyeg)",data.testStartedAt], ["Teszt befejezése (ISO időbélyeg)",data.testFinishedAt],
     ["Másik lapra/ablakra váltás észlelve",data.awayDetected?"igen":"nem"], ["Lap-/ablakváltások száma",data.awayCount||0],
-    ["Összpontszám",data.totalScore],["Elérhető összpont",data.maxScore],["Írandó karakterek száma",data.totalExpected], ["Átlag (%)",data.averagePercent], ["Érdemjegy",data.grade],
+    ["Helyes szavak",data.totalCorrectWords||0],["Összes szó",data.totalWords||0],["Pontozás",data.scoringVersion||"karakter_v1"],["Összpontszám",data.totalScore],["Elérhető összpont",data.maxScore],["Írandó karakterek száma",data.totalExpected], ["Átlag (%)",data.averagePercent], ["Érdemjegy",data.grade],
     ["Pontos karakter",data.totalCorrect], ["Hibás karakter",data.totalWrong], ["Rontás",data.totalMistakes],
     ["Leütés",data.totalTyped], ["Átlagsebesség (leütés/perc)",data.averageSpeed], [],
     ["Feladat","Típus","Eredmény (%)","Pont","Pontos karakter","Hibás","Rontás","Ékezethiba","Kis-/nagybetű hiba","Elütés","Kihagyott karakter","Felesleges karakter","Sebesség (leütés/perc)","Idő (mp)","Idő lejárt","Megszakítva","Írandó szöveg","Beírt szöveg"]
@@ -2392,7 +2448,10 @@ function exportRows(data){
 function downloadCsv(){
   const data=getExportData();if(!data)return;
   if(!csvDownloadAllowed(data)){syncResultSaveGate();$('resultSaveGate').scrollIntoView({behavior:'smooth',block:'center'});return;}
-  const rows=exportRows(data),width=Math.max(...rows.map(r=>r.length));
+  const rows=exportRows(data),payload=JSON.stringify(data),chunks=[];
+  const chars=Array.from(payload);for(let i=0;i<chars.length;i+=16000)chunks.push(chars.slice(i,i+16000).join(''));
+  rows.push(['GEPIRAS_IMPORT','2']);chunks.forEach((chunk,i)=>rows.push(['GEPIRAS_JSON',i+1,chunks.length,'JSON:'+chunk]));
+  const width=Math.max(...rows.map(r=>r.length));
   const csv='\ufeff'+rows.map(row=>Array.from({length:width},(_,i)=>csvCell(row[i]??'')).join(';')).join('\r\n');
   triggerDownload(new Blob([csv],{type:'text/csv;charset=utf-8;'}),exportFilename(data,'csv'));
   if(data.testId&&csvDownloadAllowed(data)){csvBackupIds.add(data.testId);if(!data.practice&&!confirmedResultIds.has(data.testId))rememberCsvForTeacher(data);syncResultSaveGate();}
@@ -2528,12 +2587,16 @@ $("nextBtn").addEventListener("click",nextTask);
 
 $("answer").addEventListener("keydown",e=>{
   if(e.ctrlKey&&e.key==="Enter"){e.preventDefault();if(!$("nextBtn").disabled) nextTask();return;}
-  if(!graceActive&&(e.key==="Backspace"||e.key==="Delete")) mistakes++;
+  if(!finished&&!practicePaused&&!graceActive&&(e.key==="Backspace"||e.key==="Delete")) mistakes++;
 });
-$("answer").addEventListener("input",updateStats);
+$('answer').addEventListener('input',()=>{
+ if(finished&&results.length){$('answer').value=results[results.length-1].answer||'';return;}
+ updateStats();
+});
 $("answer").addEventListener("paste",blockPaste);
 $("answer").addEventListener("drop",blockPaste);
 $("answer").addEventListener("beforeinput",e=>{
+  if(finished||practicePaused||dictationWaiting){e.preventDefault();return;}
   if(e.inputType==="insertFromPaste"||e.inputType==="insertFromDrop"||e.inputType==="insertFromYank") blockPaste(e);
 });
 
@@ -2858,6 +2921,7 @@ function readTask(){
    const begin=dictationBegin;dictationBegin=null;dictationWaiting=false;
    $('answer').disabled=false;$('nextBtn').disabled=false;$('nextBtn').classList.remove('hidden');
    $('nextBtn').textContent=currentIndex===tasks.length-1?'Befejezés':'Következő';
+   $('dictationStartControls')?.classList.add('hidden');
    $('taskText').textContent=dictationReadingNotice();
    begin();$('answer').focus();
   };
@@ -2877,6 +2941,7 @@ function readTask(){
  speak();
 }
 function prepareSpeech(t){
+ $('dictationStartControls')?.classList.add('hidden');
  $('nextBtn').classList.remove('hidden');
  stopReading(); const on=enabledFlag(t.readAloud)||enabledFlag(t.dictation);
  $('skipDictationBtn').classList.toggle('hidden',!enabledFlag(t.dictation));
@@ -3125,7 +3190,14 @@ function formattedPdf(){
 // A zárolás csak sikeres szerverválasz után oldható fel. Üres szerveroldali jelszó esetén minden beállítás szabad.
 let teacherPinRequired=null,teacherSettingsPromise=null,bankSettingsApplied=false,teacherSessionUnlocked=false;
 function applyBankDefaults(settings){
+ if(settings?.gradeLimits&&$('testPanel').classList.contains('hidden')&&$('resultPanel').classList.contains('hidden')){
+  const limits=settings.gradeLimits;
+  if(!Array.isArray(limits)||limits.length!==5||!limits.every((pair,i)=>Array.isArray(pair)&&pair.length===2&&Number.isInteger(pair[0])&&pair[0]>=0&&pair[0]<=100&&pair[1]===5-i)||limits[4][0]!==0||!limits.every((pair,i)=>i===4||pair[0]>limits[i+1][0]))throw new Error('Érvénytelen jegyhatárok a Feladatbankban.');
+  GRADE_LIMITS=limits.map(pair=>pair.slice());
+ }
+
  if(typeof settings?.gradingEnabled==='boolean')gradingEnabledSetting=settings.gradingEnabled;
+ if(Number.isInteger(settings?.gradeGroupSize))gradingGroupSizeSetting=settings.gradeGroupSize;
  if(bankSettingsApplied||!settings||!$('testPanel').classList.contains('hidden')||!$('resultPanel').classList.contains('hidden'))return;
  const count=Number(settings.taskCount),minutes=Number(settings.capMinutes),repeat=Number(settings.dictationRepeatCount);
  if(Number.isInteger(count)&&count>=1&&count<=50)$('taskCount').value=String(count);
@@ -3179,16 +3251,22 @@ applyLock();refreshTeacherSettings();
 <script>
 
 let taskScrollHoldUntil=0;
-function autoScrollTaskText(){
- const panel=$('taskText'),task=tasks[currentIndex];if(!panel||!task||finished)return;
- if(typeof graceActive!=='undefined'&&graceActive)return;
+function autoScrollTaskText(evaluation){
+ const panel=$('taskText'),task=tasks[currentIndex];if(!panel||!task||finished||enabledFlag(task.dictation)||graceActive||practicePaused)return;
  if(Date.now()<taskScrollHoldUntil)return;
- const allowed=task._allowedSeconds||configuredTime(task),elapsed=Math.max(0,allowed-remaining);
- if(elapsed<allowed/2)return;
- const max=Math.max(0,panel.scrollHeight-panel.clientHeight);if(!max)return;
- const progress=remaining<=1?1:Math.min(1,Math.max(0,(elapsed-allowed/2)/(allowed/2)));
- panel.scrollTo({top:max*progress,behavior:window.matchMedia('(prefers-reduced-motion:reduce)').matches?'auto':'smooth'});
+ const answer=$('answer'),caret=answer.selectionStart??answer.value.length;
+ const ops=evaluation?.ops||diffOps(String(task.text||''),answer.value).ops;
+ let expected=0,typed=0,position=0;
+ for(const op of ops){if(typed>=caret)break;if(op.t!=='ins')expected++;if(op.t!=='del'){typed++;position=expected;}}
+ const text=String(task.text||''),node=panel.firstChild;if(!node||node.nodeType!==3||!text.length)return;
+ const start=Math.min(position,text.length-1),space=text.indexOf(' ',start+1),end=Math.min(text.length,space<0?start+1:space+1);
+ const range=document.createRange();range.setStart(node,start);range.setEnd(node,Math.max(start+1,end));
+ const rects=range.getClientRects(),rect=rects[rects.length-1],box=panel.getBoundingClientRect();if(!rect)return;
+ const line=parseFloat(getComputedStyle(panel).lineHeight)||24;
+ if(rect.bottom>box.bottom-line)panel.scrollTop+=rect.bottom-box.bottom+line*2;
+ else if(rect.top<box.top)panel.scrollTop-=box.top-rect.top+line;
 }
+
 ['touchstart','wheel','pointerdown'].forEach(event=>$('taskText').addEventListener(event,()=>{taskScrollHoldUntil=Date.now()+4000;},{passive:true}));
 
 </script>
@@ -3260,10 +3338,13 @@ function showDictationNotice(){
  const notice=document.createElement('p');notice.id='dictationNotice';
  notice.textContent=dictationWaitingNotice();
  const start=document.createElement('button');start.type='button';start.id='dictationStart';start.textContent='🔊 Felolvasás bekapcsolása és kezdés';start.addEventListener('click',startDictationReading);
- box.append(notice,start);
+ let controls=$('dictationStartControls');if(!controls){controls=document.createElement('div');controls.id='dictationStartControls';$('typingWorkspace').before(controls);}
+ const skip=document.createElement('button');skip.type='button';skip.textContent='Részfeladat kihagyása';skip.addEventListener('click',nextTask);
+ controls.classList.remove('hidden');controls.replaceChildren(start,skip);box.append(notice);
 }
 function startDictationReading(){
  if(!dictationWaiting||finished||stopped)return;
+ $('answer').disabled=false;$('answer').focus();
  speechDisabledForTest=false;refreshSpeechSwitch();readTask();saveDraft();
 }
 function refreshSpeechSwitch(){
@@ -3431,6 +3512,7 @@ function setupStartScreenFit(){
  function fit(){
   frame=0;if(!document.body.classList.contains('screen-start')){card.style.zoom='';card.style.minHeight='';return;}
   card.style.zoom='1';
+  if(window.innerWidth<=760){card.style.minHeight='';return;}
   const viewport=window.visualViewport,height=Math.max(1,(viewport?.height||window.innerHeight)-14),width=Math.max(1,(viewport?.width||window.innerWidth)-14);
 
   const alternative=document.body.dataset.startTheme&&document.body.dataset.startTheme!=='original'&&window.innerWidth>760;
@@ -3468,14 +3550,15 @@ setupStartScreenFit();
 </script>
 <script>
 function setGradeProgressText(text){
- ['gradeProgressTop','gradeProgressBottom'].forEach(id=>{const el=$(id);if(el){el.textContent=text;el.classList.toggle('hidden',!text);el.classList.toggle('grade-complete',String(text).startsWith('✅'));}});
+ const el=$('gradeProgressTop');if(el){el.textContent=text;el.classList.toggle('hidden',!text);el.classList.toggle('grade-complete',String(text).startsWith('✅'));}
+ const bottom=$('gradeProgressBottom');if(bottom){bottom.textContent='';bottom.classList.add('hidden');}
 }
 function gradeProgressMessage(p){
- if(!p.enabled)return 'Jegyszerzés: nem. Ez a teszt nem indít új naplóba szánt jegyátlagot.';
+ if(!p.enabled)return 'Ez a teszt nem számít jegyszerzéshez.';
  const mean=p.average===null?'–':Number(p.average).toFixed(2).replace('.',',');
- if(!p.eligible)return `Ez a teszt nem számít jegyszerzéshez. A következő teljes ${p.size} tesztes csoporthoz még ${p.nextGroupRemaining} befejezett teszt kell.`;
- if(p.complete)return `✅ Elkészült a ${p.size} tesztes csoport. Jegyátlag: ${mean}; kerekített, naplóba beírható jegy: ${p.roundedGrade}. A következő csoporthoz ${p.size} új teszt kell.`;
- return `Jegyszerzés: ${p.countInGroup}/${p.size} teszt kész; még legalább ${p.remaining} befejezett teszt kell. Eddigi jegyátlag: ${mean}; jelenleg ${p.roundedGrade}-re kerekülne. Ez még nem végleges naplójegy.`;
+ if(!p.eligible)return `Ez a teszt nem számít jegyszerzéshez. A következő ${p.size} tesztes csoportból még ${p.nextGroupRemaining} hátra van.`;
+ if(p.complete)return `✅ ${p.size} egymás utáni teszt elkészült. Átlagjegyed: ${mean} · Kerekített jegy: ${p.roundedGrade}`;
+ return `${p.size} egymás utáni tesztből még ${p.remaining} hátra van. Eddigi átlagjegyed: ${mean}`;
 }
 const gradeProgressRequests=new Set();
 async function refreshGradeProgress(id){
@@ -3568,7 +3651,7 @@ function togglePracticePause(){
  if(practicePaused){endPracticePause(true);$('autoMsg').textContent='A gyakorlás folytatódik.';$('answer').focus();updateStats();return;}
  practicePaused=true;practicePausedAt=performance.now();
  practicePausedSpeech=!speechDisabledForTest&&('speechSynthesis' in window)&&(speechSynthesis.speaking||speechSynthesis.pending||!!speechLoopTimer);
- stopReading();$('answer').disabled=true;document.body.classList.add('practice-paused');
+ stopReading();$('answer').disabled=!isMobileTyping();document.body.classList.add('practice-paused');
  $('autoMsg').className='auto-msg info';$('autoMsg').textContent='⏸ Szünet: az idő és a felolvasás áll, a begépelt szöveg megmarad.';
  updatePracticePauseButton();updateStats();
 }
@@ -3606,11 +3689,13 @@ function renderSimpleSaveStatus(){
  const data=exportResult;if(!data)return;
  const bar=$('sendBar'),text=$('sendBarText');
  if(data.practice){
+  $('simpleCsvFallback')?.classList.add('hidden');
   const pendingFiles=csvTeacherFiles.filter(item=>item.name===String(data.studentName||'')&&item.cls===String(data.studentClass||''));
   if(pendingFiles.length){bar.className='send-bar warning';text.textContent='⚠️ A korábban letöltött CSV-fájlt add át a tanárnak! A mostani gyakorlás nem kerül beküldésre.';}else bar.classList.add('hidden');
   return;
  }
  const confirmed=confirmedResultIds.has(data.testId),csv=csvBackupIds.has(data.testId)&&csvDownloadAllowed(data);
+ $('simpleCsvFallback')?.classList.toggle('hidden',confirmed||csv||(failedSaveAttempts.get(data.testId)||0)<CSV_FALLBACK_AFTER);
  const savedButton=$('newTestBtnSaved');if(savedButton)savedButton.classList.toggle('hidden',!(confirmed||csv));
  bar.classList.remove('hidden');
  let message;
@@ -3638,5 +3723,32 @@ syncResultSaveGate();
  $('sendBarText').after(button);syncResultSaveGate();
 })();
 </script>
+<script>
+(function improveMobileAndFallback(){
+ const csv=document.createElement('button');csv.type='button';csv.id='simpleCsvFallback';csv.className='hidden';csv.textContent='⬇ CSV letöltése – majd új teszt';csv.addEventListener('click',downloadCsv);$('sendBar').append(csv);
+ ['nextBtn','practicePauseBtn','readTaskBtn','stopReadBtn','disableSpeechTestBtn'].forEach(id=>$(id)?.addEventListener('pointerdown',e=>{if(isMobileTyping()&&testActive)e.preventDefault();}));
+ syncResultSaveGate();
+})();
+</script>
+<style>
+#sendBar{flex-wrap:wrap;gap:8px 12px!important;padding:12px!important}
+#sendBar #gradeProgressTop{order:-2;flex:0 0 100%;margin:0 0 4px!important;padding:0 0 8px!important;background:transparent!important;color:inherit!important;border:0!important;border-bottom:1px solid currentColor!important;box-shadow:none!important;font-size:1rem!important;font-weight:700;line-height:1.45}
+#sendBar #gradeProgressTop::before{display:none!important}
+#sendBar #sendBarText{flex:1 1 220px!important;font-size:.98rem!important}
+#sendBar::before{order:-1}
+.feedback-compact>strong{font-size:1.05rem}
+.feedback-metrics{display:flex;flex-wrap:wrap;gap:6px 16px;margin:8px 0}
+.feedback-compact p{margin:6px 0!important;line-height:1.4}
+.feedback-compact details{margin-top:8px;font-size:.92rem}
+.feedback-compact summary{cursor:pointer}
+@media(max-width:600px){#sendBar #gradeProgressTop{font-size:.95rem!important}.feedback-metrics{gap:6px 12px}}
+</style>
+<script>
+(function unifyGradeAndSave(){
+ $('sendBar').prepend($('gradeProgressTop'));
+ // A jegyszerzési állapot és a mentési visszajelzés egy közös panelben marad.
+})();
+</script>
+<style>.progress-explanation{margin:8px 0;font-size:.92rem}.progress-explanation summary{cursor:pointer;color:var(--primary,#1769aa);font-weight:600}.progress-explanation p{margin:8px 0;line-height:1.45}</style>
 </body>
 </html>
