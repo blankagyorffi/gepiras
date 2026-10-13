@@ -671,7 +671,7 @@ body:not(.screen-start) .student-theme-picker{display:none!important}
 <div class="wrap">
 
 <div class="card">
-<div class="row app-heading"><h1>Gépírás teszt</h1><div class="top-actions"><button type="button" id="bigTextToggle" class="access-btn" aria-pressed="false">A+ Nagy betű</button><button type="button" id="contrastToggle" class="access-btn" aria-pressed="false">◐ Nagy kontraszt</button></div></div>
+<div class="row app-heading"><h1 id="appModeTitle">Gépírás teszt</h1><div class="top-actions"><button type="button" id="bigTextToggle" class="access-btn" aria-pressed="false">A+ Nagy betű</button><button type="button" id="contrastToggle" class="access-btn" aria-pressed="false">◐ Nagy kontraszt</button></div></div>
 <p class="muted">A feladatokat a tanár által kezelt Google Táblázatból tölti be a rendszer. Billentyűzet: a Tab billentyűvel lépkedhetsz, a fókuszban lévő gomb az Enterrel aktiválható; a gépelőmezőben a Ctrl+Enter a következő feladatot indítja, ha elérhető.</p>
 <div id="error" class="error hidden"></div>
 
@@ -707,13 +707,14 @@ body:not(.screen-start) .student-theme-picker{display:none!important}
 <input id="studentClassOther" class="hidden" placeholder="Írd be az osztályt, pl. 6.a vagy 11.ny" style="margin-top:8px">
 
 <label for="taskCount">Feladatok száma</label>
-<div class="lock-row"><input id="taskCount" type="number" min="1" max="50" value="15"><button type="button" id="unlockBtn" class="btn-grey hidden">🔒 Tanári feloldás</button></div>
+<div class="lock-row"><input id="taskCount" type="number" min="1" max="500" value="15"><button type="button" id="unlockBtn" class="btn-grey hidden">🔒 Tanári feloldás</button></div>
 <label for="speechVoiceStart">Magyar felolvasóhang</label><select id="speechVoiceStart" aria-describedby="voiceHelp" aria-label="Magyar felolvasóhang a kezdőoldalon"><option value="">Automatikus (ajánlott)</option></select><p id="voiceHelp" class="setting-help">Ezen a hangon szólal meg a felolvasás a tesztben és a gyakorlásban. A hangot tanári feloldás nélkül is kiválaszthatod.</p>
 <label for="dictationRepeatStart">Tollbamondás: mondatonkénti ismétlés</label><select id="dictationRepeatStart" aria-describedby="repeatHelp"><option value="2">2 alkalom</option><option value="3" selected>3 alkalom</option><option value="4">4 alkalom</option><option value="5">5 alkalom</option></select><p id="repeatHelp" class="setting-help">A tollbamondás minden mondatát ennyiszer olvassa fel a program (alapérték: 3). Gyakorló módban szabadon állítható; éles tesztnél tanári feloldás után módosítható, indulás előtt és felolvasás közben is. Az utolsó mondat után a felolvasás leáll.</p>
 <p id="teacherConfigStatus" class="muted small" role="status"></p>
 <div id="teacherOpts"><label for="capInput">Tanári időkeret (perc)</label><input id="capInput" type="number" min="5" max="120" value="35"></div>
-<p id="timeLimitHelp" class="setting-help">A teszt teljes időkerete legfeljebb <span id="capMinutes">35</span> perc. A feladatszám és az időkeret módosításához kattints a Tanári feloldás gombra.</p>
-<div id="taskOrderField"><label for="taskOrder">Feladatok sorrendje</label><select id="taskOrder" aria-describedby="taskOrderHelp"><option value="random">Véletlen feladatkeverés</option><option value="bank">Feladatbank sorrendje</option></select><p id="taskOrderHelp" class="setting-help"><b>Feladatbank sorrendje:</b> az osztályhoz és a választott szövegcsoporthoz megfelelő feladatok a feladatbank elejétől, keverés nélkül következnek. Ez a teszt alapbeállítása. <b>Véletlen keverés:</b> a program arányosan választ a feladattípusokból, majd összekeveri a feladatokat. A sorrendet tesztben csak tanári feloldással, gyakorló módban a diák is módosíthatja.</p></div>
+<p id="timeLimitHelp" class="setting-help">A teszt hamarabb is befejezhető; a tervezett idő maximum. A teszt teljes időkerete legfeljebb <span id="capMinutes">35</span> perc. A feladatszám és az időkeret módosításához kattints a Tanári feloldás gombra.</p>
+<div id="taskOrderField"><label for="taskOrder">Feladatok sorrendje</label><select id="taskOrder" aria-describedby="taskOrderHelp"><option value="random">Véletlen feladatkeverés</option><option value="bank">Feladatbank sorrendje</option></select><p id="taskOrderHelp" class="setting-help"><b>Feladatbank sorrendje:</b> az osztályhoz és a választott szövegcsoporthoz megfelelő feladatok a feladatbank elejétől, keverés nélkül következnek. Ez a teszt alapbeállítása. <b>Véletlen keverés:</b> a program a tanári típusarányok szerint választ, majd összekeveri a feladatokat. Saját arányok nélkül a korábbi kiegyensúlyozott választás működik. Bekapcsolt típusarányoknál a feladatbank sorrendjét is ezek szerint szűri. A sorrendet tesztben csak tanári feloldással, gyakorló módban a diák is módosíthatja.</p></div>
+<section id="contentBankSection" class="content-bank-section"><h3 id="contentBankTitle">Feladatbank</h3><div id="contentBankPractice" class="hidden"><label for="practiceBankStart">Gyakorlás feladatbankja</label><select id="practiceBankStart" disabled><option value="bank1">Feladatbank 1</option><option value="bank2">Feladatbank 2</option><option value="bank3">Feladatbank 3</option></select></div><div id="contentBankTeacher"><label for="testContentBank">Tanár által kijelölt bank</label><select id="testContentBank" disabled></select></div><p id="contentBankHelp" class="muted small"></p><p id="contentBankStatus" class="small" role="status"></p></section>
 <label class="chk"><input type="checkbox" id="practiceMode"> Gyakorló mód (az eredmény nem kerül a táblázatba)</label><div id="practiceOptions"><label for="practiceTextKind">Gyakorló feladatok</label><select id="practiceTextKind" disabled><option value="all">Mindenféle szöveg</option><option value="short">Rövid szavak és kifejezések</option><option value="long">Hosszabb mondatok és szövegek</option></select><label for="practiceTime">Gyakorlási idő</label><select id="practiceTime" disabled><option value="0.5">Fele idő – nehezítés (0,5×)</option><option value="0.75">25%-kal kevesebb idő (0,75×)</option><option value="1" selected>Tanári idő (1×)</option><option value="1.5">50%-kal több idő (1,5×)</option><option value="2">Kétszeres idő (2×)</option></select><label for="practiceSpeechRate">Felolvasás tempója</label><select id="practiceSpeechRate" disabled><option value="0">Tanári felolvasási tempó</option><option value="0.5">Lassú (0,5×)</option><option value="0.75">Nyugodt (0,75×)</option><option value="1">Normál (1×)</option><option value="1.25">Gyorsabb (1,25×)</option><option value="1.5">Gyors (1,5×)</option></select><p class="muted">A szövegválasztás csak gyakorló módban, indulás előtt állítható. Rövid: legfeljebb 8 szó és 80 karakter; hosszabb: az ennél hosszabb szövegek. A gyakorlási idő és a felolvasási tempó gyakorló módban, menet közben is módosítható.</p></div>
 <label class="chk"><input type="checkbox" id="soundOn"> 🔊 Hangjelzés (lejárt idő, kész feladat)</label>
 <div id="connChip" class="conn small" role="status" title="Kattints az újraellenőrzéshez">Kapcsolat ellenőrzése…</div>
@@ -748,6 +749,7 @@ body:not(.screen-start) .student-theme-picker{display:none!important}
 <div class="msg-slot"><div id="autoMsg" class="auto-msg"></div></div>
 
 <div class="answer-wrap">
+  <div id="liveTestHistory" class="live-test-history" aria-label="Korábbi teszteredmények"><strong id="liveHistoryLabel"></strong><div id="liveHistoryItems" class="live-history-items" tabindex="0" aria-label="Korábbi eredmények, oldalirányban görgethető"></div></div>
   <div class="answer-timer"><span>⏱ Feladatból hátralévő idő</span><strong id="timerBeside">--:--</strong></div>
   <div id="speechTools" class="hidden"><button type="button" id="readTaskBtn">🔊 Felolvasás / újrahallgatás</button> <button type="button" id="stopReadBtn">Felolvasás leállítása</button><button type="button" id="disableSpeechTestBtn" aria-pressed="false" title="Felolvasás kikapcsolása erre a tesztre; később visszakapcsolható" aria-label="Felolvasás kikapcsolása erre a tesztre; később visszakapcsolható">🔇 Felolvasás ki</button><label for="speechVoice" style="display:inline;font-size:.8rem">Magyar hang:</label><select id="speechVoice" aria-label="Magyar felolvasóhang" style="width:auto;max-width:210px;padding:4px;font-size:.8rem"><option value="">Automatikus</option></select><label for="dictationRepeatLive" style="display:inline;font-size:.8rem">Mondat ismétlése:</label><select id="dictationRepeatLive" style="width:auto;padding:4px;font-size:.8rem"><option value="2">2 alkalom</option><option value="3" selected>3 alkalom</option><option value="4">4 alkalom</option><option value="5">5 alkalom</option></select><button type="button" id="skipDictationBtn" class="hidden">Tollbamondás kihagyása</button><p id="speechStatus" role="status" aria-live="polite"></p></div>
 <textarea id="answer" spellcheck="false" autocomplete="off" autocorrect="off" autocapitalize="off"></textarea>
@@ -782,6 +784,7 @@ body:not(.screen-start) .student-theme-picker{display:none!important}
   <div class="hero-stat" id="percentHero"><span>Százalékos eredmény</span><strong id="heroPercent">0%</strong></div>
   <div class="hero-stat" id="gradeHero"><span>Érdemjegy</span><strong id="heroGrade">-</strong></div>
 </div>
+<div id="resultRecentHistory" class="result-history hidden"></div>
 <p id="gradeNote" class="muted small grade-note"></p>
 <p id="scoreExplain" class="score-explain"></p>
 <div class="grid result-summary">
@@ -902,6 +905,7 @@ const LETTERS = ["ny","a","b","c","n","bn","g"]; // választható betűjelek
 const DEFAULT_LETTER = "ny";                     // alapértelmezett betűjel
 const GRACE_FIRST_MS = 7000;  // az első feladat előtt ennyit vár az időmérés (a betűméret beállításához is)
 const GRACE_NEXT_MS = 2000;   // feladatváltás után ennyit vár az időmérés
+let typeRatioSettings={typeRatiosEnabled:false,typeWeights:[25,25,25,25]};
 let GRADE_LIMITS = [[86,5],[76,4],[56,3],[36,2],[0,1]];  // modulzáró vizsga: [legalább ennyi %, érdemjegy]
 const SPEED_LIMIT = 900;     // ennél gyorsabb gépelés (leütés/perc) gyanús
 const AWAY_LIMIT = 3;        // ennyi ablakelhagyás fölött a teszt gyanús
@@ -1098,6 +1102,44 @@ function jsonp(params,timeoutMs){
   });
 }
 
+let gradingMinEvaluatedPercentSetting=70;
+let teacherBankSessionToken='';
+let activeTestContentBank='bank1',currentPracticeContentBank='bank1',bankSwitchSerial=0,contentBankCatalog=null;
+function requestedContentContext(bankOverride){const practice=testActive?practiceMode:selectedPractice();return {practice,bank:bankOverride||(practice?$('practiceBankStart').value:activeTestContentBank)};}
+function refreshContentBankControls(settings){
+ if(settings?.activeBank)activeTestContentBank=settings.activeBank;
+ if(Array.isArray(settings?.banks))contentBankCatalog=settings.banks;
+ const banks=contentBankCatalog||[{id:'bank1',label:'Feladatbank 1',available:true},{id:'bank2',label:'Feladatbank 2',available:true},{id:'bank3',label:'Feladatbank 3',available:true}];
+ ['practiceBankStart','practiceBankLive'].forEach(id=>{const select=$(id);if(!select)return;const previous=select.value;select.replaceChildren(...banks.map(b=>{const o=document.createElement('option');o.value=b.id;o.textContent=b.label+(b.available?'':' – üres / nincs létrehozva');o.disabled=!b.available;return o;}));select.value=banks.some(b=>b.id===previous&&b.available)?previous:activeTestContentBank;});
+ $('practiceBankStart').disabled=!selectedPractice();
+ $('practiceBankLive').closest('label').classList.toggle('hidden',!practiceMode||!testActive);
+}
+async function changeLivePracticeBank(){
+ if(!practiceMode||!testActive)return;
+ const chosen=$('practiceBankLive').value,idx=currentIndex,epoch=taskEpoch,serial=++bankSwitchSerial;
+ $('practiceBankStart').value=chosen;
+ const status=$('practiceBankStatus');
+ if(currentIndex>=tasks.length-1||enabledFlag(tasks[currentIndex]?.dictation)){status.textContent='Bankváltás a következő gyakorló teszttől: az új bankot akkor használjuk; a mostani utolsó feladatrészek megmaradnak.';return;}
+ status.textContent='Az új bank feladatainak betöltése…';
+ try{
+  const res=await loadTasksRobust(chosen);if(serial!==bankSwitchSerial)return;
+  if(!testActive||!practiceMode||idx!==currentIndex||epoch!==taskEpoch){status.textContent='Közben új feladat kezdődött. Az új bank a következő tesztnél érvényes; a mostani sor nem változott.';return;}
+  const grade=parseInt(studentClassVal,10);let all=res.tasks;
+  if(Number.isFinite(grade)){const filtered=all.filter(t=>gradeMatch(t.grades,grade));if(filtered.length)all=filtered;}
+  const kind=$('practiceTextKind').value;
+  if(kind!=='all')all=all.filter(t=>practiceTextMatches(t,kind));
+  all=all.filter(t=>!(t.sourceBank===tasks[idx].sourceBank&&String(t.id)===String(tasks[idx].id)&&String(t.text)===String(tasks[idx].text)));
+  if(!all.length)throw new Error('Ebben a bankban nincs az aktuális gyakorlási szűréshez megfelelő új feladat.');
+  let n=Math.min(tasks.length-idx-1,all.length),selection=selectTasksInOrder(all,n,practiceTaskOrder);
+  const previousBudget=Math.max(MAX_TOTAL_SEC,totalTime(tasks)),used=totalTime(tasks.slice(0,idx+1));
+  while(n>1&&used+selection.total>previousBudget)selection=selectTasksInOrder(all,--n,practiceTaskOrder);
+  if(used+selection.total>previousBudget)throw new Error('Az új bank feladatai nem férnek a mostani teszt időkeretébe. Válaszd az új bankot a következő gyakorláshoz.');
+  tasks=tasks.slice(0,idx+1).concat(dictationLast(selection.list));currentPracticeContentBank=chosen;
+  $('totalLen').textContent=fmtDur(totalTime(tasks));$('progressText').textContent=`${idx+1} / ${tasks.length}`;updateTimer();
+  status.textContent='Bankváltás kész: a jelenlegi feladat megmaradt, a következő már az új bankból jön.';
+ }catch(e){status.textContent=e.message;$('practiceBankLive').value=currentPracticeContentBank;}
+}
+
 const TASK_CACHE_KEY="gepiras_tasks_cache";
 const TASK_CACHE_TTL=12*60*60*1000;   // a helyben mentett feladatbank 12 óráig használható
 
@@ -1105,11 +1147,12 @@ function shortTxt(t){ return String(t||"").replace(/\s+/g," ").slice(0,70); }
 
 // Háromszor próbálkozik JSONP-vel (mobilnál előfordul egy-egy elveszett kérés),
 // ha az nem megy, fetch-csel is megpróbálja, és a hiba okát összegyűjti.
-async function loadTasks(count){
+async function loadTasks(count,context){
+  context=context||requestedContentContext();
   const diag=[];
   for(let i=1;i<=3;i++){
     try{
-      const data=await jsonp({action:"getTasks",count},12000);
+      const data=await jsonp({action:"getTasks",count,bank:context.bank,practice:context.practice?'yes':'no'},12000);
       if(data&&data.success) return data.tasks||[];
       const err=new Error((data&&data.error)||"A feladatok betöltése sikertelen.");
       err.scriptError=true;   // maga a script válaszolt hibával: újrapróbálni nem segít
@@ -1122,7 +1165,7 @@ async function loadTasks(count){
   }
 
   try{
-    const r=await fetch(API_URL+"?action=getTasks&count="+count+"&_="+Date.now(),{redirect:"follow"});
+    const r=await fetch(API_URL+"?action=getTasks&count="+count+"&bank="+encodeURIComponent(context.bank)+"&practice="+(context.practice?'yes':'no')+"&_="+Date.now(),{redirect:"follow"});
     const txt=await r.text();
     let data=null;
     try{ data=JSON.parse(txt); }catch(x){}
@@ -1147,18 +1190,20 @@ async function loadTasks(count){
 }
 
 // Ha a hálózat nem működik, a legutóbb sikeresen letöltött feladatbankot használja.
-async function loadTasksRobust(){
+async function loadTasksRobust(bankOverride){
+  const context=requestedContentContext(bankOverride),cacheKey=TASK_CACHE_KEY+'_'+context.bank+'_'+(context.practice?'practice':'test');
   try{
-    const tasks=await loadTasks(1000);
-    try{ localStorage.setItem(TASK_CACHE_KEY,JSON.stringify({ts:Date.now(),tasks})); }catch(e){}
+    const tasks=await loadTasks(1000,context);
+    try{ localStorage.setItem(cacheKey,JSON.stringify({ts:Date.now(),tasks})); }catch(e){}
     return {tasks,cached:false};
   }catch(e){
     try{
-      const c=JSON.parse(localStorage.getItem(TASK_CACHE_KEY)||"null");
-      if(c&&Array.isArray(c.tasks)&&c.tasks.length&&Date.now()-c.ts<TASK_CACHE_TTL&&!e.scriptError){
+      const c=JSON.parse(localStorage.getItem(cacheKey)||"null");
+      if(context.practice&&c&&Array.isArray(c.tasks)&&c.tasks.length&&Date.now()-c.ts<TASK_CACHE_TTL&&!e.scriptError){
         return {tasks:c.tasks,cached:true};
       }
     }catch(x){}
+    if(!context.practice)throw new Error('Az éles teszthez nem sikerült frissen ellenőrizni a feladatbankot. Ellenőrizd az internetet, vagy válassz Gyakorló módot; ott a korábban betöltött bank is használható.');
     const ne=new Error(e.message+(e.scriptError?"":" Próbáld újra egy perc múlva, vagy váltsd a wifit és a mobilnetet."));
     ne.detail=e.detail;
     throw ne;
@@ -1235,7 +1280,34 @@ function interleaveDiff(arr){
 
 // Minden típusból (szó, mondat, bekezdés stb.) ugyanannyi feladatot választ,
 // véletlenszerűen, majd az egész sorozatot is összekeveri.
+function plannerTypeKey(value){return String(value||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim().toLowerCase();}
+function plannerQuotas(groups,count){
+ const sum=groups.reduce((s,g)=>s+g.weight,0),target=Math.min(Math.max(0,Math.floor(count)),groups.reduce((s,g)=>s+g.pool.length,0));
+ const taken=groups.map(g=>Math.min(g.pool.length,Math.floor(target*g.weight/sum)));
+ let left=target-taken.reduce((s,n)=>s+n,0);
+ while(left>0){let best=-1;for(let i=0;i<groups.length;i++)if(taken[i]<groups[i].pool.length&&(best<0||target*groups[i].weight/sum-taken[i]>target*groups[best].weight/sum-taken[best]))best=i;if(best<0)break;taken[best]++;left--;}
+ return taken;
+}
+function plannerGroups(all,settings){
+ const map=new Map();all.forEach(t=>{const key=plannerTypeKey(t.type);if(!map.has(key))map.set(key,[]);map.get(key).push(t);});
+ const keys=['szo','kifejezes','mondat','szoveg'];
+ return [...map].map(([key,pool])=>({key,pool,weight:settings.typeRatiosEnabled?(settings.typeWeights[keys.indexOf(key)]||0):1,avg:pool.reduce((s,t)=>s+String(t.text||'').length,0)/pool.length})).filter(g=>g.weight>0).sort((a,b)=>a.avg-b.avg||a.key.localeCompare(b.key,'hu'));
+}
+function plannerGradeMatches(spec,g){
+ spec=String(spec||'').trim();if(!spec||!Number.isFinite(g))return true;
+ const re=/(\d{1,2})\s*[-–]\s*(\d{1,2})|(\d{1,2})/g;let m;
+ while((m=re.exec(spec)))if(m[3]!==undefined?Number(m[3])===g:g>=Number(m[1])&&g<=Number(m[2]))return true;
+ return false;
+}
+
+function selectRatioTasks(all,count,inOrder){
+ const groups=plannerGroups(all,typeRatioSettings),quota=plannerQuotas(groups,count),out=[];
+ groups.forEach((g,i)=>out.push(...(inOrder?g.pool:interleaveDiff(shuffle(g.pool))).slice(0,quota[i])));
+ if(!out.length)throw new Error('Nincs feladat a tanár által engedélyezett típusokból.');
+ return inOrder?all.filter(t=>out.includes(t)):shuffle(out);
+}
 function balanceTasks(all,count){
+  if(typeRatioSettings.typeRatiosEnabled)return selectRatioTasks(all,count,false);
   const groups=new Map();
   all.forEach(t=>{
     const k=String(t.type||"");
@@ -1285,6 +1357,7 @@ function bestSelection(all,n,tries){
 
 function selectTasksInOrder(all,n,order){
  if(order!=='bank')return bestSelection(all,n,300);
+ if(typeRatioSettings.typeRatiosEnabled){const list=selectRatioTasks(all,n,true),total=totalTime(list);return {list,total,fits:total<=MAX_TOTAL_SEC};}
  const list=all.slice(0,n),total=totalTime(list);return {list,total,fits:total<=MAX_TOTAL_SEC};
 }
 
@@ -1293,6 +1366,7 @@ async function checkPinServer(pin){
   try{
     const r=await jsonp({action:"checkPin",pin},10000);
     if(r?.success&&r.pinRequired===false){teacherPinRequired=false;applyLock();}
+    if(r?.ok&&r.bankToken)teacherBankSessionToken=r.bankToken;
     if(r&&r.success){ return r.ok?"ok":(r.blocked?"blocked":"bad"); }
   }catch(e){}
   return "offline";
@@ -1335,9 +1409,18 @@ async function askApproval(count,total){
   });
 }
 
+async function verifyCurrentRealBank(){
+ const r=await jsonp({action:'getSettings'},12000);
+ if(!r?.success||!r.settings?.activeBank||typeof r.pinRequired!=='boolean')throw new Error('A tanári bankbeállítás nem ellenőrizhető. Éles teszt előtt internetkapcsolat és frissített Apps Script szükséges; gyakorló módban folytathatsz.');
+ teacherPinRequired=r.pinRequired;applyBankDefaults(r.settings);applyLock();return true;
+}
 async function startTest(){
  syncPracticeAccess();
  if(!allowLeavingResult())return;
+ if(!selectedPractice()){
+  if($('startBtn').disabled)return;$('startBtn').disabled=true;$('startBtn').textContent='Tanári bank ellenőrzése…';
+  try{await verifyCurrentRealBank();}catch(e){showError(e.message);return;}finally{$('startBtn').disabled=false;$('startBtn').textContent='Teszt indítása';}
+ }
  if(teacherSettingsPromise){
   if($('startBtn').disabled)return;
   $('startBtn').disabled=true;$('startBtn').textContent='Beállítások betöltése…';
@@ -1359,7 +1442,7 @@ async function startTest(){
   const practiceTextKind=practice?$("practiceTextKind").value:"all";
   let name=$("studentName").value.trim().replace(/\s+/g," ")||(practice?"Gyakorló":"");
   const cls=getClass();
-  const count=Math.max(1,Math.min(50,Number($("taskCount").value)||5));
+  const count=Math.max(1,Math.min(500,Number($("taskCount").value)||5));
 
   if(!name&&!practice){
     showError("Írd be a tanuló nevét.");
@@ -1407,7 +1490,8 @@ async function startTest(){
     loadVarietyHistory(name,cls);
     const wanted=Math.min(count,all.length);
     let sel=selectTasksInOrder(all,wanted,taskOrder);
-    let note=practice&&practiceTextKind!=="all"&&wanted<count?`ℹ️ Ebben a szövegcsoportban ${wanted} megfelelő feladat érhető el, ezért ennyi kerül a gyakorlásba.`:"";
+    let note=sel.list.length<wanted?'ℹ️ A beállított típusarányokhoz kevés feladat érhető el: '+sel.list.length+' feladat kerül a tesztbe.':'';
+    note+=practice&&practiceTextKind!=="all"&&wanted<count?`ℹ️ Ebben a szövegcsoportban ${wanted} megfelelő feladat érhető el, ezért ennyi kerül a gyakorlásba.`:"";
 
     if(!sel.fits){
       const ok=await askApproval(wanted,sel.total);
@@ -1429,7 +1513,8 @@ async function startTest(){
 
     $("loadingOverlay").classList.add("hidden");
     enableSpeechForNewTest();
-    tasks=sel.list;
+    tasks=dictationLast(sel.list);
+    tasks.forEach(t=>delete t._dictationWaitStartedAt);
     autoRetryN=0;
     results=[];
     currentIndex=0;
@@ -1440,6 +1525,8 @@ async function startTest(){
     studentNameVal=name;
     studentClassVal=cls;
     practiceMode=practice;
+    currentPracticeContentBank=tasks[0]?.sourceBank||$('practiceBankStart').value;$('practiceBankLive').value=currentPracticeContentBank;
+    refreshContentBankControls();
     $("practiceTag").classList.toggle("hidden",!practice);
     testId=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():(Date.now().toString(36)+Math.random().toString(36).slice(2));
     testStartedAt=new Date();
@@ -1471,7 +1558,38 @@ async function startTest(){
 
 /* ---------- Feladat megjelenítése és időzítés ---------- */
 
+let dictationWaitTimer=null;
+function clearDictationWait(){clearInterval(dictationWaitTimer);dictationWaitTimer=null;}
+function dictationLast(list){return list.filter(t=>!enabledFlag(t.dictation)).concat(list.filter(t=>enabledFlag(t.dictation)));}
+function startDictationWait(){
+ clearDictationWait();const task=tasks[currentIndex],idx=currentIndex,epoch=taskEpoch;
+ if(!Number.isFinite(task._dictationWaitStartedAt))task._dictationWaitStartedAt=Date.now();
+ saveDraft();
+ const tick=()=>{
+  if(!dictationWaiting||finished||stopped||idx!==currentIndex||epoch!==taskEpoch){clearDictationWait();return;}
+  const elapsed=Date.now()-task._dictationWaitStartedAt;
+  if(elapsed>=120000){skipWaitingDictation('no-response');return;}
+  const left=Math.ceil((120000-elapsed)/1000),warn=elapsed>=60000;
+  const controls=$('dictationStartControls');controls?.classList.toggle('dictation-wait-warning',warn);
+  const notice=$('dictationNotice');if(notice){notice.setAttribute('role',warn?'alert':'status');notice.textContent=warn?`⚠️ Indítsd el a felolvasást! Ha technikai gond van (például nincs fülhallgató vagy nem szól a felolvasó), válaszd a „Technikai okból kihagyom” gombot: ez nem rontja az eredményed. Ha nem választasz, ${left} mp múlva a feladat automatikusan kimarad és 0%-ot ér.`:dictationWaitingNotice()+` Indításra vagy választásra még ${left} mp áll rendelkezésre.`;}
+  if(warn){$('autoMsg').className='auto-msg warn';$('autoMsg').textContent='⚠️ Tollbamondás: indítsd el, vagy jelezd a technikai akadályt!';}
+ };
+ dictationWaitTimer=setInterval(tick,1000);tick();
+}
+function skipWaitingDictation(reason){
+ if(!dictationWaiting||finished||stopped)return;
+ clearDictationWait();dictationWaiting=false;dictationBegin=null;startTime=performance.now();
+ finishCurrentTask(reason==='no-response');
+ const r=results[results.length-1];if(!r)return;
+ r.skipped=true;r.skipReason=reason;r.timeSpent=0;r.technicalSkip=reason==='technical';
+ if(r.technicalSkip){for(const k of ['correct','wrong','mistakes','correctWords','totalWords','totalTyped','score','percent','speed','accentErrors','caseErrors','typoErrors','missingChars','extraChars','characterPercent','wordPercent'])r[k]=0;r.timedOut=false;}
+ skippedIdx.add(currentIndex);saveDraft();goNext();
+}
+
 function showTask(graceMs){
+  clearDictationWait();
+  updateModeLabel();
+  renderLiveTestHistory();
   endPracticePause(false);
   taskEpoch++; stopReading();
   dictationWaiting=false;dictationBegin=null;
@@ -1557,7 +1675,7 @@ function showTask(graceMs){
     dictationWaiting=true;dictationBegin=begin;graceActive=true;
     $('answer').disabled=true;$('nextBtn').disabled=false;$('nextBtn').textContent='Következő – kihagyás';$('nextBtn').classList.remove('hidden');
     $('autoMsg').className='auto-msg info';$('autoMsg').textContent='Tollbamondás következik. Az idő a felolvasás elindulásáig áll.';
-    showDictationNotice();return;
+    showDictationNotice();startDictationWait();return;
   }
   $("answer").focus();
   if(graceMs>0) setTimeout(begin,graceMs);
@@ -1640,6 +1758,7 @@ function updateStats(){
 }
 
 function finishCurrentTask(timedOut){
+ clearDictationWait();
  $('dictationStartControls')?.classList.add('hidden');
   endPracticePause(false);
   dictationWaiting=false;dictationBegin=null;
@@ -1658,6 +1777,7 @@ function finishCurrentTask(timedOut){
     allowedSeconds:task._allowedSeconds||configuredTime(task),
     timeMultiplier:practiceMode?practiceFactor:1,
     taskId:task.id||"",
+    sourceBank:task.sourceBank||activeTestContentBank,sourceBankLabel:task.sourceBankLabel||'Feladatbank 1',
     type:task.type||"",
     text:c.expected,
     answer:c.answer,
@@ -1709,6 +1829,7 @@ function goNext(){
 }
 
 function nextTask(){
+  if(dictationWaiting){skipWaitingDictation('student-skip');return;}
   const skippedDictation=dictationWaiting;
   if(dictationWaiting){dictationWaiting=false;dictationBegin=null;startTime=performance.now();}
   if(!finished) finishCurrentTask(false);
@@ -1948,20 +2069,21 @@ function gradeFor(percent){
 }
 
 function detailedOverallFeedback(analyses){
-  const n=results.length;
-  if(!n) return "";
-  const avgP=Math.round(results.reduce((s,r)=>s+r.percent,0)/n);
+  const included=results.filter(r=>!r.technicalSkip);
+  const n=included.length;
+  if(!n) return "Technikai okból minden feladat kimaradt; ebből a tesztből nem készül jegy.";
+  const avgP=Math.round(included.reduce((s,r)=>s+r.percent,0)/n);
   const doneR=results.filter((r,i)=>!skippedIdx.has(i));
   const avgS=doneR.length?Math.round(doneR.reduce((s,r)=>s+r.speed,0)/doneR.length):0;
-  const perfect=results.filter(r=>r.percent===100&&r.wrong===0).length;
-  const timedOut=results.filter(r=>r.timedOut).length;
-  const sub=analyses.reduce((s,a)=>s+a.cnt.sub,0);
-  const del=analyses.reduce((s,a)=>s+a.cnt.del,0);
-  const ins=analyses.reduce((s,a)=>s+a.cnt.ins,0);
-  const acc=analyses.reduce((s,a)=>s+a.cnt.accent,0);
-  const cas=analyses.reduce((s,a)=>s+a.cnt.case,0);
-  const typ=analyses.reduce((s,a)=>s+a.cnt.typo,0);
-  const corrections=results.reduce((s,r)=>s+r.mistakes,0);
+  const perfect=included.filter(r=>r.percent===100&&r.wrong===0).length;
+  const timedOut=included.filter(r=>r.timedOut).length;
+  const sub=analyses.filter((a,i)=>!results[i].technicalSkip).reduce((s,a)=>s+a.cnt.sub,0);
+  const del=analyses.filter((a,i)=>!results[i].technicalSkip).reduce((s,a)=>s+a.cnt.del,0);
+  const ins=analyses.filter((a,i)=>!results[i].technicalSkip).reduce((s,a)=>s+a.cnt.ins,0);
+  const acc=analyses.filter((a,i)=>!results[i].technicalSkip).reduce((s,a)=>s+a.cnt.accent,0);
+  const cas=analyses.filter((a,i)=>!results[i].technicalSkip).reduce((s,a)=>s+a.cnt.case,0);
+  const typ=analyses.filter((a,i)=>!results[i].technicalSkip).reduce((s,a)=>s+a.cnt.typo,0);
+  const corrections=included.reduce((s,r)=>s+r.mistakes,0);
 
   const p=[];
   let level;
@@ -1990,13 +2112,14 @@ function detailedOverallFeedback(analyses){
 }
 
 function overallFeedback(analyses){
- const n=results.length;if(!n)return '';
- const pct=Math.round(results.reduce((a,r)=>a+r.percent,0)/n);
+ const included=results.filter(r=>!r.technicalSkip);
+  const n=included.length;if(!n)return 'Technikai okból minden feladat kimaradt; ebből a tesztből nem készül jegy.';
+ const pct=Math.round(included.reduce((a,r)=>a+r.percent,0)/n);
  const done=results.filter((r,i)=>!skippedIdx.has(i));
  const speed=done.length?Math.round(done.reduce((a,r)=>a+r.speed,0)/done.length):0;
- const perfect=results.filter(r=>r.percent===100&&r.wrong===0).length;
- const timeout=results.filter(r=>r.timedOut).length;
- const counts=[['Kihagyott karakter',analyses.reduce((a,r)=>a+r.cnt.del,0)],['Felesleges karakter',analyses.reduce((a,r)=>a+r.cnt.ins,0)],['Ékezethiba',analyses.reduce((a,r)=>a+r.cnt.accent,0)],['Kis-/nagybetű hiba',analyses.reduce((a,r)=>a+r.cnt.case,0)],['Elütés',analyses.reduce((a,r)=>a+r.cnt.typo,0)]].sort((a,b)=>b[1]-a[1]);
+ const perfect=included.filter(r=>r.percent===100&&r.wrong===0).length;
+ const timeout=included.filter(r=>r.timedOut).length;
+ const counts=[['Kihagyott karakter',analyses.filter((a,i)=>!results[i].technicalSkip).reduce((a,r)=>a+r.cnt.del,0)],['Felesleges karakter',analyses.filter((a,i)=>!results[i].technicalSkip).reduce((a,r)=>a+r.cnt.ins,0)],['Ékezethiba',analyses.filter((a,i)=>!results[i].technicalSkip).reduce((a,r)=>a+r.cnt.accent,0)],['Kis-/nagybetű hiba',analyses.filter((a,i)=>!results[i].technicalSkip).reduce((a,r)=>a+r.cnt.case,0)],['Elütés',analyses.filter((a,i)=>!results[i].technicalSkip).reduce((a,r)=>a+r.cnt.typo,0)]].sort((a,b)=>b[1]-a[1]);
  const main=counts[0];
  const level=pct>=95?'Kiváló eredmény!':pct>=85?'Szép eredmény!':pct>=70?'Jó alap, gyakorolj tovább!':'Gyakorolj tovább, lépésről lépésre!';
  let tip=pct>=95?'Tartsd meg a pontosságot, és fokozatosan gyorsíts.':main[0]==='Kihagyott karakter'&&main[1]>0?'Figyelj, hogy ne maradjon ki betű; az elütéseket javítsd.':main[0]==='Ékezethiba'&&main[1]>0?'Figyelj az ékezetekre, és javítsd az elütéseket.':'Gépeld pontosan a szöveget, és javítsd az elütéseket.';
@@ -2009,6 +2132,44 @@ function overallFeedback(analyses){
 const HISTORY_KEY="gepiras_progress_history_v1";
 function historyIdentity(data){return String(data.studentName||"").trim().toLocaleLowerCase("hu-HU")+"|"+String(data.studentClass||"").trim().toLocaleLowerCase("hu-HU");}
 function readProgressHistory(){try{const v=JSON.parse(localStorage.getItem(HISTORY_KEY)||"{}");return v&&typeof v==="object"?v:{}}catch(e){return {}}}
+const RECENT_RESULTS_KEY='gepiras_recent_results_1h_v1';
+let recentResultsMemory={};
+function readRecentResults(){try{const data=JSON.parse(localStorage.getItem(RECENT_RESULTS_KEY)||'{}');if(data&&typeof data==='object'&&!Array.isArray(data))recentResultsMemory=data;}catch(e){}return recentResultsMemory;}
+function recentResultTime(entry){return Number(entry.completedAt)||Date.parse(entry.testFinishedAt||'');}
+function withinRecentHour(entry,now){const time=recentResultTime(entry);return Number.isFinite(time)&&time>=now-3600000&&time<=now;}
+function rememberRecentResult(data){
+ const all=readRecentResults(),now=Date.now(),key=historyIdentity(data);
+ Object.keys(all).forEach(k=>{all[k]=(Array.isArray(all[k])?all[k]:[]).filter(h=>withinRecentHour(h,now));if(!all[k].length)delete all[k];});
+ const completedAt=Date.parse(data.testFinishedAt||'');if(!Number.isFinite(completedAt)||completedAt>now||completedAt<now-3600000)return;
+ const entry={testId:data.testId||'',mode:data.practice?'practice':'test',completedAt,accuracy:Number(data.averagePercent)||0,grade:Number(data.grade)||0};
+ const items=all[key]||[],existing=entry.testId?items.findIndex(h=>h.testId===entry.testId):-1;
+ if(existing>=0)items[existing]=entry;else items.push(entry);
+ all[key]=items;recentResultsMemory=all;try{localStorage.setItem(RECENT_RESULTS_KEY,JSON.stringify(all));}catch(e){}
+}
+function updateModeLabel(){
+ const running=!$('testPanel').classList.contains('hidden')||!$('resultPanel').classList.contains('hidden');
+ const practice=running?practiceMode:selectedPractice();
+ $('appModeTitle').textContent=practice?'Gépírás – Gyakorló módban':'Gépírás teszt';
+ ['newTestBtn','newTestBtnTop','newTestBtnSaved'].forEach(id=>{const button=$(id);if(button){button.textContent=practice?'↻ Új gyakorló teszt':'↻ Új éles teszt';button.title=practice?'Új teszt indítása gyakorló módban':'Új éles teszt indítása';}});
+ document.body.dataset.typingMode=practice?'practice':'test';
+ $('practiceTag').textContent=practice?'Gyakorló mód':'Éles teszt';$('practiceTag').classList.remove('hidden');
+}
+
+function renderLiveTestHistory(){
+ const mode=practiceMode?'practice':'test';
+ const key=historyIdentity({studentName:studentNameVal,studentClass:studentClassVal});
+ const now=Date.now(),stored=readRecentResults()[key]||[];
+ const entries=stored.filter(h=>h.mode===mode&&withinRecentHour(h,now)).sort((a,b)=>recentResultTime(b)-recentResultTime(a));
+ $('liveHistoryLabel').textContent=practiceMode?'Gyakorlás · ezen az eszközön, 1 óra:':'Éles teszt · ezen az eszközön, 1 óra:';
+ $('liveTestHistory').title='Az ezen a böngészőn, ezzel a névvel és osztállyal az elmúlt 60 percben befejezett, azonos módú tesztek. Legújabb elöl; további eredmények oldalra görgethetők.';
+ $('liveHistoryItems').innerHTML=entries.length?entries.map(h=>{
+  const pct=Math.round(Math.max(0,Math.min(100,Number(h.accuracy)||0))*100)/100;
+  const grade=Number(h.grade),gradeText=Number.isInteger(grade)&&grade>=1&&grade<=5?String(grade):'–';
+  return `<span class="live-history-result" title="${esc(new Date(h.completedAt).toLocaleTimeString('hu-HU',{hour:'2-digit',minute:'2-digit'}))}"><b>${String(pct).replace('.',',')}%</b><span>jegy: <b>${gradeText}</b></span></span>`;
+ }).join(''):'<span class="live-history-empty">Az elmúlt 1 órában még nincs saját eredmény ebben a módban.</span>';
+
+}
+
 function renderProgress(data,viewMode,record=true){
   const all=readProgressHistory(),key=historyIdentity(data);
   let entries=Array.isArray(all[key])?all[key].slice():[];
@@ -2016,6 +2177,7 @@ function renderProgress(data,viewMode,record=true){
   const existing=data.testId?entries.findIndex(h=>h.testId===data.testId):-1;
   const dataPoint={mode,testId:data.testId||"",date:new Date(data.testFinishedAt||Date.now()).toLocaleDateString("hu-HU"),speed:Number(data.averageSpeed)||0,accuracy:Math.max(0,Math.min(100,Number(data.averagePercent)||0)),score:Number(data.totalScore)||0,grade:Number(data.grade)||0};
   if(record){
+    rememberRecentResult(data);
     if(existing>=0)entries[existing]=dataPoint;else entries.push(dataPoint);
     const counts={};
     entries=entries.slice().reverse().filter(h=>{const bucket=['practice','test'].includes(h.mode)?h.mode:'legacy';counts[bucket]=(counts[bucket]||0)+1;return counts[bucket]<=20;}).reverse();
@@ -2064,6 +2226,7 @@ function renderProgress(data,viewMode,record=true){
 }
 
 function finishTest(){
+  clearDictationWait();
   endPracticePause(false);
   dictationWaiting=false;dictationBegin=null;
   stopReading();
@@ -2079,17 +2242,21 @@ function finishTest(){
   $("testPanel").classList.add("hidden");
   $("resultPanel").classList.remove("hidden");
 
+  const evaluated=results.filter(r=>!r.technicalSkip);
+  const technicalCount=results.length-evaluated.length;
+  const evaluatedCoverage=results.length?100*evaluated.length/results.length:0;
+  const coverageEligible=evaluatedCoverage>=gradingMinEvaluatedPercentSetting;
   const totalScore=results.reduce((s,r)=>s+r.score,0);
   const totalCorrect=results.reduce((s,r)=>s+r.correct,0);
   const totalWrong=results.reduce((s,r)=>s+r.wrong,0);
   const totalMistakes=results.reduce((s,r)=>s+r.mistakes,0);
   const totalTyped=results.reduce((s,r)=>s+r.totalTyped,0);
-  const averagePercent=results.length?Math.round(results.reduce((s,r)=>s+r.percent,0)/results.length):0;
+  const averagePercent=evaluated.length?Math.round(evaluated.reduce((s,r)=>s+r.percent,0)/evaluated.length):0;
   const doneResults=results.filter((r,i)=>!skippedIdx.has(i));
   const averageSpeed=doneResults.length?Math.round(doneResults.reduce((s,r)=>s+r.speed,0)/doneResults.length):0;
 
-  const grade=gradeFor(averagePercent);
-  $("heroGrade").textContent=grade;
+  const grade=evaluated.length?gradeFor(averagePercent):null;
+  $("heroGrade").textContent=grade??'–';
   $("heroPercent").textContent=averagePercent+"%";
   $("gradeHero").classList.toggle("hidden",!!practiceMode);
   $("gradeNote").classList.toggle("hidden",!!practiceMode);
@@ -2099,34 +2266,35 @@ function finishTest(){
   const gradeText="A modulzáró vizsga százalékos jegyének határai: "+gl.map(([m,g],i)=>`${g}: ${m}–${i<gl.length-1?gl[i+1][0]-1:100}%`).join(" · ")+".";
   $("gradeExplain").textContent=gradeText+" Az érdemjegy a feladatok százalékainak átlagából számolódik.";
   $("gradeNote").textContent=gradeText;
-  const maxTotal=results.reduce((s,r,i)=>s+(Number(tasks[i]&&tasks[i].points)||100),0);
-  const totalExpected=results.reduce((s,r)=>s+String(r.text||"").length,0);
+  const maxTotal=results.reduce((s,r,i)=>s+(r.technicalSkip?0:(Number(tasks[i]&&tasks[i].points)||100)),0);
+  const totalExpected=evaluated.reduce((s,r)=>s+String(r.text||"").length,0);
   $("finalScore").textContent=totalScore+" / "+maxTotal;
   $("finalCorrect").textContent=totalCorrect+" / "+totalExpected;
   $("finalWrong").textContent=totalWrong;
   $("finalMistakes").textContent=totalMistakes;
   $("finalSpeed").textContent=averageSpeed;
 
-  const analyses=results.map(analyze);
-  const notWritten=results.reduce((s,r,i)=>s+(skippedIdx.has(i)?String(r.text||"").length:(analyses[i].rest||0)),0);
+  const analyses=results.map(r=>r.technicalSkip?{ops:[],rest:0,cnt:{sub:0,del:0,ins:0,accent:0,case:0,typo:0}}:analyze(r));
+  const notWritten=results.reduce((s,r,i)=>s+(r.technicalSkip?0:(skippedIdx.has(i)?String(r.text||"").length:(analyses[i].rest||0))),0);
   $('scoreExplain').innerHTML=`Az eredmény 80%-ban a karakterpontosságot, 20%-ban a teljesen helyes szavakat értékeli. Helyes szavak: <b>${results.reduce((sum,r)=>sum+(r.correctWords||0),0)} / ${results.reduce((sum,r)=>sum+(r.totalWords||0),0)}</b>. A kijavított, végül helyes szó teljes értékű; a törlésekért nincs külön pontlevonás. A pontszám legfeljebb a feladatbankban megadott maximumpont.`;
   const doneN=results.filter((r,i)=>!skippedIdx.has(i)&&!r.interrupted).length;
   const intrN=results.filter(r=>r.interrupted).length;
   const stopBanner=stopped
     ?`<div class="stop-banner"><b>⛔ A tesztet vészleállítással megszakították.</b> Elvégzett feladat: ${doneN}, megszakított: ${intrN}, el sem kezdett: ${skippedIdx.size}. Csak az elvégzett és a megszakított feladatok pontjai számítanak, az el sem kezdettekre 0 pont jár.${practiceMode?"":" Az eredmény így is el lett mentve."}</div>`
     :"";
-  $("overallFeedback").innerHTML=stopBanner+overallFeedback(analyses);
+  $("overallFeedback").innerHTML=stopBanner+(technicalCount?`<p>🛠 ${technicalCount} tollbamondás technikai okból kimaradt; ezek nem számítanak bele az eredménybe.${!coverageEligible&&!practiceMode?` A teszt nem számít jegyszerzéshez: ${Math.round(evaluatedCoverage)}% értékelhető, a tanári minimum ${gradingMinEvaluatedPercentSetting}%.`:''}</p>`:'')+overallFeedback(analyses);
 
   $("detail").innerHTML=results.map((r,i)=>{
     const a=analyses[i];
     const maxPoints=Number(tasks[i]&&tasks[i].points)||100;
+    if(r.technicalSkip)return `<div class="task-res"><b>${i+1}. feladat · ${esc(r.type)}</b><p>🛠 A diák technikai akadályt jelzett (például nincs fülhallgató vagy nem működik a felolvasás). Ez a feladat nem számít bele a százalékba, pontokba és jegybe.</p></div>`;
     if(skippedIdx.has(i)){
       return `<div class="task-res">
         <div class="row">
           <b>${i+1}. feladat${r.type?` · ${esc(r.type)}`:""}</b>
           <span class="pill" style="background:#c5221f">0% · 0 / ${maxPoints} pont</span>
         </div>
-        <div class="fb"><p class="skipped">Ez a feladat nem lett elvégezve (vészleállítás), ezért 0 pontot ér.</p></div>
+        <div class="fb"><p class="skipped">${r.skipReason==='no-response'?'A felolvasás 2 percen belül nem indult el, és technikai akadályt sem jelzett a diák.':r.skipReason==='student-skip'?'A diák kihagyta a tollbamondást, technikai akadály jelzése nélkül.':'Ez a feladat nem lett elvégezve (vészleállítás).'} Ezért 0%-ot és 0 pontot ér.</p></div>
       </div>`;
     }
     const diffHtml=renderDiff(a.ops);
@@ -2181,6 +2349,7 @@ function finishTest(){
     studentName:studentNameVal,
     studentClass:studentClassVal,
     taskCount:results.length,
+    evaluatedTaskCount:evaluated.length,technicalSkippedCount:technicalCount,
     testStartedAt:startedAtIso,
     testFinishedAt:finishedAtIso,
     gradeLimits:GRADE_LIMITS.map(pair=>pair.slice()),
@@ -2216,12 +2385,14 @@ function finishTest(){
   };
   exportResult=pendingResult;
   exportResult.practice=practiceMode; exportResult.timeMultiplier=practiceFactor;
-  exportResult.gradingRequired=!practiceMode&&gradingEnabledSetting;
+  exportResult.gradingRequired=!practiceMode&&gradingEnabledSetting&&evaluated.length>0&&coverageEligible;
+  exportResult.gradingMinEvaluatedPercent=gradingMinEvaluatedPercentSetting;exportResult.evaluatedCoverage=evaluatedCoverage;
   exportResult.gradeGroupSize=gradingGroupSizeSetting;
   syncResultSaveGate();
   showCsvTeacherReminder();
   setGradeProgressText(practiceMode?'Gyakorló mód: ez a teszt nem számít jegyszerzéshez.':'A jegyszerzési előrehaladás a mentés ellenőrzése után jelenik meg.');
-  renderProgress({...pendingResult,practice:practiceMode});
+  renderProgress({...pendingResult,practice:practiceMode},undefined,evaluated.length>0);
+  renderResultRecentHistory();
   playSound("end");
   updateWeakBox();
   if(practiceMode){
@@ -2440,9 +2611,9 @@ function exportRows(data){
     ["Helyes szavak",data.totalCorrectWords||0],["Összes szó",data.totalWords||0],["Pontozás",data.scoringVersion||"karakter_v1"],["Összpontszám",data.totalScore],["Elérhető összpont",data.maxScore],["Írandó karakterek száma",data.totalExpected], ["Átlag (%)",data.averagePercent], ["Érdemjegy",data.grade],
     ["Pontos karakter",data.totalCorrect], ["Hibás karakter",data.totalWrong], ["Rontás",data.totalMistakes],
     ["Leütés",data.totalTyped], ["Átlagsebesség (leütés/perc)",data.averageSpeed], [],
-    ["Feladat","Típus","Eredmény (%)","Pont","Pontos karakter","Hibás","Rontás","Ékezethiba","Kis-/nagybetű hiba","Elütés","Kihagyott karakter","Felesleges karakter","Sebesség (leütés/perc)","Idő (mp)","Idő lejárt","Megszakítva","Írandó szöveg","Beírt szöveg"]
+    ["Feladat","Típus","Eredmény (%)","Pont","Pontos karakter","Hibás","Rontás","Ékezethiba","Kis-/nagybetű hiba","Elütés","Kihagyott karakter","Felesleges karakter","Sebesség (leütés/perc)","Idő (mp)","Idő lejárt","Megszakítva","Írandó szöveg","Beírt szöveg","Értékelési státusz","Feladatbank"]
   ];
-  (data.tasks||[]).forEach((r,i)=>rows.push([i+1,r.type,r.percent,r.score,r.correct,r.wrong,r.mistakes,r.accentErrors,r.caseErrors,r.typoErrors,r.missingChars,r.extraChars,r.speed,r.timeSpent,r.timedOut?"igen":"nem",r.interrupted?"igen":"nem",r.text,r.answer]));
+  (data.tasks||[]).forEach((r,i)=>rows.push([i+1,r.type,r.technicalSkip?"nem értékelt":r.percent,r.technicalSkip?"–":r.score,r.correct,r.wrong,r.mistakes,r.accentErrors,r.caseErrors,r.typoErrors,r.missingChars,r.extraChars,r.speed,r.timeSpent,r.timedOut?"igen":"nem",r.interrupted?"igen":"nem",r.text,r.answer,r.technicalSkip?"Technikai okból kihagyva – nem értékelt":r.skipReason==='no-response'?"Nem indította el – 0%":r.skipReason==='student-skip'?"Kihagyva – 0%":"Értékelt",r.sourceBankLabel||r.sourceBank||"Feladatbank 1"]));
   return rows;
 }
 function downloadCsv(){
@@ -2642,7 +2813,7 @@ function checkDraftOnLoad(){
     $("draftBox").classList.add("hidden");
     speechDisabledForTest=!!d.speechDisabled;refreshSpeechSwitch();
     tasks=d.tasks; results=d.results; currentIndex=results.length;
-    skippedIdx.clear(); stopped=false; savedOk=false; pendingResult=null;
+    skippedIdx.clear();results.forEach((r,i)=>{if(r.skipped)skippedIdx.add(i);}); stopped=false; savedOk=false; pendingResult=null;
     studentNameVal=d.name; studentClassVal=d.cls; practiceMode=false;
     resumeCount=(d.resumes||0)+1;
     testId=d.testId; testStartedAt=d.startedAt?new Date(d.startedAt):new Date(); testFinishedAt=null; testActive=true;
@@ -2780,7 +2951,7 @@ function startWeakPractice(){
   if(!list.length) return;
   // Új, mentés nélküli gyakorlókör (az eredeti teszt eredményét nem érinti).
   enableSpeechForNewTest();
-  tasks=list; results=[]; currentIndex=0; skippedIdx.clear();
+  tasks=dictationLast(list); results=[]; currentIndex=0; skippedIdx.clear();
   stopped=false; savedOk=true; pendingResult=null; practiceMode=true;
   $("practiceTag").classList.remove("hidden");
   testId=Date.now().toString(36);
@@ -2843,7 +3014,7 @@ function rememberPracticePrefs(){
  try{localStorage.setItem(PRACTICE_PREFS_KEY,JSON.stringify(savedPracticePrefs));}catch(e){}
 }
 function dictationReadingNotice(){return `🎧 Tollbamondás: minden mondat ${dictationRepeatCount} alkalommal hangzik el. Hallgasd a felolvasást, és gépeld be a szöveget.`;}
-function dictationWaitingNotice(){return `🎧 Tollbamondás következik: minden mondat ${dictationRepeatCount} alkalommal hangzik el. Saját tempóbeállítás nélkül a felolvasás 10%-kal lassabb. Az idő csak a felolvasás indulásakor kezdődik. Elindíthatod, vagy kihagyhatod ezt a részfeladatot.`;}
+function dictationWaitingNotice(){return `🎧 Tollbamondás következik: minden mondat ${dictationRepeatCount} alkalommal hangzik el. Saját tempóbeállítás nélkül a felolvasás 10%-kal lassabb. Az idő csak a felolvasás indulásakor kezdődik. Indítsd el a felolvasást, vagy válassz kihagyást. Technikai akadályt külön jelezhetsz; az így kihagyott feladat nem számít bele az értékelésbe.`;}
 function syncDictationRepeats(){
  ['dictationRepeatStart','dictationRepeatLive'].forEach(id=>$(id).value=String(dictationRepeatCount));
  const notice=$('dictationNotice');if(notice)notice.textContent=dictationWaitingNotice();
@@ -2918,6 +3089,7 @@ function readTask(){
   u.rate=baseRate*(dictation&&!customRate ? .9 : 1);
   u.onstart=()=>{
    if(!active()||!dictationWaiting||!dictationBegin)return;
+   clearDictationWait();
    const begin=dictationBegin;dictationBegin=null;dictationWaiting=false;
    $('answer').disabled=false;$('nextBtn').disabled=false;$('nextBtn').classList.remove('hidden');
    $('nextBtn').textContent=currentIndex===tasks.length-1?'Befejezés':'Következő';
@@ -3165,10 +3337,31 @@ function formattedPdf(){
  const popup=window.open('','_blank');
  if(!popup){alert('A formázott PDF-nézet megnyitásához engedélyezd a felugró ablakot, majd kattints újra a PDF mentése / nyomtatása gombra.');return;}
  const title=exportFilename(data,'pdf').replace(/\.pdf$/,'');
- const root=$('resultPanel').cloneNode(true);root.classList.remove('hidden');root.querySelectorAll('button,.export-actions,#sendBar,#saveActions,#saveStatus,#weakBox').forEach(n=>n.remove());root.querySelectorAll('details').forEach(n=>n.open=true);
+ const root=$('resultPanel').cloneNode(true);root.classList.remove('hidden');root.querySelectorAll('button,script,.export-actions,.hidden,#saveActions,#saveStatus,#resultSaveGate,#saveBanner,#csvTeacherReminder').forEach(n=>n.remove());root.querySelectorAll('details').forEach(n=>n.open=true);
  const styles=Array.from(document.querySelectorAll('style')).map(n=>n.textContent).join('\n');
  const safeTitle=title.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- const compact=`@page{size:A4;margin:5mm}html,body{margin:0!important;padding:0!important;background:#fff!important;color:#202124!important;font-size:8pt!important;line-height:1.1!important}*{animation:none!important;transition:none!important;print-color-adjust:exact;-webkit-print-color-adjust:exact}.wrap,#resultPanel{width:auto!important;max-width:none!important;margin:0!important;padding:0!important;overflow:visible!important}.card{box-shadow:none!important}.task-res,.diff-block{break-inside:auto!important}.diff-row .txt{white-space:pre-wrap!important;overflow-wrap:anywhere!important}.result-meta{grid-template-columns:repeat(2,minmax(0,1fr))!important}.result-highlight .hero-stat{background:#e3eee8!important;color:#215347!important}.progress-chart svg{height:55px!important}.legend{font-size:7pt!important}.pdf-toolbar{padding:8px;margin-bottom:8px;background:#e3eee8;font:14px Arial}button{display:inline-block!important}@media print{.pdf-toolbar{display:none!important}}`;
+ const compact=`@page{size:A4;margin:5mm}html,body{margin:0!important;padding:0!important;background:#fff!important;color:#202124!important;font-size:8pt!important;line-height:1.1!important}*{animation:none!important;transition:none!important;print-color-adjust:exact;-webkit-print-color-adjust:exact}.wrap,#resultPanel{width:auto!important;max-width:none!important;margin:0!important;padding:0!important;overflow:visible!important}.card{box-shadow:none!important}.task-res,.diff-block{break-inside:auto!important}.diff-row .txt{white-space:pre-wrap!important;overflow-wrap:anywhere!important}.result-meta{grid-template-columns:repeat(2,minmax(0,1fr))!important}.result-highlight .hero-stat{background:#e3eee8!important;color:#215347!important}.progress-chart svg{height:55px!important}.legend{font-size:7pt!important}.pdf-toolbar{padding:8px;margin-bottom:8px;background:#e3eee8;font:14px Arial}button{display:inline-block!important}@media print{.pdf-toolbar{display:none!important}}
+/* A hosszú részletek folytonosan töltsék ki az oldalakat. */
+#resultPanel,#resultPanel details,#resultPanel .explain,#resultPanel .progress-section,#resultPanel .fb-box,#resultPanel .task-res,#resultPanel .diff-block,#detail{break-inside:auto!important;page-break-inside:auto!important;break-before:auto!important;page-break-before:auto!important;break-after:auto!important;page-break-after:auto!important;height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;position:static!important}
+#resultPanel details>summary{display:block!important;font-weight:700;font-size:8pt!important;line-height:1.15!important;margin:3pt 0!important;break-after:avoid!important;page-break-after:avoid!important;list-style:none}
+#resultPanel details>summary::marker{content:''}
+#resultPanel .progress-chart{break-inside:avoid!important}
+#resultPanel .progress-chart svg{height:45px!important;max-height:45px!important}
+#resultPanel .diff-row{break-inside:auto!important;page-break-inside:auto!important}
+#resultPanel .diff-row .txt{white-space:pre-wrap!important;overflow:visible!important;height:auto!important;max-height:none!important;min-height:0!important}
+#resultPanel .progress-header,#resultPanel .result-top-actions{margin:0 0 3pt!important}
+#resultPanel .result-meta{gap:2pt!important;margin:2pt 0!important}
+#resultPanel .meta-item{padding:2pt!important}
+#resultPanel .send-bar{display:block!important;margin:3pt 0!important;padding:4pt!important;font-size:8pt!important;border-width:1pt!important;box-shadow:none!important;animation:none!important}
+#resultPanel .send-bar::before{display:none!important}
+#resultPanel #gradeProgressTop,#resultPanel #gradeGroupResults{font-size:8pt!important;margin:0 0 2pt!important;padding:0!important}
+#resultPanel .result-history,#resultPanel .history-result-card{font-size:7pt!important;padding:2pt!important;margin:1pt!important}
+#resultPanel .legend{gap:2pt 6pt!important;margin:2pt 0!important}
+#resultPanel .mini{gap:2pt!important}
+#resultPanel .feedback-compact details{font-size:7pt!important}
+#resultPanel .fb-box p,#resultPanel .task-res p{margin:1pt 0!important}
+`;
+
  popup.document.open();popup.document.write('<!doctype html><html lang="hu"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+safeTitle+'</title><style>'+styles+'\n'+compact+'</style></head><body><div class="pdf-toolbar">A nyomtatási ablakban válaszd a Mentés PDF-ként lehetőséget. A fejlécek/láblécek kikapcsolásával több hely marad.<br><button type="button" onclick="window.print()">PDF mentése / nyomtatás</button> <button type="button" id="returnToResults">Vissza az eredménylapra</button><span id="pdfReturnHint" role="status"></span></div><main class="wrap">'+root.outerHTML+'</main></body></html>');popup.document.close();
  const returnToResults=()=>{
   try{window.focus();}catch(e){}
@@ -3190,6 +3383,10 @@ function formattedPdf(){
 // A zárolás csak sikeres szerverválasz után oldható fel. Üres szerveroldali jelszó esetén minden beállítás szabad.
 let teacherPinRequired=null,teacherSettingsPromise=null,bankSettingsApplied=false,teacherSessionUnlocked=false;
 function applyBankDefaults(settings){
+ if(Number.isInteger(settings?.minEvaluatedPercent))gradingMinEvaluatedPercentSetting=settings.minEvaluatedPercent;
+ refreshContentBankControls(settings);
+ if(settings&&$('testPanel').classList.contains('hidden')&&$('resultPanel').classList.contains('hidden')){typeRatioSettings={typeRatiosEnabled:settings.typeRatiosEnabled===true,typeWeights:Array.isArray(settings.typeWeights)?settings.typeWeights.slice():[25,25,25,25]};}
+
  if(settings?.gradeLimits&&$('testPanel').classList.contains('hidden')&&$('resultPanel').classList.contains('hidden')){
   const limits=settings.gradeLimits;
   if(!Array.isArray(limits)||limits.length!==5||!limits.every((pair,i)=>Array.isArray(pair)&&pair.length===2&&Number.isInteger(pair[0])&&pair[0]>=0&&pair[0]<=100&&pair[1]===5-i)||limits[4][0]!==0||!limits.every((pair,i)=>i===4||pair[0]>limits[i+1][0]))throw new Error('Érvénytelen jegyhatárok a Feladatbankban.');
@@ -3199,8 +3396,9 @@ function applyBankDefaults(settings){
  if(typeof settings?.gradingEnabled==='boolean')gradingEnabledSetting=settings.gradingEnabled;
  if(Number.isInteger(settings?.gradeGroupSize))gradingGroupSizeSetting=settings.gradeGroupSize;
  if(bankSettingsApplied||!settings||!$('testPanel').classList.contains('hidden')||!$('resultPanel').classList.contains('hidden'))return;
+ if(['bank','random'].includes(settings.taskOrder)){testTaskOrder=settings.taskOrder;refreshTaskOrderControl();}
  const count=Number(settings.taskCount),minutes=Number(settings.capMinutes),repeat=Number(settings.dictationRepeatCount);
- if(Number.isInteger(count)&&count>=1&&count<=50)$('taskCount').value=String(count);
+ if(Number.isInteger(count)&&count>=1&&count<=500)$('taskCount').value=String(count);
  if(Number.isInteger(minutes)&&minutes>=5&&minutes<=120){$('capInput').value=String(minutes);MAX_TOTAL_SEC=minutes*60;$('capMinutes').textContent=String(minutes);}
  if([2,3,4,5].includes(repeat)){dictationRepeatCount=repeat;syncDictationRepeats();}
  if(practiceTeacherSnapshot&&selectedPractice())practiceTeacherSnapshot=capturePracticeTeacherValues();
@@ -3238,7 +3436,7 @@ function openTeacherUnlock(){
 async function submitTeacherUnlock(){
  $('teacherUnlockSubmit').disabled=true;
  try{const status=await checkPinServer($('teacherUnlockPin').value);if(status!=='ok'){$('teacherUnlockError').textContent=pinMessage(status);return;}
- teacherSessionUnlocked=true; $('teacherUnlockModal').classList.add('hidden');$('taskCount').readOnly=false;$('capInput').readOnly=false;refreshTaskOrderControl();['dictationRepeatStart','dictationRepeatLive'].forEach(id=>{$(id).disabled=false;$(id).title='Mondatonkénti felolvasások száma';});$('teacherOpts').classList.remove('hidden');$('unlockBtn').classList.remove('hidden');$('unlockBtn').disabled=true;$('unlockBtn').title='A tanári beállítások már módosíthatók';
+ teacherSessionUnlocked=true; $('teacherUnlockPin').value='';updateBankSection(); $('teacherUnlockModal').classList.add('hidden');$('taskCount').readOnly=false;$('capInput').readOnly=false;refreshTaskOrderControl();['dictationRepeatStart','dictationRepeatLive'].forEach(id=>{$(id).disabled=false;$(id).title='Mondatonkénti felolvasások száma';});$('teacherOpts').classList.remove('hidden');$('unlockBtn').classList.remove('hidden');$('unlockBtn').disabled=true;$('unlockBtn').title='A tanári beállítások már módosíthatók';
  }finally{$('teacherUnlockSubmit').disabled=false;}
 }
 $('unlockBtn').addEventListener('click',openTeacherUnlock);
@@ -3276,7 +3474,7 @@ function setupScreenFit(){
  const group=(label,controls)=>{const field=document.createElement('div');field.className='start-field';if(label)field.append(label);controls.filter(Boolean).forEach(n=>field.append(n));grid.append(field);};
  group(start.querySelector('label[for="studentName"]'),[$('studentName'),$('nameClassStatus'),$('rosterLoadStatus'),$('rosterRetry')]);
  group(start.querySelector('label[for="studentGrade"]'),[start.querySelector('.class-row'),$('studentClassOther')]);
- const settings=document.createElement('div');settings.className='start-settings-row';grid.append(settings);
+ const settings=document.createElement('div');settings.className='start-settings-row';grid.append(settings);settings.before($('contentBankSection'));
  const count=document.createElement('div');count.className='start-field';count.append(start.querySelector('label[for="taskCount"]'),$('taskCount'));
  const unlock=document.createElement('div');unlock.className='start-unlock-field';unlock.append($('unlockBtn'));
  settings.append(count,$('teacherOpts'),unlock,$('timeLimitHelp'));
@@ -3340,7 +3538,8 @@ function showDictationNotice(){
  const start=document.createElement('button');start.type='button';start.id='dictationStart';start.textContent='🔊 Felolvasás bekapcsolása és kezdés';start.addEventListener('click',startDictationReading);
  let controls=$('dictationStartControls');if(!controls){controls=document.createElement('div');controls.id='dictationStartControls';$('typingWorkspace').before(controls);}
  const skip=document.createElement('button');skip.type='button';skip.textContent='Részfeladat kihagyása';skip.addEventListener('click',nextTask);
- controls.classList.remove('hidden');controls.replaceChildren(start,skip);box.append(notice);
+ const technical=document.createElement('button');technical.type='button';technical.className='dictation-technical-skip';technical.textContent='🛠 Technikai okból kihagyom – nem számít hibának';technical.addEventListener('click',()=>skipWaitingDictation('technical'));
+ controls.classList.remove('hidden','dictation-wait-warning');controls.replaceChildren(start,technical,skip);box.append(notice);
 }
 function startDictationReading(){
  if(!dictationWaiting||finished||stopped)return;
@@ -3458,10 +3657,11 @@ function setupMobileSettingsDrawer(){
  const keyboardButton=openButton.cloneNode(true);keyboardButton.id='openMobileSettingsTyping';keyboardButton.textContent='⚙';keyboardButton.setAttribute('aria-label','Beállítások megnyitása');document.querySelector('.answer-timer').prepend(keyboardButton);
  const mobile=window.matchMedia('(max-width:760px)'),placements=[];
  const register=(node,target)=>{if(!node)return;const marker=document.createComment('mobil beállítás eredeti helye');node.before(marker);placements.push({node,marker,target});};
+ register($('contentBankSection'),$('drawerStartFields'));
  register(document.querySelector('.start-settings-row'),$('drawerStartFields'));
  register(document.querySelector('.start-audio-row'),$('drawerStartFields'));
  register($('taskOrderField'),$('drawerStartFields'));
- register($('practiceMode').closest('label'),$('drawerStartFields'));
+
  register($('practiceOptions'),$('drawerStartFields'));
  register($('teacherConfigStatus'),$('drawerStartFields'));
  register(document.querySelector('.settings-memory'),$('drawerStartFields'));
@@ -3550,13 +3750,14 @@ setupStartScreenFit();
 </script>
 <script>
 function setGradeProgressText(text){
+ $('gradeGroupResults')?.classList.add('hidden');
  const el=$('gradeProgressTop');if(el){el.textContent=text;el.classList.toggle('hidden',!text);el.classList.toggle('grade-complete',String(text).startsWith('✅'));}
  const bottom=$('gradeProgressBottom');if(bottom){bottom.textContent='';bottom.classList.add('hidden');}
 }
 function gradeProgressMessage(p){
  if(!p.enabled)return 'Ez a teszt nem számít jegyszerzéshez.';
  const mean=p.average===null?'–':Number(p.average).toFixed(2).replace('.',',');
- if(!p.eligible)return `Ez a teszt nem számít jegyszerzéshez. A következő ${p.size} tesztes csoportból még ${p.nextGroupRemaining} hátra van.`;
+ if(!p.eligible)return `${p.exclusionReason||'Ez a teszt nem számít jegyszerzéshez.'} A következő ${p.size} tesztes csoportból még ${p.nextGroupRemaining} hátra van.`;
  if(p.complete)return `✅ ${p.size} egymás utáni teszt elkészült. Átlagjegyed: ${mean} · Kerekített jegy: ${p.roundedGrade}`;
  return `${p.size} egymás utáni tesztből még ${p.remaining} hátra van. Eddigi átlagjegyed: ${mean}`;
 }
@@ -3568,7 +3769,7 @@ async function refreshGradeProgress(id){
  try{
   const r=await jsonp({action:'gradeProgress',id},12000);
   if(exportResult?.testId!==id||!$('testPanel').classList.contains('hidden'))return;
-  if(r?.success&&r.progress?.testId===id){confirmedResultIds.add(id);savedOk=true;showSaveBanner(false);$('saveActions').classList.add('hidden');if(lastReal?.testId===id){lastReal=null;clearPending();}if(exportResult)exportResult.gradingRequired=r.progress.enabled===true;$('sendBar').className='send-bar ok';$('sendBarText').textContent='✅ A Google-táblázatba mentés visszaigazolva – új tesztet indíthatsz.';$('saveStatus').textContent='✅ Az eredmény mentése visszaigazolva.';syncResultSaveGate();setGradeProgressText(gradeProgressMessage(r.progress));}
+  if(r?.success&&r.progress?.testId===id){confirmedResultIds.add(id);savedOk=true;showSaveBanner(false);$('saveActions').classList.add('hidden');if(lastReal?.testId===id){lastReal=null;clearPending();}if(exportResult)exportResult.gradingRequired=r.progress.enabled===true&&r.progress.eligible===true;$('sendBar').className='send-bar ok';$('sendBarText').textContent='✅ A Google-táblázatba mentés visszaigazolva – új tesztet indíthatsz.';$('saveStatus').textContent='✅ Az eredmény mentése visszaigazolva.';syncResultSaveGate();setGradeProgressText(gradeProgressMessage(r.progress));renderGradeGroupResults(r.progress);}
   else setGradeProgressText('A jegyszerzési előrehaladás nem kérhető le. Ellenőrizd az Apps Script telepített verzióját.');
  }catch(e){gradeProgressRequests.delete(id);if(exportResult?.testId===id)setGradeProgressText('Az eredmény mentésétől függetlenül a jegyszerzési előrehaladás most nem kérhető le.');}
 }
@@ -3758,6 +3959,156 @@ syncResultSaveGate();
 .progress-header .achievement .mascot{font-size:1.2rem}
 @media(max-width:760px){.progress-header{grid-template-columns:minmax(0,1fr);gap:6px}.progress-header .achievement-badges{justify-self:end;max-width:100%}}
 @media print{.progress-header{gap:4pt;margin-bottom:3pt}.progress-header .achievement{padding:1pt 3pt!important;font-size:7pt!important}}
+</style>
+<style>
+.live-test-history{display:flex;align-items:center;gap:8px;min-width:0;flex:0 0 auto;padding:3px 6px;border:1px solid #b7c8bd;border-radius:6px;background:#edf5ef;color:#24332e;font-size:.78rem;line-height:1.3}
+.live-test-history>strong{flex:0 0 auto;white-space:nowrap;font-size:inherit}
+.live-history-items{display:flex;align-items:center;gap:6px;overflow-x:auto;min-width:0;flex:1;scrollbar-width:thin;overscroll-behavior-x:contain}
+.live-history-result{display:inline-flex;align-items:center;gap:7px;flex:0 0 auto;white-space:nowrap;padding:2px 7px;border:1px solid #b7c8bd;border-radius:5px;background:#fff}
+.live-history-empty{white-space:nowrap;font-size:.75rem}
+.live-history-items:focus-visible{outline:2px solid #1769aa;outline-offset:1px}
+body.high-contrast .live-test-history,body.high-contrast .live-history-result{background:#000!important;color:#ffeb3b!important;border-color:#ffeb3b!important}
+@media(max-width:760px){.live-test-history{gap:5px;padding:2px 4px;font-size:.7rem}.live-history-result{gap:4px;padding:2px 5px}}
+@media print{.live-test-history{display:none!important}}
+</style>
+<style>
+#dictationStartControls{display:flex;flex-wrap:wrap;gap:7px;align-items:center}
+#dictationStartControls .dictation-technical-skip{background:#235e99;color:white}
+#dictationStartControls.dictation-wait-warning{padding:9px;background:#fff1ce;border:3px solid #bc7600;border-radius:8px;animation:dictationWaitPulse 1.2s ease-in-out 3}
+#dictationStartControls.dictation-wait-warning .dictation-technical-skip{font-weight:800;outline:2px solid #235e99;outline-offset:2px}
+@keyframes dictationWaitPulse{50%{box-shadow:0 0 0 5px #eaa52855}}
+@media(prefers-reduced-motion:reduce){#dictationStartControls.dictation-wait-warning{animation:none}}
+body.high-contrast #dictationStartControls.dictation-wait-warning{background:#000;color:#ffeb3b;border-color:#ffeb3b}
+</style>
+<style>
+#appModeTitle{border-left:5px solid #326b54;padding-left:8px;line-height:1.2}
+body[data-typing-mode="practice"] #appModeTitle{color:#764b00;border-color:#b97700}
+body[data-typing-mode="practice"] #practiceTag{background:#fff0c2;color:#684400;border:1px solid #b97700}
+body[data-typing-mode="test"] #practiceTag{background:#deefe5;color:#205039;border:1px solid #326b54}
+body[data-typing-mode="practice"] .live-test-history{background:#fff4d9;border-color:#b97700}
+@media(max-width:760px){.app-heading #appModeTitle{max-width:none!important;font-size:1rem!important;min-width:0}.live-test-history>strong{white-space:normal;max-width:105px;font-size:.7rem}}
+body.high-contrast #appModeTitle{color:#ffeb3b!important;border-color:#ffeb3b!important}
+</style>
+<script>
+(function maintainVisibleModeAndHistory(){
+ $('practiceMode').addEventListener('change',updateModeLabel);
+ const observer=new MutationObserver(updateModeLabel);
+ ['testPanel','resultPanel','startPanel'].forEach(id=>observer.observe($(id),{attributes:true,attributeFilter:['class']}));
+ setInterval(()=>{if(testActive)renderLiveTestHistory();},10000);
+ window.addEventListener('storage',e=>{if(e.key===RECENT_RESULTS_KEY&&testActive)renderLiveTestHistory();});
+ updateModeLabel();
+})();
+</script>
+<style>
+.result-history{margin:6px 0;padding:7px 9px;border:1px solid #b7c8bd;border-radius:7px;background:#edf5ef;font-size:.85rem;line-height:1.4}
+.result-history .history-result-items{display:flex;flex-wrap:wrap;gap:6px;margin-top:5px}
+.result-history .history-result-card{display:inline-flex;gap:6px;align-items:center;padding:3px 7px;border:1px solid #b7c8bd;border-radius:5px;background:#fff;color:#24332e}
+#sendBar #gradeGroupResults{order:-2;flex:0 0 100%;margin:0!important;padding:0 0 7px!important;background:transparent!important;color:inherit!important;border:0!important}
+body.high-contrast .result-history,body.high-contrast .history-result-card{background:#000!important;color:#ffeb3b!important;border-color:#ffeb3b!important}
+</style>
+<script>
+function resultHistoryCards(entries){return entries.map((h,i)=>{
+ const pct=Number(h.percent??h.accuracy),grade=Number(h.grade);
+ return `<span class="history-result-card">${h.number?`${h.number}. teszt`:`${i+1}. eredmény`}${h.current?' (mostani)':''}: <b>${Number.isFinite(pct)?String(Math.round(pct*100)/100).replace('.',','):'–'}%</b> · jegy: <b>${grade>=1&&grade<=5?grade:'–'}</b></span>`;
+ }).join('');}
+function renderResultRecentHistory(){
+ const data=exportResult,box=$('resultRecentHistory');if(!data||!box)return;
+ const now=Date.now(),mode=data.practice?'practice':'test';
+ const entries=(readRecentResults()[historyIdentity(data)]||[]).filter(h=>h.mode===mode&&withinRecentHour(h,now)).sort((a,b)=>a.completedAt-b.completedAt).map(h=>({...h,current:h.testId===data.testId}));
+ box.classList.toggle('hidden',!entries.length);
+ box.innerHTML=`<strong>${data.practice?'Gyakorló':'Éles'} eredményeid ezen az eszközön, az elmúlt 1 órában</strong><div class="history-result-items">${resultHistoryCards(entries)}</div>`;
+}
+function renderGradeGroupResults(progress){
+ let box=$('gradeGroupResults');if(!box){box=document.createElement('div');box.id='gradeGroupResults';box.className='result-history hidden';$('gradeProgressTop').after(box);}
+ const entries=progress.enabled&&progress.eligible&&Array.isArray(progress.tests)?progress.tests:[];
+ box.classList.toggle('hidden',!entries.length);
+ if(entries.length){
+ box.innerHTML='<strong>A Sheetben mentett átlagolási csoport tesztjegyei (nem csak az elmúlt óra):</strong><div class="history-result-items">'+resultHistoryCards(entries)+'</div>';
+ $('resultRecentHistory').classList.add('hidden');
+ }
+}
+</script>
+<script>
+(function setupBankControls(){
+ const label=document.createElement('label');label.innerHTML='Feladatbank: <select id="practiceBankLive"><option value="bank1">Feladatbank 1</option><option value="bank2">Feladatbank 2</option><option value="bank3">Feladatbank 3</option></select>';
+ const status=document.createElement('span');status.id='practiceBankStatus';status.setAttribute('role','status');
+ $('livePracticeOptions').append(label,status);$('practiceBankLive').title='A jelenlegi feladat megmarad; a következő feladatok cserélődnek. Utolsó feladatnál vagy megkezdett tollbamondásnál csak a következő tesztre érvényes.';
+ $('practiceBankLive').addEventListener('change',changeLivePracticeBank);
+ $('practiceMode').addEventListener('change',()=>refreshContentBankControls());
+ new MutationObserver(()=>refreshContentBankControls()).observe($('testPanel'),{attributes:true,attributeFilter:['class']});
+ refreshContentBankControls();
+})();
+</script>
+<style>
+.content-bank-section{grid-column:1/-1;padding:8px 10px;border:1px solid #9aaf9f;border-radius:8px;background:#edf5ef;margin:5px 0}
+.content-bank-section h3{font-size:.95rem;margin:0 0 5px}.content-bank-section p{margin:4px 0;font-size:.8rem;line-height:1.3}
+#contentBankTeacher,#contentBankPractice{display:flex;align-items:center;flex-wrap:wrap;gap:6px}
+.content-bank-section select{width:auto;max-width:240px;margin:0;padding:5px 8px}
+.content-bank-section button{padding:6px 9px;font-size:.8rem}
+body.high-contrast .content-bank-section{background:#000;color:#fff;border-color:#ffeb3b}
+</style>
+<script>
+function updateBankSection(){
+ const practice=selectedPractice(),locked=teacherPinRequired!==false&&!teacherSessionUnlocked;
+ $('contentBankSection').classList.toggle('hidden',practice);
+ $('contentBankPractice').classList.toggle('hidden',!practice);
+ $('practiceBankStart').disabled=!practice;
+ let reference=$('practiceTeacherBankReference');if(reference)reference.textContent='A tanár éles teszthez kijelölt bankja: '+((contentBankCatalog||[]).find(b=>b.id===activeTestContentBank)?.label||activeTestContentBank)+'. Gyakorláshoz ettől függetlenül választhatsz.';$('contentBankTeacher').classList.toggle('hidden',practice);
+ $('contentBankTitle').textContent=practice?'Feladatbank – szabad választás gyakorláshoz':'Feladatbank az éles teszthez';
+ const real=$('testContentBank');real.replaceChildren(...(contentBankCatalog||[{id:'bank1',label:'Feladatbank 1',available:true},{id:'bank2',label:'Feladatbank 2',available:true},{id:'bank3',label:'Feladatbank 3',available:true}]).map(b=>{const o=document.createElement('option');o.value=b.id;o.textContent=b.label;o.disabled=!b.available;return o;}));real.value=activeTestContentBank;real.disabled=locked||teacherPinRequired===null;
+ $('contentBankHelp').textContent=practice?'Bármelyik feltöltött bankból gyakorolhatsz. A többi beállítás közös.':locked?'Módosításhoz használd a feladatszám mellett lévő Tanári feloldás gombot.':'A bankválasztás automatikusan mentődik, és minden új éles tesztben érvényes.';
+}
+async function saveUnlockedBankChoice(){
+ const bank=$('testContentBank').value;$('testContentBank').disabled=true;
+ try{
+  const r=await jsonp({action:'setActiveBank',bank,bankToken:teacherPinRequired===false?'':teacherBankSessionToken},15000);
+  if(!r?.success)throw new Error(r?.error||'A bankválasztás mentése nem sikerült.');
+  activeTestContentBank=r.activeBank;$('contentBankStatus').textContent='Éles teszt bankja: '+$('testContentBank').selectedOptions[0].textContent+'. A következő teszt ezt használja.';
+ }catch(e){$('contentBankStatus').textContent=e.message;if(teacherPinRequired===true){teacherSessionUnlocked=false;teacherBankSessionToken='';applyLock();}}
+ finally{updateBankSection();}
+}
+$('testContentBank').addEventListener('change',saveUnlockedBankChoice);
+$('practiceMode').addEventListener('change',updateBankSection);
+const originalRefreshBankControls=refreshContentBankControls;
+refreshContentBankControls=function(settings){originalRefreshBankControls(settings);updateBankSection();};
+updateBankSection();
+</script>
+<style>
+#practiceOptions{border:2px solid #b78327!important;border-left:6px solid #b78327!important;background:#fff5db!important;margin-top:12px!important;padding:8px 10px!important;box-shadow:0 2px 7px #97600014}
+#practiceOptions::before{content:'🎯 Gyakorló mód beállításai';grid-column:1/-1;display:block;font-weight:800;font-size:.9rem;color:#744b0c;margin-bottom:5px;padding-bottom:4px;border-bottom:1px solid #d8bb7e}
+#livePracticeOptions{border-left:4px solid #b78327!important;background:#fff5db!important;padding:4px 7px!important;border-radius:5px}
+#livePracticeOptions::before{content:'🎯 Gyakorlás';font-weight:800;color:#744b0c;font-size:.8rem;margin-right:5px}
+#weakBox{border:2px solid #b78327!important;border-left-width:6px!important;background:#fff5db!important}
+body.high-contrast #practiceOptions,body.high-contrast #livePracticeOptions,body.high-contrast #weakBox{background:#000!important;color:#fff!important;border-color:#ffeb3b!important}
+body.high-contrast #practiceOptions::before,body.high-contrast #livePracticeOptions::before{color:#ffeb3b!important}
+@media(max-width:760px){#practiceOptions{margin-top:8px!important;padding:6px 8px!important}#practiceOptions::before{font-size:.85rem}}
+</style>
+<style>
+#practiceOptions .practice-mode-heading{grid-column:1/-1;display:flex!important;align-items:center;gap:9px;width:100%;box-sizing:border-box;background:#ffe8aa;border:1px solid #bd8a2d;border-radius:6px;padding:8px 10px!important;margin:0 0 6px!important;font-weight:800!important;font-size:.95rem!important;color:#684400}
+#practiceOptions .practice-mode-heading input{width:19px!important;height:19px!important;margin:0!important;flex:0 0 19px;accent-color:#986510}
+body.high-contrast #practiceOptions .practice-mode-heading{background:#000!important;color:#ffeb3b!important;border-color:#ffeb3b!important}
+@media(max-width:760px){#practiceOptions .practice-mode-heading{font-size:.85rem!important;padding:7px 8px!important}}
+</style>
+<script>
+(function groupPracticeModeCheckbox(){
+ const label=$('practiceMode').closest('label');
+ label.classList.add('practice-mode-heading');
+ $('practiceOptions').prepend(label);
+})();
+</script>
+<script>
+(function clarifyPracticeBankSection(){
+ const box=$('contentBankPractice');const reference=document.createElement('p');reference.id='practiceTeacherBankReference';reference.className='muted small';box.prepend(reference);
+ const heading=$('practiceOptions').querySelector('.practice-mode-heading');if(heading)heading.after(box);else $('practiceOptions').prepend(box);
+ box.querySelector('label[for="practiceBankStart"]').textContent='Saját feladatbankom gyakorláshoz – szabadon választható';
+ updateBankSection();
+})();
+</script>
+<style>
+#contentBankPractice{grid-column:1/-1;border-bottom:1px solid #d8bb7e;padding:5px 0 8px;margin-bottom:5px}
+#practiceTeacherBankReference{flex:0 0 100%;font-size:.8rem!important;line-height:1.35}
+#contentBankPractice label{font-weight:700}
+#contentBankPractice select{min-width:140px;width:auto;max-width:100%}
 </style>
 </body>
 </html>
