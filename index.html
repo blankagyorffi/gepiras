@@ -2147,7 +2147,7 @@ function rememberRecentResult(data){
  const all=readRecentResults(),now=Date.now(),key=historyIdentity(data);
  Object.keys(all).forEach(k=>{all[k]=(Array.isArray(all[k])?all[k]:[]).filter(h=>withinRecentHour(h,now));if(!all[k].length)delete all[k];});
  const completedAt=Date.parse(data.testFinishedAt||'');if(!Number.isFinite(completedAt)||completedAt>now||completedAt<now-3600000)return;
- const entry={testId:data.testId||'',mode:data.practice?'practice':'test',completedAt,accuracy:Number(data.averagePercent)||0,grade:Number(data.grade)||0};
+ const entry={testId:data.testId||'',mode:data.practice?'practice':'test',completedAt,accuracy:Number(data.averagePercent)||0,grade:Number(data.grade)||0,emergencyStop:!!data.emergencyStop,technicalSkippedCount:Number(data.technicalSkippedCount)||0};
  const items=all[key]||[],existing=entry.testId?items.findIndex(h=>h.testId===entry.testId):-1;
  if(existing>=0)items[existing]=entry;else items.push(entry);
  all[key]=items;recentResultsMemory=all;try{localStorage.setItem(RECENT_RESULTS_KEY,JSON.stringify(all));}catch(e){}
@@ -2288,7 +2288,7 @@ function finishTest(){
   const stopBanner=stopped
     ?`<div class="stop-banner"><b>⛔ A tesztet vészleállítással megszakították.</b> Elvégzett feladat: ${doneN}, megszakított: ${intrN}, el sem kezdett: ${skippedIdx.size}. Csak az elvégzett és a megszakított feladatok pontjai számítanak, az el sem kezdettekre 0 pont jár.${practiceMode?"":" Az eredmény így is el lett mentve."}</div>`
     :"";
-  $("overallFeedback").innerHTML=stopBanner+(technicalCount?`<p>🛠 ${technicalCount} tollbamondás technikai okból kimaradt; ezek nem számítanak bele az eredménybe.${!coverageEligible&&!practiceMode?` A teszt nem számít jegyszerzéshez: ${Math.round(evaluatedCoverage)}% értékelhető, a tanári minimum ${gradingMinEvaluatedPercentSetting}%.`:''}</p>`:'')+overallFeedback(analyses);
+  $("overallFeedback").innerHTML=stopBanner+(technicalCount?`<p>🛠 ${technicalCount} tollbamondás technikai okból kimaradt; ezek nem számítanak bele az eredménybe.${!evaluated.length?' Nincs értékelhető részfeladat, ezért ebből a tesztből nem számítható jegy.':''}</p>`:'')+overallFeedback(analyses);
 
   $("detail").innerHTML=results.map((r,i)=>{
     const a=analyses[i];
@@ -2391,7 +2391,7 @@ function finishTest(){
   };
   exportResult=pendingResult;
   exportResult.practice=practiceMode; exportResult.timeMultiplier=practiceFactor;
-  exportResult.gradingRequired=!practiceMode&&gradingEnabledSetting&&evaluated.length>0&&coverageEligible;
+  exportResult.gradingRequired=!practiceMode&&gradingEnabledSetting&&evaluated.length>0;
   exportResult.gradingMinEvaluatedPercent=gradingMinEvaluatedPercentSetting;exportResult.evaluatedCoverage=evaluatedCoverage;
   exportResult.gradeGroupSize=gradingGroupSizeSetting;
   syncResultSaveGate();
@@ -3147,7 +3147,8 @@ function resetStartScreen(){
  if(typeof exportResult!=='undefined') exportResult=null;
  ['resultPanel','testPanel','loadingOverlay','stopModal','approveModal','sendBar','saveBanner'].forEach(id=>document.getElementById(id)?.classList.add('hidden'));
  $('startPanel').classList.remove('hidden'); $('startBtn').disabled=false; $('startBtn').textContent='Teszt indítása';
- $('practiceMode').checked=false;$('practiceMode').dispatchEvent(new Event('change',{bubbles:true}));
+ // Új tesztnél a kiválasztott mód és mezőértékek változatlanok maradnak.
+ syncPracticeAccess();updateModeLabel();rememberPracticePrefs();
  requiredControl('answer').value=''; window.scrollTo(0,0); $('studentName').focus();
 }
 function pdfLines(data){
@@ -3774,15 +3775,28 @@ setupStartScreenFit();
 <script>
 function setGradeProgressText(text){
  $('gradeGroupResults')?.classList.add('hidden');
- const el=$('gradeProgressTop');if(el){el.textContent=text;el.classList.toggle('hidden',!text);el.classList.toggle('grade-complete',String(text).startsWith('✅'));}
+ const el=$('gradeProgressTop');if(el){
+  const value=String(text||''),changed=el.dataset.currentGradeState!==value;
+  el.dataset.currentGradeState=value;el.replaceChildren();
+  if(value){
+   const label=document.createElement('span');label.className='grade-state-label';label.textContent='Aktuális jegyszerzési állapot';el.append(label);
+   const content=document.createElement('span');content.className='grade-state-current';
+   // A számok kiemelése a szöveg és a szerveres számítás megváltoztatása nélkül.
+   const parts=value.split(/(\d+(?:[,.]\d+)?)/g);
+   parts.forEach((part,i)=>{if(i%2){const number=document.createElement('strong');number.className='grade-state-value';number.textContent=part;content.append(number);}else content.append(document.createTextNode(part));});
+   el.append(content);
+  }
+  el.classList.toggle('hidden',!value);el.classList.toggle('grade-complete',value.startsWith('✅'));
+  if(changed&&value){el.classList.remove('grade-state-updated');requestAnimationFrame(()=>{if(el.dataset.currentGradeState===value)el.classList.add('grade-state-updated');});}
+ }
  const bottom=$('gradeProgressBottom');if(bottom){bottom.textContent='';bottom.classList.add('hidden');}
 }
 function gradeProgressMessage(p){
- if(!p.enabled)return 'Ez a teszt nem számít jegyszerzéshez.';
+ if(!p.enabled)return 'A jegy elmentve, de az átlagba nem számít: a tanár kikapcsolta a jegyszerzést.';
  const mean=p.average===null?'–':Number(p.average).toFixed(2).replace('.',',');
  if(!p.eligible)return `${p.exclusionReason||'Ez a teszt nem számít jegyszerzéshez.'} A következő ${p.size} tesztes csoportból még ${p.nextGroupRemaining} hátra van.`;
- if(p.complete)return `✅ ${p.size} egymás utáni teszt elkészült. Átlagjegyed: ${mean} · Kerekített jegy: ${p.roundedGrade}`;
- return `${p.size} egymás utáni tesztből még ${p.remaining} hátra van. Eddigi átlagjegyed: ${mean}`;
+ if(p.complete)return `✅ ${p.size} egymás utáni teszt elkészült. Átlagjegyed: ${mean} · Kerekített jegy: ${p.roundedGrade}${p.note?' '+p.note:''}`;
+ return `${p.size} egymás utáni tesztből még ${p.remaining} hátra van. Eddigi átlagjegyed: ${mean}${p.note?' · '+p.note:''}`;
 }
 const gradeProgressRequests=new Set();
 async function refreshGradeProgress(id){
@@ -4005,10 +4019,10 @@ body.high-contrast #dictationStartControls.dictation-wait-warning{background:#00
 </style>
 <style>
 #appModeTitle{border-left:5px solid #326b54;padding-left:8px;line-height:1.2}
-body[data-typing-mode="practice"] #appModeTitle{color:#764b00;border-color:#b97700}
-body[data-typing-mode="practice"] #practiceTag{background:#fff0c2;color:#684400;border:1px solid #b97700}
+body:not(.high-contrast)[data-typing-mode="practice"] #appModeTitle{color:#764b00;border-color:#b97700}
+body:not(.high-contrast)[data-typing-mode="practice"] #practiceTag{background:#fff0c2;color:#684400;border:1px solid #b97700}
 body[data-typing-mode="test"] #practiceTag{background:#deefe5;color:#205039;border:1px solid #326b54}
-body[data-typing-mode="practice"] .live-test-history{background:#fff4d9;border-color:#b97700}
+body:not(.high-contrast)[data-typing-mode="practice"] .live-test-history{background:#fff4d9;border-color:#b97700}
 @media(max-width:760px){.app-heading #appModeTitle{max-width:none!important;font-size:1rem!important;min-width:0}.live-test-history>strong{white-space:normal;max-width:105px;font-size:.7rem}}
 body.high-contrast #appModeTitle{color:#ffeb3b!important;border-color:#ffeb3b!important}
 </style>
@@ -4030,9 +4044,11 @@ body.high-contrast #appModeTitle{color:#ffeb3b!important;border-color:#ffeb3b!im
 body.high-contrast .result-history,body.high-contrast .history-result-card{background:#000!important;color:#ffeb3b!important;border-color:#ffeb3b!important}
 </style>
 <script>
+function specialGradeKind(data){const emergency=!!data?.emergencyStop,technical=Number(data?.technicalSkippedCount)>0;return emergency&&technical?'mixed':emergency?'emergency':technical?'technical':'';}
+function specialGradeNote(kind){return kind==='mixed'?'Vészleállítás és technikai részfeladat-kihagyás':kind==='emergency'?'Vészleállított teszt':kind==='technical'?'Technikai részfeladat-kihagyás':'';}
 function resultHistoryCards(entries){return entries.map((h,i)=>{
- const pct=Number(h.percent??h.accuracy),grade=Number(h.grade);
- return `<span class="history-result-card">${h.number?`${h.number}. teszt`:`${i+1}. eredmény`}${h.current?' (mostani)':''}: <b>${Number.isFinite(pct)?String(Math.round(pct*100)/100).replace('.',','):'–'}%</b> · jegy: <b>${grade>=1&&grade<=5?grade:'–'}</b></span>`;
+ const pct=Number(h.percent??h.accuracy),grade=Number(h.grade),kind=specialGradeKind(h);
+ return `<span class="history-result-card">${h.number?`${h.number}. teszt`:`${i+1}. eredmény`}${h.current?' (mostani)':''}: <b>${Number.isFinite(pct)?String(Math.round(pct*100)/100).replace('.',','):'–'}%</b> · jegy: <b class="special-grade-${kind||'normal'}" title="${specialGradeNote(kind)}">${grade>=1&&grade<=5?grade:'–'}</b></span>`;
  }).join('');}
 function renderResultRecentHistory(){
  const data=exportResult,box=$('resultRecentHistory');if(!data||!box)return;
@@ -4042,6 +4058,8 @@ function renderResultRecentHistory(){
  box.innerHTML=`<strong>${data.practice?'Gyakorló':'Éles'} eredményeid ezen az eszközön, az elmúlt 1 órában</strong><div class="history-result-items">${resultHistoryCards(entries)}</div>`;
 }
 function renderGradeGroupResults(progress){
+ const special=progress.enabled&&progress.eligible&&Array.isArray(progress.tests)&&progress.tests.some(t=>specialGradeKind(t));
+ $('gradeProgressTop').classList.toggle('special-average',!!special);$('gradeProgressTop').title=special?'Az átlag vészleállított vagy technikai kihagyással érintett teszt jegyét is tartalmazza.':'';
  let box=$('gradeGroupResults');if(!box){box=document.createElement('div');box.id='gradeGroupResults';box.className='result-history hidden';$('gradeProgressTop').after(box);}
  const entries=progress.enabled&&progress.eligible&&Array.isArray(progress.tests)?progress.tests:[];
  box.classList.toggle('hidden',!entries.length);
@@ -4383,20 +4401,82 @@ body.high-contrast #practiceOptions .practice-mode-heading{background:#000!impor
 
 <style>
 @media screen{
- body[data-typing-mode="practice"]{background:#fff8e8!important}
- body[data-typing-mode="practice"] .app-heading{border-color:#b47c21!important}
- body[data-typing-mode="practice"] #appModeTitle{color:#76500c!important}
- body[data-typing-mode="practice"] #testPanel>.card,body[data-typing-mode="practice"] #resultPanel>.card{background:#fffbf1!important;border:2px solid #d6b16b!important}
- body[data-typing-mode="practice"] #typingWorkspace{background:#fff4d9!important;border-color:#d6b16b!important}
- body[data-typing-mode="practice"] #taskText{background:#fff9eb!important;border-color:#dbbd86!important}
- body[data-typing-mode="practice"] #answer{background:#fffef8!important;border-color:#b68b3e!important}
- body[data-typing-mode="practice"] #practiceTag,body[data-typing-mode="practice"] #liveTestHistory,body[data-typing-mode="practice"] .result-history{background:#fff0bd!important;color:#725013!important;border-color:#d6b16b!important}
- body[data-typing-mode="practice"] #resultPanel .result-highlight,body[data-typing-mode="practice"] #resultPanel .progress-section{background:#fff5d9!important;border-color:#d6b16b!important}
- body[data-typing-mode="practice"] #nextBtn,body[data-typing-mode="practice"] #newTestBtn,body[data-typing-mode="practice"] #newTestBtnTop,body[data-typing-mode="practice"] #newTestBtnSaved{background:#946419!important;color:white!important}
+ body:not(.high-contrast)[data-typing-mode="practice"]{background:#fff8e8!important}
+ body:not(.high-contrast)[data-typing-mode="practice"] .app-heading{border-color:#b47c21!important}
+ body:not(.high-contrast)[data-typing-mode="practice"] #appModeTitle{color:#76500c!important}
+ body:not(.high-contrast)[data-typing-mode="practice"] #testPanel>.card,body:not(.high-contrast)[data-typing-mode="practice"] #resultPanel>.card{background:#fffbf1!important;border:2px solid #d6b16b!important}
+ body:not(.high-contrast)[data-typing-mode="practice"] #typingWorkspace{background:#fff4d9!important;border-color:#d6b16b!important}
+ body:not(.high-contrast)[data-typing-mode="practice"] #taskText{background:#fff9eb!important;border-color:#dbbd86!important}
+ body:not(.high-contrast)[data-typing-mode="practice"] #answer{background:#fffef8!important;border-color:#b68b3e!important}
+ body:not(.high-contrast)[data-typing-mode="practice"] #practiceTag,body:not(.high-contrast)[data-typing-mode="practice"] #liveTestHistory,body:not(.high-contrast)[data-typing-mode="practice"] .result-history{background:#fff0bd!important;color:#725013!important;border-color:#d6b16b!important}
+ body:not(.high-contrast)[data-typing-mode="practice"] #resultPanel .result-highlight,body:not(.high-contrast)[data-typing-mode="practice"] #resultPanel .progress-section{background:#fff5d9!important;border-color:#d6b16b!important}
+ body:not(.high-contrast)[data-typing-mode="practice"] #nextBtn,body:not(.high-contrast)[data-typing-mode="practice"] #newTestBtn,body:not(.high-contrast)[data-typing-mode="practice"] #newTestBtnTop,body:not(.high-contrast)[data-typing-mode="practice"] #newTestBtnSaved{background:#946419!important;color:white!important}
  body.high-contrast[data-typing-mode="practice"]{background:#000!important}
  body.high-contrast[data-typing-mode="practice"] #testPanel>.card,body.high-contrast[data-typing-mode="practice"] #resultPanel>.card,body.high-contrast[data-typing-mode="practice"] #typingWorkspace,body.high-contrast[data-typing-mode="practice"] #taskText,body.high-contrast[data-typing-mode="practice"] #answer,body.high-contrast[data-typing-mode="practice"] .result-history,body.high-contrast[data-typing-mode="practice"] #resultPanel .result-highlight,body.high-contrast[data-typing-mode="practice"] #resultPanel .progress-section{background:#000!important;color:#fff!important;border-color:#ffda75!important}
  body.high-contrast[data-typing-mode="practice"] #appModeTitle{color:#ffda75!important}
 }
 </style>
+
+<style>
+@media screen and (max-width:760px){
+ body.screen-test #typingWorkspace,body.screen-test.keyboard-open #typingWorkspace{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;grid-template-rows:auto minmax(0,1fr)!important;column-gap:6px!important;row-gap:5px!important;min-height:130px!important;overflow:hidden!important;align-items:stretch}
+ body.screen-test #typingWorkspace>.answer-timer{grid-column:1/-1;grid-row:1;display:flex!important;flex-wrap:wrap!important;align-items:center;gap:4px!important;margin:0!important;padding:3px 4px!important;min-width:0;font-size:13px!important}
+ body.screen-test #typingWorkspace>#taskText{grid-column:1;grid-row:2;width:100%!important;height:100%!important;min-width:0!important;min-height:0!important;box-sizing:border-box;padding:7px!important;font-size:calc(16px * var(--task-scale,.95))!important;line-height:1.35!important;overflow:auto!important;overflow-wrap:anywhere}
+ body.screen-test #typingWorkspace>.answer-wrap{grid-column:2;grid-row:2;display:flex!important;flex-direction:column!important;width:100%;height:100%!important;min-width:0!important;min-height:0!important;overflow:hidden;box-sizing:border-box}
+ body.screen-test #typingWorkspace #answer{flex:1 1 0!important;min-width:0!important;min-height:0!important;height:100%!important;max-height:none!important;width:100%!important;padding:7px!important;box-sizing:border-box;font-size:max(16px,calc(16px * var(--answer-scale,.95)))!important;line-height:1.35!important;overflow:auto!important;resize:none!important}
+ body.screen-test #typingWorkspace>.answer-timer #stopBtn{margin-left:auto!important}
+}
+@media screen{
+ body.high-contrast[data-typing-mode="practice"] #practiceOptions,body.high-contrast[data-typing-mode="practice"] #contentBankPractice,body.high-contrast[data-typing-mode="practice"] #unifiedBankSlot,body.high-contrast[data-typing-mode="practice"] #livePracticeOptions,body.high-contrast[data-typing-mode="practice"] #practiceTag,body.high-contrast[data-typing-mode="practice"] #liveTestHistory,body.high-contrast[data-typing-mode="practice"] .result-history,body.high-contrast[data-typing-mode="practice"] #startModeDescription{background:#000!important;color:#fff!important;border-color:#ffda75!important}
+ body.high-contrast[data-typing-mode="practice"] #practiceOptions.practice-view{background:#000!important;color:#fff!important;border-color:#ffda75!important}
+ body.high-contrast[data-typing-mode="practice"] #startPanel input,body.high-contrast[data-typing-mode="practice"] #startPanel select,body.high-contrast[data-typing-mode="practice"] #livePracticeOptions select{background:#000!important;color:#fff!important;border:1px solid #fff!important;color-scheme:dark}
+ body.high-contrast[data-typing-mode="practice"] #startPanel input:disabled,body.high-contrast[data-typing-mode="practice"] #startPanel select:disabled{background:#222!important;color:#ddd!important;opacity:1}
+ body.high-contrast[data-typing-mode="practice"] #typingWorkspace>.answer-timer{background:#000!important;color:#fff!important;border-color:#ffda75!important}
+ body.high-contrast[data-typing-mode="practice"] #taskText,body.high-contrast[data-typing-mode="practice"] #answer{background:#000!important;color:#fff!important;caret-color:#ffda75!important;border:2px solid #ffda75!important}
+}
+</style>
+<script>
+(function mobileSideBySideWorkspace(){
+ const workspace=$('typingWorkspace'),wrap=workspace?.querySelector('.answer-wrap'),timer=wrap?.querySelector('.answer-timer');if(!workspace||!wrap||!timer)return;
+ const marker=document.createComment('idősor eredeti helye');timer.before(marker);const mobile=window.matchMedia('(max-width:760px)');
+ function place(){if(mobile.matches){if(timer.parentNode!==workspace)workspace.prepend(timer);}else if(timer.parentNode!==wrap)marker.after(timer);}
+ mobile.addEventListener('change',place);place();
+})();
+</script>
+
+<style>
+@media screen{
+ #resultPanel #gradeProgressTop{background:#f2edff!important;color:#35215b!important;border:2px solid #8055bd!important;border-left:6px solid #8055bd!important;border-radius:8px;padding:9px 12px!important;box-shadow:none!important;font-size:15px!important;line-height:1.45!important}
+ #resultPanel #gradeProgressTop::before{display:none!important}
+ .grade-state-label{display:block;font-size:12px;font-weight:650;color:#674b8f;margin-bottom:4px}
+ .grade-state-current{display:block;font-weight:600}
+ .grade-state-value{display:inline-block;background:#ffdf83;color:#382800;padding:0 5px;border-radius:4px;font-weight:850;line-height:1.5}
+ #resultPanel #gradeProgressTop.grade-complete{background:#e8f6ec!important;color:#174429!important;border-color:#368353!important}
+ #resultPanel #gradeProgressTop.grade-complete .grade-state-label{color:#285d3b}
+ #resultPanel #gradeProgressTop.grade-state-updated{animation:gradeStateUpdate 1.1s ease-out}
+ @keyframes gradeStateUpdate{0%{box-shadow:0 0 0 4px #a58bd366;background:#e0d0ff}100%{box-shadow:0 0 0 0 #a58bd300}}
+ body.high-contrast #resultPanel #gradeProgressTop,body.high-contrast #resultPanel #gradeProgressTop.grade-complete{background:#000!important;color:#fff!important;border-color:#ffdf83!important}
+ body.high-contrast #resultPanel .grade-state-label{color:#ffdf83!important}
+ body.high-contrast #resultPanel .grade-state-value{background:#ffdf83!important;color:#000!important}
+ @media(prefers-reduced-motion:reduce){#resultPanel #gradeProgressTop.grade-state-updated{animation:none!important}}
+}
+@media print{.grade-state-label{display:none}.grade-state-value{font-weight:700}}
+</style>
+
+<style>
+.special-grade-emergency{background:#ffe3b5!important;color:#663800!important}.special-grade-technical{background:#d9edff!important;color:#154569!important}.special-grade-mixed{background:#eadcff!important;color:#462b69!important}
+.history-result-card b[class^="special-grade-"]:not(.special-grade-normal){padding:1px 5px;border-radius:4px;border:1px solid currentColor}
+#resultPanel #gradeHero.special-grade-emergency,#resultPanel #gradeHero.special-grade-technical,#resultPanel #gradeHero.special-grade-mixed{border:2px solid currentColor!important}
+#specialGradeExplanation{font-size:12px;line-height:1.35;padding:4px 7px;margin:5px 0;border-left:3px solid currentColor}
+#resultPanel #gradeProgressTop.special-average{border-color:#8455b4!important;border-left-width:8px!important}
+body.high-contrast .special-grade-emergency,body.high-contrast .special-grade-technical,body.high-contrast .special-grade-mixed{background:#000!important;color:#ffdf83!important;border:2px solid #ffdf83!important}
+</style>
+<script>
+(function specialResultGrade(){
+ function sync(){const data=exportResult,hero=$('gradeHero');if(!data||!hero)return;const kind=specialGradeKind(data);['emergency','technical','mixed'].forEach(k=>hero.classList.toggle('special-grade-'+k,k===kind));hero.title=specialGradeNote(kind);
+ let note=$('specialGradeExplanation');if(!note){note=document.createElement('p');note.id='specialGradeExplanation';hero.after(note);}const text=kind?specialGradeNote(kind)+'. A jegy az értékelhető részfeladatokból számít.':'';if(note.textContent!==text)note.textContent=text;note.classList.toggle('hidden',!kind||data.practice);}
+ new MutationObserver(sync).observe($('resultPanel'),{childList:true,subtree:true});
+})();
+</script>
 </body>
 </html>
