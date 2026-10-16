@@ -695,6 +695,10 @@ body:not(.screen-start) .student-theme-picker{display:none!important}
 
 <div id="startPanel">
 <div id="browserRecommendation" class="browser-recommendation"><div><strong>Ajánlott böngésző: Microsoft Edge</strong><p>A természetesebb magyar felolvasásért válaszd az Edge-et, majd az elérhető Noémi vagy Tamás Online (Natural) hangot. Az online hangokhoz internetkapcsolat kell.</p></div><div><strong>Más böngészőben is használható</strong><p>Chrome-ban, Firefoxban és Safariban is megnyithatod a feladatokat. A választható magyar hangok és a hangminőség a böngészőtől és az eszköztől függnek.</p></div></div>
+<label for="studentCode">Titkos tanulói azonosító (nem kötelező)</label>
+<input id="studentCode" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Például: K7M92-P4RX8">
+<button type="button" id="studentCodeVerify" onclick="verifyStudentCodeUI()">Saját név betöltése</button>
+<small id="studentCodeStatus" role="status" aria-live="polite">Azonosító nélkül is használható: írd be a nevedet.</small>
 <label for="studentName">Tanuló neve</label>
 <input id="studentName" autocomplete="off" list="nameList">
 <datalist id="nameList"></datalist><small id="nameClassStatus" role="status" aria-live="polite"></small><small id="rosterLoadStatus" role="status"></small><button type="button" id="rosterRetry" class="hidden" onclick="loadRoster()">Névsor újratöltése</button>
@@ -714,8 +718,8 @@ body:not(.screen-start) .student-theme-picker{display:none!important}
 <div id="teacherOpts"><label for="capInput">Tanári időkeret (perc)</label><input id="capInput" type="number" min="5" max="120" value="35"></div>
 <p id="timeLimitHelp" class="setting-help">A teszt hamarabb is befejezhető; a tervezett idő maximum. A teszt teljes időkerete legfeljebb <span id="capMinutes">35</span> perc. A feladatszám és az időkeret módosításához kattints a Tanári feloldás gombra.</p>
 <div id="taskOrderField"><label for="taskOrder">Feladatok sorrendje</label><select id="taskOrder" aria-describedby="taskOrderHelp"><option value="random">Véletlen feladatkeverés</option><option value="bank">Feladatbank sorrendje</option></select><p id="taskOrderHelp" class="setting-help"><b>Feladatbank sorrendje:</b> az osztályhoz és a választott szövegcsoporthoz megfelelő feladatok a feladatbank elejétől, keverés nélkül következnek. Ez a teszt alapbeállítása. <b>Véletlen keverés:</b> a program a tanári típusarányok szerint választ, majd összekeveri a feladatokat. Saját arányok nélkül a korábbi kiegyensúlyozott választás működik. Bekapcsolt típusarányoknál a feladatbank sorrendjét is ezek szerint szűri. A sorrendet tesztben csak tanári feloldással, gyakorló módban a diák is módosíthatja.</p></div>
-<section id="contentBankSection" class="content-bank-section"><h3 id="contentBankTitle">Feladatbank</h3><div id="contentBankPractice" class="hidden"><label for="practiceBankStart">Gyakorlás feladatbankja</label><select id="practiceBankStart" disabled><option value="bank1">Feladatbank 1</option><option value="bank2">Feladatbank 2</option><option value="bank3">Feladatbank 3</option></select></div><div id="contentBankTeacher"><label for="testContentBank">Tanár által kijelölt bank</label><select id="testContentBank" disabled></select></div><p id="contentBankHelp" class="muted small"></p><p id="contentBankStatus" class="small" role="status"></p></section>
-<label class="chk"><input type="checkbox" id="practiceMode"> Gyakorló mód (az eredmény nem kerül a táblázatba)</label><div id="practiceOptions"><label for="practiceTextKind">Gyakorló feladatok</label><select id="practiceTextKind" disabled><option value="all">Mindenféle szöveg</option><option value="short">Rövid szavak és kifejezések</option><option value="long">Hosszabb mondatok és szövegek</option><option value="szo">Szavak</option><option value="kifejezes">Kifejezések</option><option value="mondat">Mondatok</option><option value="szoveg">Szövegek</option></select><label for="practiceTime">Gyakorlási idő</label><select id="practiceTime" disabled><option value="0.5">Fele idő – nehezítés (0,5×)</option><option value="0.75">25%-kal kevesebb idő (0,75×)</option><option value="1" selected>Tanári idő (1×)</option><option value="1.5">50%-kal több idő (1,5×)</option><option value="2">Kétszeres idő (2×)</option></select><label for="practiceSpeechRate">Felolvasás tempója</label><select id="practiceSpeechRate" disabled><option value="0">Tanári felolvasási tempó</option><option value="0.5">Lassú (0,5×)</option><option value="0.75">Nyugodt (0,75×)</option><option value="1">Normál (1×)</option><option value="1.25">Gyorsabb (1,25×)</option><option value="1.5">Gyors (1,5×)</option></select><p class="muted">A szövegválasztás csak gyakorló módban, indulás előtt állítható. Rövid: legfeljebb 8 szó és 80 karakter; hosszabb: az ennél hosszabb szövegek. A gyakorlási idő és a felolvasási tempó gyakorló módban, menet közben is módosítható.</p></div>
+<section id="contentBankSection" class="content-bank-section"><h3 id="contentBankTitle">Feladatbank</h3><div id="contentBankPractice" class="hidden"><label for="practiceBankStart">Gyakorlás feladatbankja</label><select id="practiceBankStart" disabled><option value="bank1">Feladatbank 1</option><option value="bank2">Feladatbank 2</option><option value="bank3">Feladatbank 3</option><option value="bank4">Modulzáró</option></select></div><div id="contentBankTeacher"><label for="testContentBank">Tanár által kijelölt bank</label><select id="testContentBank" disabled></select></div><p id="contentBankHelp" class="muted small"></p><p id="contentBankStatus" class="small" role="status"></p></section>
+<label class="chk"><input type="checkbox" id="practiceMode"> Gyakorló mód (az eredmény nem kerül a táblázatba)</label><div id="practiceOptions"><label for="practiceTextKind">Gyakorló feladatok</label><select id="practiceTextKind" disabled><option value="all">Mindenféle szöveg</option><option value="short">Rövid szavak és kifejezések</option><option value="long">Hosszabb mondatok és szövegek</option><option value="szo">Szavak</option><option value="kifejezes">Kifejezések</option><option value="mondat">Mondatok</option><option value="szoveg">Szövegek</option></select><label for="practiceTime">Időelőny – lassítható óra</label><select id="practiceTime" disabled><option value="0.5">Fele idő – nehezítés (0,5×)</option><option value="0.75">25%-kal kevesebb idő (0,75×)</option><option value="1" selected>Tanári idő (1×)</option><option value="1.5">50%-kal több idő (1,5×)</option><option value="2">Kétszeres idő (2×)</option></select><label for="practiceSpeechRate">Felolvasás tempója</label><select id="practiceSpeechRate" disabled><option value="0">Tanári felolvasási tempó</option><option value="0.5">Lassú (0,5×)</option><option value="0.75">Nyugodt (0,75×)</option><option value="1">Normál (1×)</option><option value="1.25">Gyorsabb (1,25×)</option><option value="1.5">Gyors (1,5×)</option></select><p class="muted">A beállítások gyakorló módban szabadon, éles tesztben tanári feloldással módosíthatók. Rövid: legfeljebb 8 szó és 80 karakter; hosszabb: az ennél hosszabb szövegek. A gyakorlási idő és a felolvasási tempó gyakorló módban, menet közben is módosítható.</p></div>
 <label class="chk"><input type="checkbox" id="soundOn"> 🔊 Hangjelzés (lejárt idő, kész feladat)</label>
 <div id="connChip" class="conn small" role="status" title="Kattints az újraellenőrzéshez">Kapcsolat ellenőrzése…</div>
 
@@ -1131,9 +1135,9 @@ function requestedContentContext(bankOverride){const practice=testActive?practic
 function refreshContentBankControls(settings){
  if(settings?.activeBank)activeTestContentBank=settings.activeBank;
  if(Array.isArray(settings?.banks))contentBankCatalog=settings.banks;
- const banks=contentBankCatalog||[{id:'bank1',label:'Feladatbank 1',available:true},{id:'bank2',label:'Feladatbank 2',available:true},{id:'bank3',label:'Feladatbank 3',available:true}];
+ const banks=contentBankCatalog||[{id:'bank1',label:'Feladatbank 1',available:true},{id:'bank2',label:'Feladatbank 2',available:true},{id:'bank3',label:'Feladatbank 3',available:true},{id:'bank4',label:'Modulzáró',available:true}];
  ['practiceBankStart','practiceBankLive'].forEach(id=>{const select=$(id);if(!select)return;const previous=select.value;select.replaceChildren(...banks.map(b=>{const o=document.createElement('option');o.value=b.id;o.textContent=b.label+(b.available?'':' – üres / nincs létrehozva');o.disabled=!b.available;return o;}));select.value=banks.some(b=>b.id===previous&&b.available)?previous:activeTestContentBank;});
- $('practiceBankStart').disabled=!selectedPractice();
+ $('practiceBankStart').disabled=!selectedPractice()&&!teacherSessionUnlocked&&teacherPinRequired!==false;
  const liveBank=$('practiceBankLive');
  if(liveBank){const label=liveBank.closest('label');if(label)label.classList.toggle('hidden',!practiceMode||!testActive);}
 }
@@ -1485,7 +1489,7 @@ async function startTest(){
     if(list.length){
       const hit=list.find(n=>normName(n)===normName(name));
       if(hit){ requiredControl("studentName").value=hit; name=hit; }
-      else if(!confirm(`„${name}” nem szerepel a(z) ${cls} osztály névsorában. Biztosan így írod a nevedet? (Elírás esetén a Mégsem gombbal javíthatod.)`)) return;
+      else if(!await confirmRosterName(name,cls)) return;
     }
   }
 
@@ -1754,13 +1758,27 @@ function wordEvaluation(expected,answer){
  return {correctWords,totalWords:a.length,typedWords:b.length,wordPercent:denom?100*correctWords/denom:null};
 }
 function isMobileTyping(){return window.matchMedia('(max-width:760px)').matches;}
+// Tollbamondás: a vessző nem kötelező, de a pontosan elhelyezett vessző jutalompont.
+function dictationCommaEvaluation(expected,answer){
+ const clean=x=>String(x||'').replace(/,/g,'');
+ const positions=x=>{let plain=0,out=[];for(const ch of String(x||'')){if(ch===',')out.push(plain);else plain++;}return out;};
+ const expectedPositions=positions(expected),typedPositions=positions(answer);
+ const counts=new Map();expectedPositions.forEach(n=>counts.set(n,(counts.get(n)||0)+1));
+ // Csak a hibátlanul egyező, vessző nélküli előtag végén lévő vessző számít.
+ const a=clean(expected),b=clean(answer);let prefix=0;
+ while(prefix<a.length&&prefix<b.length&&a[prefix]===b[prefix])prefix++;
+ let bonus=0;for(const pos of typedPositions){if(pos<=prefix&&(counts.get(pos)||0)>0){bonus++;counts.set(pos,counts.get(pos)-1);}}
+ return {expected:clean(expected),answer:clean(answer),bonus,available:expectedPositions.length};
+}
 function calculate(){
   const expected=tasks[currentIndex].text||"";
   const answer=requiredControl("answer").value;
 
   // A két szöveget egymáshoz igazítjuk, így egy kihagyott vagy beszúrt betű nem
   // csúsztatja el az utána következő karakterek értékelését.
-  const {ops}=diffOps(expected,answer);
+  const isDictation=enabledFlag(tasks[currentIndex]?.dictation);
+  const comma=isDictation?dictationCommaEvaluation(expected,answer):null;
+  const {ops}=diffOps(comma?comma.expected:expected,comma?comma.answer:answer);
   let correct=0,sub=0,del=0,ins=0;
   ops.forEach(o=>{
     if(o.t==="eq") correct++;
@@ -1773,15 +1791,15 @@ function calculate(){
   const totalTyped=answer.length;
   const elapsed=Math.max(.001,((practicePaused?practicePausedAt:performance.now())-startTime)/1000);
   const speed=Math.round(totalTyped/Math.max(elapsed/60,1/60));
-  const denom=expected.length+ins;
+  const denom=(comma?comma.expected:expected).length+ins;
   const characterPercent=denom?Math.max(0,Math.min(100,100*correct/denom)):0;
   const words=wordEvaluation(expected,answer);
   const wordPercent=words.wordPercent===null?characterPercent:words.wordPercent;
   const percent=Math.round(.8*characterPercent+.2*wordPercent);
   const pointsMax=Number(tasks[currentIndex].points)||100;
-  const score=Math.round(pointsMax*percent/100);
+  const score=Math.round(pointsMax*percent/100)+(comma?.bonus||0);
 
-  return {expected,answer,correct,wrong,totalTyped,elapsed,speed,percent,score,mistakes,ops,...words,characterPercent,wordPercent};
+  return {expected,answer,correct,wrong,totalTyped,elapsed,speed,percent,score,mistakes,ops,...words,characterPercent,wordPercent,commaBonus:comma?.bonus||0,commaAvailable:comma?.available||0,isDictation};
 }
 
 function updateStats(){
@@ -1822,7 +1840,8 @@ function finishCurrentTask(timedOut){
 
   const c=calculate();
   const task=tasks[currentIndex];
-  const br=errorBreakdown(c.expected,c.answer);
+  const commaView=c.isDictation?dictationCommaEvaluation(c.expected,c.answer):null;
+  const br=errorBreakdown(commaView?commaView.expected:c.expected,commaView?commaView.answer:c.answer);
 
   results.push({
     allowedSeconds:task._allowedSeconds||configuredTime(task),
@@ -1835,9 +1854,10 @@ function finishCurrentTask(timedOut){
     correct:c.correct,
     wrong:c.wrong,
     mistakes:c.mistakes,
-    correctWords:c.correctWords,totalWords:c.totalWords,characterPercent:c.characterPercent,wordPercent:c.wordPercent,scoringVersion:"char80_word20_v2",
+    correctWords:c.correctWords,totalWords:c.totalWords,characterPercent:c.characterPercent,wordPercent:c.wordPercent,scoringVersion:"char80_word20_dictation_comma_bonus_v3",
     totalTyped:c.totalTyped,
     score:c.score,
+    commaBonus:c.commaBonus,commaAvailable:c.commaAvailable,isDictation:c.isDictation,
     percent:c.percent,
     speed:c.speed,
     timeSpent:Math.round(c.elapsed),
@@ -2055,7 +2075,8 @@ function errorBreakdown(expected,answer){
 }
 
 function analyze(r){
-  const {ops,rest}=diffOps(r.text,r.answer);
+  const comma=r.isDictation?dictationCommaEvaluation(r.text,r.answer):null;
+  const {ops,rest}=diffOps(comma?comma.expected:r.text,comma?comma.answer:r.answer);
   const cnt=classifyOps(ops);
   return {ops,rest,cnt};
 }
@@ -2073,6 +2094,7 @@ function taskFeedback(r,a,maxPoints){
   const errTotal=a.cnt.sub+a.cnt.del+a.cnt.ins;
   const completed=a.rest===0;
 
+  if(r.isDictation) p.push(`Tollbamondás: a vesszők elhagyása nem hiba. Helyesen kitett vesszők: <b>${r.commaBonus||0}</b>, jutalom: <b>+${r.commaBonus||0} pont</b>.`);
   // Pontosság
   if(r.percent===100&&r.wrong===0){
     p.push(`<span class="ok-line">Hibátlanul beírtad a szöveget.</span> Minden karakter a helyén volt, ezért ${r.percent}% és a teljes ${maxPoints} pont jár.`);
@@ -2319,7 +2341,7 @@ function finishTest(){
   const gradeText="A modulzáró vizsga százalékos jegyének határai: "+gl.map(([m,g],i)=>`${g}: ${m}–${i<gl.length-1?gl[i+1][0]-1:100}%`).join(" · ")+".";
   $("gradeExplain").textContent=gradeText+" Az érdemjegy a feladatok százalékainak átlagából számolódik.";
   $("gradeNote").textContent=gradeText;
-  const maxTotal=results.reduce((s,r,i)=>s+(r.technicalSkip?0:(Number(tasks[i]&&tasks[i].points)||100)),0);
+  const maxTotal=results.reduce((s,r,i)=>s+(r.technicalSkip?0:(Number(tasks[i]&&tasks[i].points)||100)+(r.isDictation?(r.commaAvailable||0):0)),0);
   const totalExpected=evaluated.reduce((s,r)=>s+String(r.text||"").length,0);
   $("finalScore").textContent=totalScore+" / "+maxTotal;
   $("finalCorrect").textContent=totalCorrect+" / "+totalExpected;
@@ -2329,7 +2351,7 @@ function finishTest(){
 
   const analyses=results.map(r=>r.technicalSkip?{ops:[],rest:0,cnt:{sub:0,del:0,ins:0,accent:0,case:0,typo:0}}:analyze(r));
   const notWritten=results.reduce((s,r,i)=>s+(r.technicalSkip?0:(skippedIdx.has(i)?String(r.text||"").length:(analyses[i].rest||0))),0);
-  $('scoreExplain').innerHTML=`Az eredmény 80%-ban a karakterpontosságot, 20%-ban a teljesen helyes szavakat értékeli. Helyes szavak: <b>${results.reduce((sum,r)=>sum+(r.correctWords||0),0)} / ${results.reduce((sum,r)=>sum+(r.totalWords||0),0)}</b>. A kijavított, végül helyes szó teljes értékű; a törlésekért nincs külön pontlevonás. A pontszám legfeljebb a feladatbankban megadott maximumpont.`;
+  $('scoreExplain').innerHTML=`Az eredmény 80%-ban a karakterpontosságot, 20%-ban a teljesen helyes szavakat értékeli. Helyes szavak: <b>${results.reduce((sum,r)=>sum+(r.correctWords||0),0)} / ${results.reduce((sum,r)=>sum+(r.totalWords||0),0)}</b>. A kijavított, végül helyes szó teljes értékű; a törlésekért nincs külön pontlevonás. Tollbamondásnál a vessző hiánya nem hiba; minden jó helyre írt vessző +1 jutalompontot ér, így az elérhető pontszám a vesszők számával nő.`;
   const doneN=results.filter((r,i)=>!skippedIdx.has(i)&&!r.interrupted).length;
   const intrN=results.filter(r=>r.interrupted).length;
   const stopBanner=stopped
@@ -2431,7 +2453,7 @@ function finishTest(){
     plannedSeconds:totalTime(tasks),
     maxScore:maxTotal,
     totalExpected,
-    scoringVersion:"char80_word20_v2",
+    scoringVersion:"char80_word20_dictation_comma_bonus_v3",
     totalCorrectWords:results.reduce((sum,r)=>sum+(r.correctWords||0),0),
     totalWords:results.reduce((sum,r)=>sum+(r.totalWords||0),0),
     tasks:results
@@ -2538,6 +2560,11 @@ async function sendResult(result,statusEl){
   // nem lehetséges (pl. mobilon a JSONP le van tiltva), false = tényleg nem sikerült.
   statusEl.textContent="Eredmény mentése a Google Táblázatba...";
   let lastVerdict="none";
+  if(studentCodeSession && studentCodeIdentity &&
+     String(result.studentName||'').trim()===studentCodeIdentity.name &&
+     String(result.studentClass||'').trim().toLowerCase()===studentCodeIdentity.cls.toLowerCase()){
+    result={...result,studentSession:studentCodeSession};
+  }
   for(let attempt=1;attempt<=3;attempt++){
     let posted=false;
     try{
@@ -2883,41 +2910,60 @@ function checkDraftOnLoad(){
   };
 }
 
-/* ---------- Névsor (opcionális "Nevek" munkalap) ---------- */
+/* Adatvédelmi zárolás: névsor nem kérhető le és nem tárolható a böngészőben. */
 let ROSTER=[];
-function normName(s){return String(s||"").normalize("NFD").replace(/[\u0300-\u036f]/g,"").toLowerCase().replace(/\s+/g," ").trim();}
-function normCls(s){return String(s||"").toLowerCase().replace(/\s+/g,"").replace(/\.$/,"");}
-function rosterFor(cls){return ROSTER.filter(r=>normCls(r.c)===normCls(cls)).map(r=>r.n);}
-function refreshNameList(){
-  const dl=$("nameList");if(!dl)return;
-  const current=normCls(getClass()),byName=new Map();
-  ROSTER.forEach(r=>{
-    const name=String(r.n||"").trim(),cls=String(r.c||"").trim();if(!name)return;
-    if(!byName.has(name))byName.set(name,{name,classes:new Set()});if(cls)byName.get(name).classes.add(cls);
-  });
-  const choices=Array.from(byName.values()).sort((a,b)=>
-    Number(Array.from(b.classes).some(c=>normCls(c)===current))-Number(Array.from(a.classes).some(c=>normCls(c)===current))||a.name.localeCompare(b.name,"hu"));
-  dl.innerHTML=choices.map(r=>`<option value="${esc(r.name)}" label="${esc(Array.from(r.classes).join(', '))}"></option>`).join("");
-}
-let rosterLoading=false;
-async function loadRoster(){
- if(rosterLoading)return;rosterLoading=true;
- const status=document.getElementById('rosterLoadStatus');if(status)status.textContent='Névsor betöltése…';
- let answer=null;
- try{
-  for(let attempt=0;attempt<2;attempt++){
-   try{const r=await jsonp({action:'getRoster'},8000);if(r?.success&&Array.isArray(r.roster)){answer=r;break;}}catch(e){}
-  }
-  if(!answer){try{const controller=new AbortController(),timeout=setTimeout(()=>controller.abort(),8000);try{const response=await fetch(API_URL+'?action=getRoster&_='+Date.now(),{signal:controller.signal,redirect:'follow'});const r=await response.json();if(r?.success&&Array.isArray(r.roster))answer=r;}finally{clearTimeout(timeout);}}catch(e){}}
-  if(answer){
-   ROSTER=answer.roster.filter(r=>String(r.n||'').trim()&&String(r.c||'').trim());refreshNameList();
-   if(status)status.textContent=ROSTER.length?'':'A névsor üres. A nevet kézzel is beírhatod.';
-   if(typeof renderNameSuggestions==='function')renderNameSuggestions();
-  }else if(status)status.textContent='A névsor nem töltődött be. A nevet kézzel is beírhatod; ellenőrizd a háttérkód telepítését.';
- }finally{rosterLoading=false;document.getElementById('rosterRetry')?.classList.toggle('hidden',!!answer&&ROSTER.length>0);}
+function normName(s){return String(s||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/\s+/g,' ').trim();}
+function normCls(s){return String(s||'').toLowerCase().replace(/\s+/g,'').replace(/\.$/,'');}
+function rosterFor(cls){return [];}
+function refreshNameList(){const dl=document.getElementById('nameList');if(dl)dl.replaceChildren();}
+
+/* Tanulói kód: kizárólag POST-ban, soha nem URL-ben vagy helyi tárhelyen. */
+let studentCodeSession='', studentCodeIdentity=null;
+function clearStudentCodeSession(){studentCodeSession='';studentCodeIdentity=null;const s=document.getElementById('studentCodeStatus');if(s)s.textContent='Kézzel megadott név – nem hitelesített.';}
+document.getElementById('studentName').addEventListener('input',clearStudentCodeSession);
+['studentGrade','studentLetter','studentClassOther'].forEach(id=>document.getElementById(id)?.addEventListener('change',()=>{if(studentCodeSession)clearStudentCodeSession();}));
+function verifyStudentCodeUI(){
+ const code=document.getElementById('studentCode').value.trim().toUpperCase();
+ const status=document.getElementById('studentCodeStatus'),btn=document.getElementById('studentCodeVerify');
+ if(!/^[A-Z0-9-]{9,24}$/.test(code)){status.textContent='Adj meg egy érvényes tanulói azonosítót.';return;}
+ btn.disabled=true;status.textContent='Azonosító ellenőrzése…';clearStudentCodeSession();
+ const frame=document.createElement('iframe'),form=document.createElement('form');
+ const nonce=(crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random());
+ const frameName='codeFrame_'+nonce.replace(/[^a-z0-9]/gi,'');frame.name=frameName;frame.hidden=true;
+ form.method='POST';form.action=API_URL;form.target=frameName;form.hidden=true;
+ for(const [k,v] of Object.entries({action:'verifyStudentCode',code,replyNonce:nonce,replyOrigin:location.origin})){
+  const input=document.createElement('input');input.type='hidden';input.name=k;input.value=v;form.appendChild(input);
+ }
+ let done=false;const finish=()=>{if(done)return;done=true;btn.disabled=false;window.removeEventListener('message',receive);form.remove();setTimeout(()=>frame.remove(),500);};
+ const receive=e=>{
+  let host;try{host=new URL(e.origin).hostname;}catch(_){return;}
+  if(!(host==='script.google.com'||host.endsWith('.googleusercontent.com')))return;
+  const p=e.data;if(p?.type!=='gepiras-code-ack'||p.nonce!==nonce)return;
+  if(p.success&&p.session&&p.name&&p.cls){
+   studentCodeSession=p.session;studentCodeIdentity={name:p.name,cls:p.cls};
+   const name=document.getElementById('studentName');name.value=p.name;
+   // Az osztály kiválasztása a meglévő osztálymezőkön keresztül történik.
+   const grade=document.getElementById('studentGrade'),letter=document.getElementById('studentLetter');
+   const m=String(p.cls).match(/^(\d+)\.?\s*([a-záéíóöőúüű])$/i);
+   if(m&&grade&&letter){grade.value=m[1];letter.value=m[2].toLowerCase();if(typeof syncClassFields==='function')syncClassFields();}
+   status.textContent='✓ Azonosító ellenőrizve: '+p.name+' ('+p.cls+').';
+   document.getElementById('studentCode').value='';
+  }else status.textContent=p.error||'Az azonosítás sikertelen.';
+  finish();
+ };
+ window.addEventListener('message',receive);
+ document.body.append(frame,form);form.submit();setTimeout(()=>{if(!done){status.textContent='Nem érkezett válasz. Ellenőrizd a telepítést.';finish();}},12000);
 }
 
-["studentGrade","studentLetter","studentClassOther"].forEach(id=>{ $(id).addEventListener("change",refreshNameList); $(id).addEventListener("input",refreshNameList); });
+function loadRoster(){
+ ROSTER=[];
+ try{for(const k of Object.keys(localStorage)){if(/^gepiras_roster/i.test(k))localStorage.removeItem(k);}}catch(e){}
+ const status=document.getElementById('rosterLoadStatus');
+ if(status)status.textContent='A teljes névsor nem hozzáférhető. Használj tanulói azonosítót, vagy írd be a neved.';
+ const retry=document.getElementById('rosterRetry');if(retry)retry.classList.add('hidden');
+ return Promise.resolve();
+}
+['studentGrade','studentLetter','studentClassOther'].forEach(id=>{document.getElementById(id)?.addEventListener('change',refreshNameList);});
 loadRoster();
 
 /* ---------- Tanári zár ---------- */
@@ -3296,7 +3342,7 @@ function setupMobileWorkspace(){
   if(oldRow&&!oldRow.children.length)oldRow.remove();
   const pause=document.createElement('button');pause.id='practicePauseBtn';pause.type='button';pause.textContent='⏸ Szünet';pause.className='hidden';pause.setAttribute('aria-pressed','false');pause.addEventListener('click',()=>togglePracticePause());nextButton.after(pause);
  }
- const live=document.createElement('div');live.innerHTML='<div id="livePracticeOptions" class="hidden"><label for="livePracticeTime">🧪 Gyakorlási idő</label><select id="livePracticeTime"><option value="0.5">Fele idő – nehezítés (0,5×)</option><option value="0.75">25%-kal kevesebb idő (0,75×)</option><option value="1" selected>Tanári idő (1×)</option><option value="1.5">50%-kal több idő (1,5×)</option><option value="2">Kétszeres idő (2×)</option></select><label for="livePracticeSpeechRate">Felolvasás tempója</label><select id="livePracticeSpeechRate"><option value="0">Tanári felolvasási tempó</option><option value="0.5">Lassú (0,5×)</option><option value="0.75">Nyugodt (0,75×)</option><option value="1">Normál (1×)</option><option value="1.25">Gyorsabb (1,25×)</option><option value="1.5">Gyors (1,5×)</option></select><span id="practiceChangeStatus" role="status" aria-live="polite"></span></div>';workspace.append(live.firstElementChild);
+ const live=document.createElement('div');live.innerHTML='<div id="livePracticeOptions" class="hidden"><label for="livePracticeTime">🧪 Időelőny – lassítható óra</label><select id="livePracticeTime"><option value="0.5">Fele idő – nehezítés (0,5×)</option><option value="0.75">25%-kal kevesebb idő (0,75×)</option><option value="1" selected>Tanári idő (1×)</option><option value="1.5">50%-kal több idő (1,5×)</option><option value="2">Kétszeres idő (2×)</option></select><label for="livePracticeSpeechRate">Felolvasás tempója</label><select id="livePracticeSpeechRate"><option value="0">Tanári felolvasási tempó</option><option value="0.5">Lassú (0,5×)</option><option value="0.75">Nyugodt (0,75×)</option><option value="1">Normál (1×)</option><option value="1.25">Gyorsabb (1,25×)</option><option value="1.5">Gyors (1,5×)</option></select><span id="practiceChangeStatus" role="status" aria-live="polite"></span></div>';workspace.append(live.firstElementChild);
  const extras=document.createElement('div');extras.id='mobileExtraControls';workspace.after(extras);
  const toolbar=document.createElement('div');toolbar.className='mobile-task-actions';extras.append(toolbar);
  const speechMarker=document.createComment('felolvasó eredeti helye');$('speechTools').before(speechMarker);
@@ -3331,11 +3377,11 @@ function activePractice(){return !$('testPanel').classList.contains('hidden')&&t
 function practiceControls(){
  refreshTaskOrderControl();
  const running=typeof testActive!=='undefined'&&testActive&&!$('testPanel').classList.contains('hidden'),on=running?activePractice():selectedPractice();
- $('practiceOptions').classList.remove('hidden');$('practiceTime').disabled=!on||running;
- $('practiceTextKind').disabled=!on||running;
+ $('practiceOptions').classList.remove('hidden');$('practiceTime').disabled=running||(!on&&teacherPinRequired!==false&&!teacherSessionUnlocked);
+ $('practiceTextKind').disabled=running||(!on&&teacherPinRequired!==false&&!teacherSessionUnlocked);
  const live=$('livePracticeOptions');if(live)live.classList.toggle('hidden',!on||!running);
  const time=$('livePracticeTime');if(time){time.disabled=!on;time.value=String(practiceFactor);}
- const rate=$('practiceSpeechRate');if(rate)rate.disabled=!on||running;
+ const rate=$('practiceSpeechRate');if(rate)rate.disabled=running||(!on&&teacherPinRequired!==false&&!teacherSessionUnlocked);
  const liveRate=$('livePracticeSpeechRate');if(liveRate){liveRate.disabled=!on;liveRate.value=String(practiceSpeechRate);}
  if(!running){practiceFactor=validPracticeFactor(requiredControl('practiceTime').value);practiceSpeechRate=Number(requiredControl('practiceSpeechRate').value)||0;}
 }
@@ -3501,13 +3547,13 @@ async function refreshTeacherSettings(){
 }
 function openTeacherUnlock(){
  if(teacherPinRequired===false){applyLock();return;}
- if(teacherPinRequired!==true){refreshTeacherSettings();return;}
+ if(teacherPinRequired===null){refreshTeacherSettings(); /* A PIN-ablak kapcsolatproblémánál is megnyitható. */}
  $('teacherUnlockModal').classList.remove('hidden');$('teacherUnlockError').textContent='';requiredControl('teacherUnlockPin').value='';$('teacherUnlockPin').focus();
 }
 async function submitTeacherUnlock(){
  $('teacherUnlockSubmit').disabled=true;
  try{const status=await checkPinServer(requiredControl('teacherUnlockPin').value);if(status!=='ok'){$('teacherUnlockError').textContent=pinMessage(status);return;}
- teacherSessionUnlocked=true; requiredControl('teacherUnlockPin').value='';updateBankSection(); $('teacherUnlockModal').classList.add('hidden');$('taskCount').readOnly=false;$('capInput').readOnly=false;refreshTaskOrderControl();['dictationRepeatStart','dictationRepeatLive'].forEach(id=>{$(id).disabled=false;$(id).title='Mondatonkénti felolvasások száma';});$('teacherOpts').classList.remove('hidden');$('unlockBtn').classList.remove('hidden');$('unlockBtn').disabled=true;$('unlockBtn').title='A tanári beállítások már módosíthatók';
+ teacherSessionUnlocked=true; requiredControl('teacherUnlockPin').value='';applyLock();updateBankSection();if(typeof practiceControls==='function')practiceControls();if(typeof refreshContentBankControls==='function')refreshContentBankControls(); $('teacherUnlockModal').classList.add('hidden');$('taskCount').readOnly=false;$('capInput').readOnly=false;refreshTaskOrderControl();['dictationRepeatStart','dictationRepeatLive'].forEach(id=>{$(id).disabled=false;$(id).title='Mondatonkénti felolvasások száma';});$('teacherOpts').classList.remove('hidden');$('unlockBtn').classList.remove('hidden');$('unlockBtn').disabled=true;$('unlockBtn').title='A tanári beállítások már módosíthatók';
  }finally{$('teacherUnlockSubmit').disabled=false;}
 }
 $('unlockBtn').addEventListener('click',openTeacherUnlock);
@@ -3543,7 +3589,7 @@ function autoScrollTaskText(evaluation){
 function setupScreenFit(){
  const start=$('startPanel'),grid=document.createElement('div');grid.className='start-grid';start.prepend(grid);grid.before($('browserRecommendation'));
  const group=(label,controls)=>{const field=document.createElement('div');field.className='start-field';if(label)field.append(label);controls.filter(Boolean).forEach(n=>field.append(n));grid.append(field);};
- group(start.querySelector('label[for="studentName"]'),[$('studentName'),$('nameClassStatus'),$('rosterLoadStatus'),$('rosterRetry')]);
+ group(start.querySelector('label[for="studentName"]'),[$('studentCode'),$('studentCodeVerify'),$('studentCodeStatus'),$('studentName'),$('nameClassStatus'),$('rosterLoadStatus'),$('rosterRetry')]);
  group(start.querySelector('label[for="studentGrade"]'),[start.querySelector('.class-row'),$('studentClassOther')]);
  const settings=document.createElement('div');settings.className='start-settings-row';grid.append(settings);settings.before($('contentBankSection'));
  const count=document.createElement('div');count.className='start-field';count.append(start.querySelector('label[for="taskCount"]'),$('taskCount'));
@@ -3642,17 +3688,17 @@ refreshSpeechSwitch();
 <script>
 let nameSuggestionIndex=-1,nameSuggestionRows=[],nameSuggestionTyped=false;
 function namePartSimilarity(query,name){
- const parts=normName(name).split(/\s+/).filter(Boolean);
- const candidates=[normName(name),...parts];
- return Math.max(0,...candidates.map(candidate=>{
-  let previous=Array.from({length:candidate.length+1},(_,i)=>i);
-  for(let i=1;i<=query.length;i++){
-   const next=[i];
-   for(let j=1;j<=candidate.length;j++)next[j]=Math.min(next[j-1]+1,previous[j]+1,previous[j-1]+Number(query[i-1]!==candidate[j-1]));
-   previous=next;
-  }
-  return 1-previous[candidate.length]/Math.max(query.length,candidate.length);
- }));
+ // Csak a begépelt karakterekkel azonos sorrendű, egybefüggő névrészletet ajánlunk.
+ // A vezetéknév vagy keresztnév elejéről is indulhat a keresés.
+ const q=normName(query).trim().replace(/\s+/g,' ');
+ const full=normName(name).trim().replace(/\s+/g,' ');
+ if(!q||!full)return -1;
+ if(full.startsWith(q))return 3;
+ const words=full.split(' ');
+ for(let i=1;i<words.length;i++){
+  if(words.slice(i).join(' ').startsWith(q))return 2;
+ }
+ return -1;
 }
 function closeNameSuggestions(){ $('nameSuggestions').classList.add('hidden');$('studentName').setAttribute('aria-expanded','false');nameSuggestionIndex=-1;$('studentName').removeAttribute('aria-activedescendant'); }
 function chooseNameSuggestion(row){
@@ -3664,7 +3710,7 @@ function renderNameSuggestions(){
  const input=$('studentName');if(document.activeElement!==input)return;
  const query=normName(input.value),current=normCls(getClass());
  if(!nameSuggestionTyped||query.replace(/\s/g,'').length<3){nameSuggestionRows=[];closeNameSuggestions();return;}
- nameSuggestionRows=ROSTER.map(row=>({row,score:namePartSimilarity(query,row.n)})).filter(hit=>hit.score>=0.6).sort((a,b)=>b.score-a.score||Number(normCls(b.row.c)===current)-Number(normCls(a.row.c)===current)||String(a.row.n).localeCompare(String(b.row.n),'hu')).slice(0,5).map(hit=>hit.row);
+ nameSuggestionRows=ROSTER.map(row=>({row,score:namePartSimilarity(query,row.n)})).filter(hit=>hit.score>0).sort((a,b)=>b.score-a.score||Number(normCls(b.row.c)===current)-Number(normCls(a.row.c)===current)||String(a.row.n).localeCompare(String(b.row.n),'hu')).slice(0,5).map(hit=>hit.row);
  const box=$('nameSuggestions');box.replaceChildren();nameSuggestionIndex=-1;
  if(!nameSuggestionRows.length){closeNameSuggestions();return;}
  nameSuggestionRows.forEach((row,i)=>{const button=document.createElement('button');button.type='button';button.id='nameSuggestion_'+i;button.setAttribute('role','option');button.setAttribute('aria-selected','false');button.textContent=String(row.n)+' — '+String(row.c);button.addEventListener('pointerdown',e=>e.preventDefault());button.addEventListener('click',()=>chooseNameSuggestion(row));box.append(button);});
@@ -3672,7 +3718,7 @@ function renderNameSuggestions(){
 }
 function initNameSuggestions(){
  const input=$('studentName'),box=document.createElement('div');box.id='nameSuggestions';box.className='name-suggestions hidden';box.setAttribute('role','listbox');box.setAttribute('aria-label','Névsor, osztállyal');input.after(box);
- input.removeAttribute('list');input.setAttribute('role','combobox');input.setAttribute('aria-autocomplete','list');input.setAttribute('aria-controls','nameSuggestions');input.setAttribute('aria-expanded','false');
+ input.removeAttribute('list');input.setAttribute('role','combobox');input.setAttribute('aria-autocomplete','none');input.setAttribute('aria-controls','nameSuggestions');input.setAttribute('aria-expanded','false');
  input.addEventListener('input',()=>{nameSuggestionTyped=true;renderNameSuggestions();});input.addEventListener('focus',()=>{nameSuggestionTyped=false;closeNameSuggestions();});
  input.addEventListener('blur',()=>setTimeout(closeNameSuggestions,180));
  input.addEventListener('keydown',e=>{
@@ -3696,6 +3742,9 @@ const START_THEME_KEY='typingStartThemeV1';
 const startThemes={"blue": "/* Alternative start-page concept: Kék irányítópult */\nbody{--v-bg:#edf3fc;--v-surface:#ffffff;--v-ink:#173250;--v-muted:#546b84;--v-line:#cfdaeb;--v-soft:#eaf2ff;--v-accent:#2864d9;--v-shadow:#2864d933}\n\nbody.screen-start{background:var(--v-bg);color:var(--v-ink)}\nbody.screen-start .wrap{max-width:1240px;padding:14px}\nbody.screen-start .wrap>.card:first-child{background:var(--v-surface);border:1px solid var(--v-line);border-radius:22px;padding:18px;box-shadow:0 12px 35px #172b4010}\nbody.screen-start .app-heading{padding-bottom:10px;border-bottom:1px solid var(--v-line);margin-bottom:12px}\nbody.screen-start .app-heading h1{font-size:1.35rem;letter-spacing:-.025em}\nbody.screen-start button{background:var(--v-accent);color:white}\nbody.screen-start .btn-grey,body.screen-start .access-btn{background:var(--v-soft);color:var(--v-ink)}\nbody.screen-start #startBtn{font-size:1rem;padding:13px 22px;border-radius:12px;box-shadow:0 5px 12px var(--v-shadow)}\nbody.screen-start #startPanel label{font-size:.84rem;margin:0 0 5px}\nbody.screen-start #startPanel input,body.screen-start #startPanel select{padding:8px 10px;border-color:var(--v-line);border-radius:10px;background:var(--v-surface)}\nbody.screen-start .variant-layout{display:grid;gap:12px}\nbody.screen-start .v-panel{min-width:0;background:var(--v-surface);border:1px solid var(--v-line);padding:14px;border-radius:14px}\nbody.screen-start .v-panel h2{font-size:.9rem;margin:0 0 11px;color:var(--v-accent);letter-spacing:.01em}\nbody.screen-start .v-panel .start-field{margin-bottom:10px}\nbody.screen-start .v-panel .start-settings-row,body.screen-start .v-panel .start-audio-row{grid-column:auto}\nbody.screen-start .setting-help{font-size:.76rem;line-height:1.35;color:var(--v-muted)}\nbody.screen-start .settings-memory{background:var(--v-soft);border-color:var(--v-accent);font-size:.73rem;margin:6px 0;padding:6px 10px}\nbody.screen-start #browserRecommendation{background:var(--v-soft);border-color:var(--v-line);margin:0;padding:9px 12px;font-size:.76rem;gap:14px}\nbody.screen-start #browserRecommendation strong{font-size:.82rem}\nbody.screen-start #practiceOptions{background:var(--v-soft);border-color:var(--v-line);font-size:.8rem;gap:5px;padding:8px}\nbody.screen-start .start-footer{margin:0;gap:8px}\nbody.screen-start #taskOrderField{width:100%;grid-column:auto;grid-template-columns:minmax(180px,.7fr) minmax(0,2fr);column-gap:12px}\nbody.screen-start #taskOrderHelp{font-size:.76rem;background:var(--v-soft);line-height:1.35;padding:8px}\nbody.screen-start .v-footer{grid-column:1/-1}\nbody.screen-start .v-caption{font-size:.74rem;color:var(--v-muted);margin:0 0 10px}\nbody.screen-start .v-identity input,body.screen-start .v-identity select{font-size:16px!important}\n@media(max-width:760px){\n body.screen-start .variant-layout{display:flex!important;flex-direction:column}\n body.screen-start .v-panel{padding:12px}\n body.screen-start .v-panel:has(>.start-settings-row):not(:has(>.start-settings-row:not(:empty))),body.screen-start .v-panel:empty{display:none}\n body.screen-start .v-identity{order:0}\n body.screen-start .v-info{order:1}\n body.screen-start .v-footer{order:2}\n body.screen-start .v-panel h2{margin-bottom:8px}\n body.screen-start #browserRecommendation{grid-template-columns:1fr}\n body.screen-start .wrap{padding:6px}\n}\nbody.high-contrast.screen-start{--v-bg:#000;--v-surface:#111;--v-ink:#fff;--v-muted:#eee;--v-line:#aaa;--v-soft:#222;--v-accent:#ffeb3b}\n\nbody.screen-start .variant-layout{grid-template-columns:minmax(230px,.7fr) minmax(0,2fr)}\nbody.screen-start .v-identity{grid-column:1;grid-row:1/5;background:#183c76;color:#fff;border:0}\nbody.screen-start .v-identity h2,body.screen-start .v-identity label{color:#fff}\nbody.screen-start .v-identity .v-caption{color:#d2e1ff}\nbody.screen-start .v-identity input,body.screen-start .v-identity select{color:#173250}\nbody.screen-start .v-teacher,body.screen-start .v-audio,body.screen-start .v-order,body.screen-start .v-practice{grid-column:2}\nbody.screen-start .v-info{grid-column:1/-1}\n\nbody.high-contrast.screen-start .v-panel{background:#111!important;color:#fff!important;border:1px solid #aaa!important}body.high-contrast.screen-start .v-panel h2,body.high-contrast.screen-start .v-panel label,body.high-contrast.screen-start .v-caption{color:#fff!important}\n", "notebook": "/* Alternative start-page concept: Meleg színű füzet */\nbody{--v-bg:#f4ecdf;--v-surface:#fffdf7;--v-ink:#493e32;--v-muted:#766955;--v-line:#dfd1bc;--v-soft:#f6eddc;--v-accent:#ad613d;--v-shadow:#ad613d33}\n\nbody.screen-start{background:var(--v-bg);color:var(--v-ink)}\nbody.screen-start .wrap{max-width:1240px;padding:14px}\nbody.screen-start .wrap>.card:first-child{background:var(--v-surface);border:1px solid var(--v-line);border-radius:22px;padding:18px;box-shadow:0 12px 35px #172b4010}\nbody.screen-start .app-heading{padding-bottom:10px;border-bottom:1px solid var(--v-line);margin-bottom:12px}\nbody.screen-start .app-heading h1{font-size:1.35rem;letter-spacing:-.025em}\nbody.screen-start button{background:var(--v-accent);color:white}\nbody.screen-start .btn-grey,body.screen-start .access-btn{background:var(--v-soft);color:var(--v-ink)}\nbody.screen-start #startBtn{font-size:1rem;padding:13px 22px;border-radius:12px;box-shadow:0 5px 12px var(--v-shadow)}\nbody.screen-start #startPanel label{font-size:.84rem;margin:0 0 5px}\nbody.screen-start #startPanel input,body.screen-start #startPanel select{padding:8px 10px;border-color:var(--v-line);border-radius:10px;background:var(--v-surface)}\nbody.screen-start .variant-layout{display:grid;gap:12px}\nbody.screen-start .v-panel{min-width:0;background:var(--v-surface);border:1px solid var(--v-line);padding:14px;border-radius:14px}\nbody.screen-start .v-panel h2{font-size:.9rem;margin:0 0 11px;color:var(--v-accent);letter-spacing:.01em}\nbody.screen-start .v-panel .start-field{margin-bottom:10px}\nbody.screen-start .v-panel .start-settings-row,body.screen-start .v-panel .start-audio-row{grid-column:auto}\nbody.screen-start .setting-help{font-size:.76rem;line-height:1.35;color:var(--v-muted)}\nbody.screen-start .settings-memory{background:var(--v-soft);border-color:var(--v-accent);font-size:.73rem;margin:6px 0;padding:6px 10px}\nbody.screen-start #browserRecommendation{background:var(--v-soft);border-color:var(--v-line);margin:0;padding:9px 12px;font-size:.76rem;gap:14px}\nbody.screen-start #browserRecommendation strong{font-size:.82rem}\nbody.screen-start #practiceOptions{background:var(--v-soft);border-color:var(--v-line);font-size:.8rem;gap:5px;padding:8px}\nbody.screen-start .start-footer{margin:0;gap:8px}\nbody.screen-start #taskOrderField{width:100%;grid-column:auto;grid-template-columns:minmax(180px,.7fr) minmax(0,2fr);column-gap:12px}\nbody.screen-start #taskOrderHelp{font-size:.76rem;background:var(--v-soft);line-height:1.35;padding:8px}\nbody.screen-start .v-footer{grid-column:1/-1}\nbody.screen-start .v-caption{font-size:.74rem;color:var(--v-muted);margin:0 0 10px}\nbody.screen-start .v-identity input,body.screen-start .v-identity select{font-size:16px!important}\n@media(max-width:760px){\n body.screen-start .variant-layout{display:flex!important;flex-direction:column}\n body.screen-start .v-panel{padding:12px}\n body.screen-start .v-panel:has(>.start-settings-row):not(:has(>.start-settings-row:not(:empty))),body.screen-start .v-panel:empty{display:none}\n body.screen-start .v-identity{order:0}\n body.screen-start .v-info{order:1}\n body.screen-start .v-footer{order:2}\n body.screen-start .v-panel h2{margin-bottom:8px}\n body.screen-start #browserRecommendation{grid-template-columns:1fr}\n body.screen-start .wrap{padding:6px}\n}\nbody.high-contrast.screen-start{--v-bg:#000;--v-surface:#111;--v-ink:#fff;--v-muted:#eee;--v-line:#aaa;--v-soft:#222;--v-accent:#ffeb3b}\n\nbody.screen-start .wrap>.card:first-child{border-radius:5px;box-shadow:8px 8px 0 #dacdb6}\nbody.screen-start .variant-layout{grid-template-columns:1fr 1fr}\nbody.screen-start .v-panel{border-radius:4px;border:0;border-top:2px solid #d5b994;background:repeating-linear-gradient(#fffdf7,#fffdf7 27px,#eee5d6 28px)}\nbody.screen-start .v-identity{grid-column:1/-1;display:grid;grid-template-columns:1fr 1fr;gap:12px}\nbody.screen-start .v-identity h2,body.screen-start .v-identity .v-caption{grid-column:1/-1;margin:0}\nbody.screen-start .v-teacher{grid-column:1}.v-audio{grid-column:2}\nbody.screen-start .v-order,body.screen-start .v-practice,body.screen-start .v-info{grid-column:1/-1}\nbody.screen-start .v-order{border-left:5px solid #ad613d}\nbody.screen-start #startBtn{border-radius:5px}\n\nbody.high-contrast.screen-start .v-panel{background:#111!important;color:#fff!important;border:1px solid #aaa!important}body.high-contrast.screen-start .v-panel h2,body.high-contrast.screen-start .v-panel label,body.high-contrast.screen-start .v-caption{color:#fff!important}\n", "cards": "/* Alternative start-page concept: Színes tanulókártyák */\nbody{--v-bg:#f1ecff;--v-surface:#ffffff;--v-ink:#33274d;--v-muted:#695d7d;--v-line:#d8cdec;--v-soft:#eee7ff;--v-accent:#7751c5;--v-shadow:#7751c533}\n\nbody.screen-start{background:var(--v-bg);color:var(--v-ink)}\nbody.screen-start .wrap{max-width:1240px;padding:14px}\nbody.screen-start .wrap>.card:first-child{background:var(--v-surface);border:1px solid var(--v-line);border-radius:22px;padding:18px;box-shadow:0 12px 35px #172b4010}\nbody.screen-start .app-heading{padding-bottom:10px;border-bottom:1px solid var(--v-line);margin-bottom:12px}\nbody.screen-start .app-heading h1{font-size:1.35rem;letter-spacing:-.025em}\nbody.screen-start button{background:var(--v-accent);color:white}\nbody.screen-start .btn-grey,body.screen-start .access-btn{background:var(--v-soft);color:var(--v-ink)}\nbody.screen-start #startBtn{font-size:1rem;padding:13px 22px;border-radius:12px;box-shadow:0 5px 12px var(--v-shadow)}\nbody.screen-start #startPanel label{font-size:.84rem;margin:0 0 5px}\nbody.screen-start #startPanel input,body.screen-start #startPanel select{padding:8px 10px;border-color:var(--v-line);border-radius:10px;background:var(--v-surface)}\nbody.screen-start .variant-layout{display:grid;gap:12px}\nbody.screen-start .v-panel{min-width:0;background:var(--v-surface);border:1px solid var(--v-line);padding:14px;border-radius:14px}\nbody.screen-start .v-panel h2{font-size:.9rem;margin:0 0 11px;color:var(--v-accent);letter-spacing:.01em}\nbody.screen-start .v-panel .start-field{margin-bottom:10px}\nbody.screen-start .v-panel .start-settings-row,body.screen-start .v-panel .start-audio-row{grid-column:auto}\nbody.screen-start .setting-help{font-size:.76rem;line-height:1.35;color:var(--v-muted)}\nbody.screen-start .settings-memory{background:var(--v-soft);border-color:var(--v-accent);font-size:.73rem;margin:6px 0;padding:6px 10px}\nbody.screen-start #browserRecommendation{background:var(--v-soft);border-color:var(--v-line);margin:0;padding:9px 12px;font-size:.76rem;gap:14px}\nbody.screen-start #browserRecommendation strong{font-size:.82rem}\nbody.screen-start #practiceOptions{background:var(--v-soft);border-color:var(--v-line);font-size:.8rem;gap:5px;padding:8px}\nbody.screen-start .start-footer{margin:0;gap:8px}\nbody.screen-start #taskOrderField{width:100%;grid-column:auto;grid-template-columns:minmax(180px,.7fr) minmax(0,2fr);column-gap:12px}\nbody.screen-start #taskOrderHelp{font-size:.76rem;background:var(--v-soft);line-height:1.35;padding:8px}\nbody.screen-start .v-footer{grid-column:1/-1}\nbody.screen-start .v-caption{font-size:.74rem;color:var(--v-muted);margin:0 0 10px}\nbody.screen-start .v-identity input,body.screen-start .v-identity select{font-size:16px!important}\n@media(max-width:760px){\n body.screen-start .variant-layout{display:flex!important;flex-direction:column}\n body.screen-start .v-panel{padding:12px}\n body.screen-start .v-panel:has(>.start-settings-row):not(:has(>.start-settings-row:not(:empty))),body.screen-start .v-panel:empty{display:none}\n body.screen-start .v-identity{order:0}\n body.screen-start .v-info{order:1}\n body.screen-start .v-footer{order:2}\n body.screen-start .v-panel h2{margin-bottom:8px}\n body.screen-start #browserRecommendation{grid-template-columns:1fr}\n body.screen-start .wrap{padding:6px}\n}\nbody.high-contrast.screen-start{--v-bg:#000;--v-surface:#111;--v-ink:#fff;--v-muted:#eee;--v-line:#aaa;--v-soft:#222;--v-accent:#ffeb3b}\n\nbody.screen-start .variant-layout{grid-template-columns:1fr 1fr 1.3fr;gap:12px}\nbody.screen-start .v-panel{border-radius:20px;border:0;box-shadow:0 4px 0 #46345b13}\nbody.screen-start .v-identity{grid-column:1;background:#e7deff}\nbody.screen-start .v-teacher{grid-column:2;background:#ffe8ba}\nbody.screen-start .v-audio{grid-column:3;background:#d9f1e8}\nbody.screen-start .v-order{grid-column:1/3;background:#ffe2e9}\nbody.screen-start .v-practice{grid-column:3;grid-row:2/4;background:#e3edff}\nbody.screen-start .v-info{grid-column:1/3}\nbody.screen-start .v-teacher .start-settings-row,body.screen-start .v-audio .start-audio-row{display:flex;flex-direction:column;align-items:stretch;gap:8px}\nbody.screen-start .v-practice #practiceOptions{display:flex;flex-direction:column;align-items:stretch;gap:5px;background:transparent;border:0}\nbody.screen-start .v-practice #practiceOptions p{line-height:1.3}\nbody.screen-start .v-panel h2{color:#473363}\nbody.screen-start #taskOrderField{grid-template-columns:1fr}\nbody.screen-start #taskOrderField>label,body.screen-start #taskOrderField>select,body.screen-start #taskOrderHelp{grid-column:1;grid-row:auto}\n\nbody.high-contrast.screen-start .v-panel{background:#111!important;color:#fff!important;border:1px solid #aaa!important}body.high-contrast.screen-start .v-panel h2,body.high-contrast.screen-start .v-panel label,body.high-contrast.screen-start .v-caption{color:#fff!important}\n", "mint": "/* Alternative start-page concept: Mentazöld fókusz */\nbody{--v-bg:#e9eeeb;--v-surface:#fafcfb;--v-ink:#244b40;--v-muted:#64786e;--v-line:#ccd9d2;--v-soft:#e7f1ec;--v-accent:#24755e;--v-shadow:#24755e33}\n\nbody.screen-start{background:var(--v-bg);color:var(--v-ink)}\nbody.screen-start .wrap{max-width:1240px;padding:14px}\nbody.screen-start .wrap>.card:first-child{background:var(--v-surface);border:1px solid var(--v-line);border-radius:22px;padding:18px;box-shadow:0 12px 35px #172b4010}\nbody.screen-start .app-heading{padding-bottom:10px;border-bottom:1px solid var(--v-line);margin-bottom:12px}\nbody.screen-start .app-heading h1{font-size:1.35rem;letter-spacing:-.025em}\nbody.screen-start button{background:var(--v-accent);color:white}\nbody.screen-start .btn-grey,body.screen-start .access-btn{background:var(--v-soft);color:var(--v-ink)}\nbody.screen-start #startBtn{font-size:1rem;padding:13px 22px;border-radius:12px;box-shadow:0 5px 12px var(--v-shadow)}\nbody.screen-start #startPanel label{font-size:.84rem;margin:0 0 5px}\nbody.screen-start #startPanel input,body.screen-start #startPanel select{padding:8px 10px;border-color:var(--v-line);border-radius:10px;background:var(--v-surface)}\nbody.screen-start .variant-layout{display:grid;gap:12px}\nbody.screen-start .v-panel{min-width:0;background:var(--v-surface);border:1px solid var(--v-line);padding:14px;border-radius:14px}\nbody.screen-start .v-panel h2{font-size:.9rem;margin:0 0 11px;color:var(--v-accent);letter-spacing:.01em}\nbody.screen-start .v-panel .start-field{margin-bottom:10px}\nbody.screen-start .v-panel .start-settings-row,body.screen-start .v-panel .start-audio-row{grid-column:auto}\nbody.screen-start .setting-help{font-size:.76rem;line-height:1.35;color:var(--v-muted)}\nbody.screen-start .settings-memory{background:var(--v-soft);border-color:var(--v-accent);font-size:.73rem;margin:6px 0;padding:6px 10px}\nbody.screen-start #browserRecommendation{background:var(--v-soft);border-color:var(--v-line);margin:0;padding:9px 12px;font-size:.76rem;gap:14px}\nbody.screen-start #browserRecommendation strong{font-size:.82rem}\nbody.screen-start #practiceOptions{background:var(--v-soft);border-color:var(--v-line);font-size:.8rem;gap:5px;padding:8px}\nbody.screen-start .start-footer{margin:0;gap:8px}\nbody.screen-start #taskOrderField{width:100%;grid-column:auto;grid-template-columns:minmax(180px,.7fr) minmax(0,2fr);column-gap:12px}\nbody.screen-start #taskOrderHelp{font-size:.76rem;background:var(--v-soft);line-height:1.35;padding:8px}\nbody.screen-start .v-footer{grid-column:1/-1}\nbody.screen-start .v-caption{font-size:.74rem;color:var(--v-muted);margin:0 0 10px}\nbody.screen-start .v-identity input,body.screen-start .v-identity select{font-size:16px!important}\n@media(max-width:760px){\n body.screen-start .variant-layout{display:flex!important;flex-direction:column}\n body.screen-start .v-panel{padding:12px}\n body.screen-start .v-panel:has(>.start-settings-row):not(:has(>.start-settings-row:not(:empty))),body.screen-start .v-panel:empty{display:none}\n body.screen-start .v-identity{order:0}\n body.screen-start .v-info{order:1}\n body.screen-start .v-footer{order:2}\n body.screen-start .v-panel h2{margin-bottom:8px}\n body.screen-start #browserRecommendation{grid-template-columns:1fr}\n body.screen-start .wrap{padding:6px}\n}\nbody.high-contrast.screen-start{--v-bg:#000;--v-surface:#111;--v-ink:#fff;--v-muted:#eee;--v-line:#aaa;--v-soft:#222;--v-accent:#ffeb3b}\n\nbody.screen-start .variant-layout{grid-template-columns:minmax(240px,.75fr) minmax(0,1.7fr);gap:16px}\nbody.screen-start .v-identity{grid-column:1;grid-row:1/5;border:0;background:#e0eee6;border-radius:18px 3px 3px 18px}\nbody.screen-start .v-identity h2{font-size:1.1rem}\nbody.screen-start .v-teacher,body.screen-start .v-audio,body.screen-start .v-order,body.screen-start .v-practice{grid-column:2;border:0;border-radius:0;border-bottom:1px solid var(--v-line);padding:8px 0}\nbody.screen-start .v-info{grid-column:1/-1;border:0;padding:0}\nbody.screen-start .v-footer{border:0;border-top:1px solid var(--v-line);padding:12px 0 0}\nbody.screen-start .app-heading h1{font-weight:500}\nbody.screen-start #startBtn{border-radius:99px}\nbody.screen-start .v-panel h2{font-weight:600;letter-spacing:.025em}\n\nbody.high-contrast.screen-start .v-panel{background:#111!important;color:#fff!important;border:1px solid #aaa!important}body.high-contrast.screen-start .v-panel h2,body.high-contrast.screen-start .v-panel label,body.high-contrast.screen-start .v-caption{color:#fff!important}\n"};
 let activeStartTheme='original';
 try{const saved=localStorage.getItem(START_THEME_KEY);if(['original','blue','notebook','cards','mint'].includes(saved))activeStartTheme=saved;}catch(e){}
+// Az alternatív témák átmenetileg letiltva; mindig a stabil eredeti elrendezést használjuk.
+activeStartTheme='original';
+try{localStorage.setItem(START_THEME_KEY,'original');}catch(e){}
 const themeStyle=document.createElement('style');themeStyle.id='studentThemeStyle';themeStyle.textContent=startThemes[activeStartTheme]||'';document.head.append(themeStyle);const readableStyle=document.createElement('style');readableStyle.textContent="\n.student-theme-picker{display:flex;align-items:center;gap:12px;margin:6px 0 10px}\n.student-theme-picker label{white-space:nowrap;margin:0!important;font-size:.95rem!important}\n.student-theme-picker select{width:auto;flex:1;max-width:340px;font-size:16px!important;padding:8px 10px!important}\nbody.screen-start #startPanel label{font-size:.95rem!important}\nbody.screen-start #startPanel input,body.screen-start #startPanel select{font-size:16px!important;padding:8px 10px!important}\nbody.screen-start .setting-help,body.screen-start #taskOrderHelp,body.screen-start #browserRecommendation,body.screen-start #practiceOptions p,body.screen-start .settings-memory{font-size:.85rem!important;line-height:1.4!important}\nhtml.big-text body.screen-start #startPanel label,html.big-text body.screen-start .v-panel h2{font-size:1.2rem!important}\nhtml.big-text body.screen-start #startPanel input,html.big-text body.screen-start #startPanel select,html.big-text body.screen-start button{font-size:20px!important;padding:11px 12px!important}\nhtml.big-text body.screen-start .setting-help,html.big-text body.screen-start #taskOrderHelp,html.big-text body.screen-start #browserRecommendation,html.big-text body.screen-start #practiceOptions p,html.big-text body.screen-start .settings-memory{font-size:1rem!important}\nhtml.big-text body.screen-start #voiceHelp,html.big-text body.screen-start #repeatHelp,html.big-text body.screen-start #taskOrderHelp,html.big-text body.screen-start #practiceOptions p,html.big-text body.screen-start .settings-memory{display:none!important}\nhtml.big-text body.screen-start #browserRecommendation p{display:none}\nhtml.big-text body.screen-start .v-caption{display:none}\nhtml.big-text body.screen-start #taskOrderField{grid-template-columns:1fr!important}\nhtml.big-text body.screen-start #taskOrderField>select{grid-column:1!important}\nhtml.big-text #mobileSettingsDrawer label{font-size:1.15rem!important}\nhtml.big-text #mobileSettingsDrawer select,html.big-text #mobileSettingsDrawer button{font-size:20px!important}\n@media(max-width:760px){.student-theme-picker{gap:8px;flex-wrap:wrap}.student-theme-picker select{max-width:none;width:100%}body.screen-start .v-panel{padding:10px}}\n";document.head.append(readableStyle);
 function buildVisualVariant(){
  const start=$('startPanel'),old=start.querySelector('.start-grid');
@@ -3712,6 +3761,8 @@ const themeField=document.createElement('div');themeField.className='student-the
 themeField.innerHTML='<label for="studentTheme">Vzhled začátku</label><select id="studentTheme"><option value="original">Eredeti felület</option><option value="cards">Színes tanulókártyák</option><option value="blue">Kék irányítópult</option><option value="notebook">Meleg színű füzet</option><option value="mint">Mentazöld fókusz</option></select>';
 themeField.querySelector('label').textContent='Kezdőlap témája';
 document.querySelector('.app-heading h1').after(themeField);requiredControl('studentTheme').value=activeStartTheme;document.body.dataset.startTheme=activeStartTheme;themeField.querySelector('label').textContent='Téma';
+// A témaválasztó a javítások idejére nem jelenik meg.
+themeField.hidden=true;themeField.style.display='none';
 const optimizedThemeStyle=document.createElement('style');optimizedThemeStyle.textContent="\n@media screen{\n .app-heading{display:grid!important;grid-template-columns:auto minmax(180px,1fr) auto;align-items:center;gap:14px!important}\n .app-heading h1{font-size:1.65rem!important;font-weight:800!important;letter-spacing:-.025em;line-height:1.15}\n .app-heading .student-theme-picker{margin:0;justify-self:end;display:flex;gap:8px;align-items:center}\n .app-heading .student-theme-picker label{font-size:.85rem!important;margin:0!important}\n .app-heading .student-theme-picker select{font-size:16px!important;width:220px!important;max-width:100%!important;padding:7px 9px!important}\n body.screen-test .student-theme-picker{display:none}\n body.screen-test .app-heading{grid-template-columns:1fr auto}\n body.screen-start:not([data-start-theme=\"original\"]) .wrap{max-width:1280px;padding:6px}\n body.screen-start:not([data-start-theme=\"original\"]) .wrap>.card:first-child{padding:10px;border-radius:14px}\n body.screen-start:not([data-start-theme=\"original\"]) .app-heading{padding-bottom:7px;margin-bottom:7px}\n body.screen-start:not([data-start-theme=\"original\"]) .variant-layout{gap:8px}\n body.screen-start:not([data-start-theme=\"original\"]) .v-panel{padding:9px;border-radius:10px}\n body.screen-start:not([data-start-theme=\"original\"]) .v-panel h2{font-size:1.05rem!important;margin:0 0 7px!important}\n body.screen-start:not([data-start-theme=\"original\"]) .v-caption{font-size:.9rem;line-height:1.35;margin-bottom:7px}\n body.screen-start:not([data-start-theme=\"original\"]) .v-panel .start-field{margin-bottom:6px}\n body.screen-start:not([data-start-theme=\"original\"]) #startPanel label{font-size:1rem!important}\n body.screen-start:not([data-start-theme=\"original\"]) #startPanel input,body.screen-start:not([data-start-theme=\"original\"]) #startPanel select{font-size:17px!important;padding:7px 9px!important}\n body.screen-start:not([data-start-theme=\"original\"]) .setting-help,body.screen-start:not([data-start-theme=\"original\"]) #taskOrderHelp,body.screen-start:not([data-start-theme=\"original\"]) #browserRecommendation,body.screen-start:not([data-start-theme=\"original\"]) #practiceOptions p,body.screen-start:not([data-start-theme=\"original\"]) .settings-memory{font-size:.92rem!important;line-height:1.3!important}\n body.screen-start:not([data-start-theme=\"original\"]) #browserRecommendation{padding:7px 9px}\n body.screen-start:not([data-start-theme=\"original\"]) #browserRecommendation strong{font-size:.95rem}\n body.screen-start:not([data-start-theme=\"original\"]) #practiceOptions{padding:6px;gap:4px;margin:3px 0}\n body.screen-start:not([data-start-theme=\"original\"]) .settings-memory{margin:4px 0;padding:5px 8px}\n body.screen-start:not([data-start-theme=\"original\"]) .v-footer{padding:7px 9px}\n body.screen-start[data-start-theme=\"blue\"] .variant-layout,body.screen-start[data-start-theme=\"mint\"] .variant-layout{grid-template-columns:minmax(260px,.85fr) minmax(0,2fr)}\n body.screen-start[data-start-theme=\"mint\"] .v-teacher,body.screen-start[data-start-theme=\"mint\"] .v-audio,body.screen-start[data-start-theme=\"mint\"] .v-order,body.screen-start[data-start-theme=\"mint\"] .v-practice{padding:6px 0}\n body.screen-start[data-start-theme=\"cards\"] .variant-layout{grid-template-columns:1fr 1fr 1.2fr;gap:8px}\n body.screen-start[data-start-theme=\"cards\"] .v-teacher .start-settings-row{display:grid;grid-template-columns:1fr 1fr;gap:6px}\n body.screen-start[data-start-theme=\"cards\"] .v-teacher .start-unlock-field{grid-column:1/-1}\n body.screen-start[data-start-theme=\"cards\"] .v-teacher .start-unlock-field button{width:100%}\n html.big-text body.screen-start:not([data-start-theme=\"original\"]) #startPanel label{font-size:1.25rem!important}\n html.big-text body.screen-start:not([data-start-theme=\"original\"]) #startPanel input,html.big-text body.screen-start:not([data-start-theme=\"original\"]) #startPanel select{font-size:21px!important}\n}\n@media(max-width:760px){\n .app-heading{grid-template-columns:auto minmax(0,1fr) auto;gap:5px!important}\n .app-heading h1{font-size:1.2rem!important;max-width:100px}\n .app-heading .student-theme-picker label{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}\n .app-heading .student-theme-picker{min-width:0;width:100%}\n .app-heading .student-theme-picker select{width:100%!important;min-width:0;padding:6px!important;font-size:14px!important}\n .app-heading .top-actions{gap:3px}\n .app-heading .mobile-settings-open{padding:6px;font-size:.78rem;min-height:34px}\n body.screen-start:not([data-start-theme=\"original\"]) .wrap{padding:4px}\n}\n";document.head.append(optimizedThemeStyle);const fullScreenTypeStyle=document.createElement("style");fullScreenTypeStyle.textContent="\n@media screen and (min-width:761px){\n body.screen-start:not([data-start-theme=\"original\"]) .wrap{max-width:none!important;width:100%;padding:6px!important}\n body.screen-start:not([data-start-theme=\"original\"]) .wrap>.card:first-child{width:100%;padding:10px!important;box-sizing:border-box}\n body.screen-start:not([data-start-theme=\"original\"]) .variant-layout{width:100%;gap:8px!important}\n body.screen-start:not([data-start-theme=\"original\"]) #startPanel label,body.screen-start:not([data-start-theme=\"original\"]) #startPanel input,body.screen-start:not([data-start-theme=\"original\"]) #startPanel select,body.screen-start:not([data-start-theme=\"original\"]) #startPanel button{font-size:var(--alt-font,20px)!important}\n body.screen-start:not([data-start-theme=\"original\"]) .v-panel h2{font-size:calc(var(--alt-font,20px)*1.04)!important}\n body.screen-start:not([data-start-theme=\"original\"]) .setting-help,body.screen-start:not([data-start-theme=\"original\"]) #taskOrderHelp,body.screen-start:not([data-start-theme=\"original\"]) #practiceOptions p,body.screen-start:not([data-start-theme=\"original\"]) .settings-memory,body.screen-start:not([data-start-theme=\"original\"]) .v-caption,body.screen-start:not([data-start-theme=\"original\"]) #browserRecommendation{font-size:calc(var(--alt-font,20px)*.84)!important;line-height:1.3!important}\n body.screen-start:not([data-start-theme=\"original\"]) #browserRecommendation strong{font-size:calc(var(--alt-font,20px)*.94)!important}\n body.screen-start:not([data-start-theme=\"original\"]) #startPanel input,body.screen-start:not([data-start-theme=\"original\"]) #startPanel select{padding:7px 9px!important}\n body.screen-start:not([data-start-theme=\"original\"]) .v-panel{padding:8px!important}\n body.screen-start:not([data-start-theme=\"original\"]) .v-panel .start-field{margin-bottom:5px!important}\n body.screen-start:not([data-start-theme=\"original\"]) .v-identity{grid-row:auto!important}\n body.screen-start[data-start-theme=\"blue\"] .variant-layout,body.screen-start[data-start-theme=\"mint\"] .variant-layout{grid-template-columns:1fr 1.3fr!important}\n body.screen-start[data-start-theme=\"blue\"] .v-identity,body.screen-start[data-start-theme=\"mint\"] .v-identity{grid-column:1;grid-row:1/3!important}\n body.screen-start[data-start-theme=\"blue\"] .v-audio,body.screen-start[data-start-theme=\"mint\"] .v-audio{grid-column:1!important;grid-row:3!important}\n body.screen-start[data-start-theme=\"blue\"] .v-teacher,body.screen-start[data-start-theme=\"mint\"] .v-teacher{grid-column:2;grid-row:1!important}\n body.screen-start[data-start-theme=\"blue\"] .v-order,body.screen-start[data-start-theme=\"mint\"] .v-order{grid-column:2;grid-row:2!important}\n body.screen-start[data-start-theme=\"blue\"] .v-practice,body.screen-start[data-start-theme=\"mint\"] .v-practice{grid-column:2;grid-row:3!important}\n}\n@media(max-width:760px){\n body.screen-start:not([data-start-theme=\"original\"]) #startPanel input,body.screen-start:not([data-start-theme=\"original\"]) #startPanel select{font-size:18px!important}\n body.screen-start:not([data-start-theme=\"original\"]) .v-panel h2{font-size:1.1rem!important}\n}\n";document.head.append(fullScreenTypeStyle);const actualLargeTextStyle=document.createElement("style");actualLargeTextStyle.textContent="\n@media screen and (min-width:761px){\n html.big-text body.screen-start:not([data-start-theme=\"original\"]) #startPanel label,\n html.big-text body.screen-start:not([data-start-theme=\"original\"]) #startPanel input,\n html.big-text body.screen-start:not([data-start-theme=\"original\"]) #startPanel select,\n html.big-text body.screen-start:not([data-start-theme=\"original\"]) #startPanel button{font-size:calc(var(--alt-font,24px)*1.25)!important}\n html.big-text body.screen-start:not([data-start-theme=\"original\"]) .v-panel h2{font-size:calc(var(--alt-font,24px)*1.3)!important}\n html.big-text body.screen-start:not([data-start-theme=\"original\"]) #browserRecommendation{font-size:calc(var(--alt-font,24px)*1.1)!important}\n html.big-text body.screen-start:not([data-start-theme=\"original\"]) #browserRecommendation strong{font-size:calc(var(--alt-font,24px)*1.2)!important}\n body.screen-start:not([data-start-theme=\"original\"]) .v-panel{height:auto;min-height:0}\n body.screen-start:not([data-start-theme=\"original\"]) .v-identity{display:flex!important;flex-direction:column;justify-content:center;gap:8px}\n body.screen-start[data-start-theme=\"notebook\"] .v-identity{display:grid!important;grid-template-columns:1fr 1fr;gap:8px}\n body.screen-start:not([data-start-theme=\"original\"]) .v-identity .start-field{width:100%}\n body.screen-start:not([data-start-theme=\"original\"]) .start-footer #startBtn{padding:10px 20px!important}\n body.screen-start:not([data-start-theme=\"original\"]) #nameClassStatus,\n body.screen-start:not([data-start-theme=\"original\"]) #rosterLoadStatus,\n body.screen-start:not([data-start-theme=\"original\"]) .start-footer .conn{font-size:calc(var(--alt-font,22px)*.8)!important;line-height:1.25}\n}\n";document.head.append(actualLargeTextStyle);
 const largeHelp=document.createElement('details');largeHelp.className='large-mode-help';const helpSummary=document.createElement('summary');helpSummary.textContent='Beállítások részletes magyarázata';largeHelp.append(helpSummary);['voiceHelp','repeatHelp','timeLimitHelp','taskOrderHelp'].forEach(id=>{const p=document.createElement('p');p.textContent=$(id).textContent;largeHelp.append(p);});$('startPanel').prepend(largeHelp);
 try{const input=JSON.parse(sessionStorage.getItem('themeSwitchInputs')||'null');if(input){['studentName','studentGrade','studentLetter','studentClassOther'].forEach(id=>{if(typeof input[id]==='string')$(id).value=input[id];});syncClassFields();sessionStorage.removeItem('themeSwitchInputs');}}catch(e){}
@@ -4130,7 +4181,7 @@ function ensureLiveBankControls(){
  if(!select){
   const label=document.createElement('label');label.textContent='Feladatbank: ';
   select=document.createElement('select');select.id='practiceBankLive';
-  const banks=contentBankCatalog||[{id:'bank1',label:'Feladatbank 1',available:true},{id:'bank2',label:'Feladatbank 2',available:true},{id:'bank3',label:'Feladatbank 3',available:true}];
+  const banks=contentBankCatalog||[{id:'bank1',label:'Feladatbank 1',available:true},{id:'bank2',label:'Feladatbank 2',available:true},{id:'bank3',label:'Feladatbank 3',available:true},{id:'bank4',label:'Modulzáró',available:true}];
   banks.forEach(bank=>{const option=document.createElement('option');option.value=bank.id;option.textContent=bank.label;option.disabled=!bank.available;select.append(option);});
   label.append(select);container.append(label);
  }
@@ -4159,10 +4210,10 @@ function updateBankSection(){
  const practice=selectedPractice(),locked=teacherPinRequired!==false&&!teacherSessionUnlocked;
  $('contentBankSection').classList.toggle('hidden',practice);
  $('contentBankPractice').classList.toggle('hidden',!practice);
- $('practiceBankStart').disabled=!practice;
+ $('practiceBankStart').disabled=!practice&&!teacherSessionUnlocked&&teacherPinRequired!==false;
  let reference=$('practiceTeacherBankReference');if(reference)reference.textContent='A tanár éles teszthez kijelölt bankja: '+((contentBankCatalog||[]).find(b=>b.id===activeTestContentBank)?.label||activeTestContentBank)+'. Gyakorláshoz ettől függetlenül választhatsz.';$('contentBankTeacher').classList.toggle('hidden',practice);
  $('contentBankTitle').textContent=practice?'Feladatbank – szabad választás gyakorláshoz':'Feladatbank az éles teszthez';
- const real=$('testContentBank');real.replaceChildren(...(contentBankCatalog||[{id:'bank1',label:'Feladatbank 1',available:true},{id:'bank2',label:'Feladatbank 2',available:true},{id:'bank3',label:'Feladatbank 3',available:true}]).map(b=>{const o=document.createElement('option');o.value=b.id;o.textContent=b.label;o.disabled=!b.available;return o;}));real.value=activeTestContentBank;real.disabled=locked||teacherPinRequired===null;
+ const real=$('testContentBank');real.replaceChildren(...(contentBankCatalog||[{id:'bank1',label:'Feladatbank 1',available:true},{id:'bank2',label:'Feladatbank 2',available:true},{id:'bank3',label:'Feladatbank 3',available:true},{id:'bank4',label:'Modulzáró',available:true}]).map(b=>{const o=document.createElement('option');o.value=b.id;o.textContent=b.label;o.disabled=!b.available;return o;}));real.value=activeTestContentBank;real.disabled=locked||teacherPinRequired===null;
  $('contentBankHelp').textContent=practice?'Bármelyik feltöltött bankból gyakorolhatsz. A többi beállítás közös.':locked?'Módosításhoz használd a feladatszám mellett lévő Tanári feloldás gombot.':'A bankválasztás automatikusan mentődik, és minden új éles tesztben érvényes.';
 }
 async function saveUnlockedBankChoice(){
@@ -4171,7 +4222,7 @@ async function saveUnlockedBankChoice(){
   const r=await jsonp({action:'setActiveBank',bank,bankToken:teacherPinRequired===false?'':teacherBankSessionToken},15000);
   if(!r?.success)throw new Error(r?.error||'A bankválasztás mentése nem sikerült.');
   activeTestContentBank=r.activeBank;$('contentBankStatus').textContent='Éles teszt bankja: '+$('testContentBank').selectedOptions[0].textContent+'. A következő teszt ezt használja.';
- }catch(e){$('contentBankStatus').textContent=e.message;if(teacherPinRequired===true){teacherSessionUnlocked=false;teacherBankSessionToken='';applyLock();}}
+ }catch(e){$('contentBankStatus').textContent=e.message;/* A sikertelen bankmentés nem vonja vissza a már ellenőrzött tanári feloldást. */}
  finally{updateBankSection();}
 }
 $('testContentBank').addEventListener('change',saveUnlockedBankChoice);
@@ -4265,7 +4316,7 @@ body.high-contrast #practiceOptions .practice-mode-heading{background:#000!impor
  let queued=false;
  function update(){
   queued=false;
-  const grouping=$('testPanel').classList.contains('hidden')&&$('resultPanel').classList.contains('hidden');
+  const grouping=document.body.dataset.startTheme==='original'&&$('testPanel').classList.contains('hidden')&&$('resultPanel').classList.contains('hidden');
   frame.classList.toggle('all-practice-settings',grouping);
   shared.classList.toggle('hidden',!grouping);auxiliary.classList.toggle('hidden',!grouping);actions.classList.toggle('hidden',!grouping);
   for(const record of records){
@@ -4306,7 +4357,7 @@ body.high-contrast #practiceOptions .practice-mode-heading{background:#000!impor
  frame.append(delivery,status);nodes.push(delivery,status);if(['all','copy','read','dictation'].includes(savedPracticePrefs.delivery))requiredControl('practiceDelivery').value=savedPracticePrefs.delivery;$('practiceDelivery').addEventListener('change',rememberPracticePrefs);
  const help=nodes.find(n=>n.tagName==='P');if(help)help.textContent='A szövegtípus és a feladat módja együtt szűrhető. A választott bank és az osztály évfolyama alapján elérhető feladatok jelennek meg. A gyakorlási idő és tempó menet közben is állítható.';
  const bankPools=new Map();let serial=0;
- function place(){const on=selectedPractice(),target=frame;for(const n of nodes)if(n.parentNode!==target)target.append(n);$('practiceDelivery').disabled=!on;outside.classList.add('hidden');}
+ function place(){const on=selectedPractice(),target=frame;for(const n of nodes)if(n.parentNode!==target)target.append(n);$('practiceDelivery').disabled=!on&&teacherPinRequired!==false&&!teacherSessionUnlocked;outside.classList.add('hidden');}
  async function availability(){place();if(!selectedPractice())return;const id=++serial;status.textContent='Elérhető gyakorló feladatok ellenőrzése…';try{const bank=requiredControl('practiceBankStart').value;let res=bankPools.get(bank);if(!res){res=await loadTasks(1000,{practice:true,bank});bankPools.set(bank,res);}if(id!==serial||!selectedPractice())return;let list=res||[];const grade=parseInt(getClass(),10);if(Number.isFinite(grade))list=list.filter(t=>gradeMatch(t.grades,grade));let matching=0;
  for(const o of $('practiceTextKind').options){const count=list.filter(t=>practiceTextMatches(t,o.value)).length;o.disabled=o.value!=='all'&&count===0;if(o.value===requiredControl('practiceTextKind').value)matching=count;}
  for(const o of $('practiceDelivery').options)o.disabled=o.value!=='all'&&!list.some(t=>practiceTextMatches(t,requiredControl('practiceTextKind').value,o.value));
@@ -4410,7 +4461,7 @@ body.high-contrast #practiceOptions .practice-mode-heading{background:#000!impor
  grid.after(frame);
  const bank=document.createElement('div');bank.id='unifiedBankSlot';frame.prepend(bank);bank.append($('contentBankSection'),$('contentBankPractice'));
  // Azonos helyen van a bankválasztó; az eredeti jogosultságkezelés marad érvényes.
- function sync(){const practice=selectedPractice();frame.classList.toggle('practice-view',practice);$('realModeTab').setAttribute('aria-pressed',String(!practice));$('practiceModeTab').setAttribute('aria-pressed',String(practice));$('realModeTab').textContent=practice?'Váltás ÉLES TESZTRE':'✓ AKTÍV: ÉLES TESZT';$('practiceModeTab').textContent=practice?'✓ AKTÍV: GYAKORLÁS':'Váltás GYAKORLÁSRA';description.textContent=practice?'Gyakorló mód – az eredmény nem kerül a táblázatba.':'Éles teszt – a tanár beállításaival, az eredmény mentésével.';const status=$('practiceAvailability');if(!practice)status.textContent='A letiltott mezőket éles tesztben a tanári beállítások határozzák meg.';}
+ function sync(){const practice=selectedPractice();frame.classList.toggle('practice-view',practice);$('realModeTab').setAttribute('aria-pressed',String(!practice));$('practiceModeTab').setAttribute('aria-pressed',String(practice));$('realModeTab').textContent=practice?'Váltás ÉLES TESZTRE':'✓ AKTÍV: ÉLES TESZT';$('practiceModeTab').textContent=practice?'✓ AKTÍV: GYAKORLÁS':'Váltás GYAKORLÁSRA';description.textContent=practice?'Gyakorló mód – az eredmény nem kerül a táblázatba.':'Éles teszt – a tanár beállításaival, az eredmény mentésével.';const status=$('practiceAvailability');if(!practice)status.textContent='Éles tesztben a beállításokat a Tanári feloldás gombbal lehet módosítani.';}
  function choose(practice){if(checkbox.checked!==practice){checkbox.checked=practice;checkbox.dispatchEvent(new Event('change',{bubbles:true}));}sync();}
  $('realModeTab').addEventListener('click',()=>choose(false));$('practiceModeTab').addEventListener('click',()=>choose(true));checkbox.addEventListener('change',sync);
  sync();
@@ -4442,15 +4493,7 @@ body.high-contrast #practiceOptions .practice-mode-heading{background:#000!impor
 </script>
 
 <style>#startBottomActions{display:flex;justify-content:flex-end;align-items:center;gap:10px;width:100%;margin-top:10px;padding-top:10px;border-top:1px solid #b8c9c0}#startBtnBottom{font-size:17px!important;padding:10px 20px!important;min-height:44px;background:#286a58;color:white;border-radius:8px}@media(max-width:700px){#startBtnBottom{width:100%}}</style>
-<script>
-(function bottomStartButton(){
- const original=$('startBtn'),row=document.createElement('div');row.id='startBottomActions';
- const button=document.createElement('button');button.type='button';button.id='startBtnBottom';row.append(button);$('startPanel').append(row);
- function sync(){const text=original.textContent;if(button.textContent!==text)button.textContent=text;button.disabled=original.disabled;}
- button.addEventListener('click',()=>{if(!original.disabled)original.click();});
- new MutationObserver(sync).observe(original,{childList:true,subtree:true,characterData:true,attributes:true,attributeFilter:['disabled']});$('practiceMode').addEventListener('change',sync);sync();
-})();
-</script>
+
 
 <style>
 @media screen{
@@ -4619,6 +4662,266 @@ body.high-contrast #dictationNotice.dictation-warning::before{color:#ffdf83!impo
  body #testPanel .msg-slot #autoMsg{position:static!important;top:auto!important;bottom:auto!important;left:auto!important;right:auto!important;transform:none!important;display:block!important;width:100%!important;max-width:none!important;height:auto!important;min-height:0!important;max-height:68px!important;margin:0!important;padding:6px 9px!important;font-size:13px!important;line-height:1.35!important;text-align:left!important;border-width:2px!important;border-radius:6px!important;box-shadow:none!important;box-sizing:border-box;pointer-events:auto!important;overflow:auto!important;overscroll-behavior:contain}
  body #testPanel .msg-slot #autoMsg:empty{display:none!important;padding:0!important;border:0!important}
  body #testPanel .msg-slot #autoMsg:not(:empty){opacity:1!important;visibility:visible!important}
+}
+</style>
+
+<style>
+/* Egységes, jól látható piros tesztindítás. */
+body:not(.high-contrast) #startBtn,body:not(.high-contrast) #startBtnBottom{
+ background:linear-gradient(135deg,#c83242,#9f2034)!important;color:#fff!important;
+ border:1px solid #8e2432!important;border-radius:12px!important;
+ box-shadow:0 5px 15px rgba(160,31,53,.27),inset 0 1px 0 #ffffff45!important;
+ font-weight:800!important;transition:transform .16s,box-shadow .16s,filter .16s;
+}
+body:not(.high-contrast) #startBtn:hover:not(:disabled),body:not(.high-contrast) #startBtnBottom:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 20px rgba(160,31,53,.36)!important;filter:brightness(1.05)}
+.roster-confirm-overlay{position:fixed;inset:0;z-index:1000;display:flex;align-items:center;justify-content:center;background:#142b27a8;padding:18px;backdrop-filter:blur(3px)}
+.roster-confirm-card{width:min(470px,100%);background:#fffaf9;color:#372b30;border:1px solid #efc4ca;border-radius:20px;padding:25px;box-shadow:0 20px 60px #1c101950;text-align:center}
+.roster-confirm-icon{width:58px;height:58px;border-radius:50%;margin:0 auto 12px;display:grid;place-items:center;background:#ffebed;color:#b72c42;font-size:29px;font-weight:900}
+.roster-confirm-card h2{color:#8e2436;font-size:1.3rem;margin:0 0 10px}
+.roster-confirm-card p{line-height:1.5;margin:9px 0}
+.roster-confirm-name{font-weight:800;font-size:1.16rem;overflow-wrap:anywhere;background:#fff0f1;border:1px solid #f0c4ca;border-radius:10px;padding:10px;margin:12px 0}
+.roster-confirm-actions{display:flex;justify-content:center;gap:10px;flex-wrap:wrap;margin-top:20px}
+.roster-confirm-actions button{min-width:145px;padding:12px;border-radius:10px}
+.roster-confirm-actions .roster-correct{background:#e9e4e5;color:#482e35}
+.roster-confirm-actions .roster-accept{background:#b72c42;color:white}
+body.high-contrast .roster-confirm-card{background:#000;color:#fff;border:2px solid #fff}
+body.high-contrast .roster-confirm-card h2{color:#ffeb3b}
+body.high-contrast .roster-confirm-name{background:#111;color:#fff;border-color:#fff}
+@media(prefers-reduced-motion:reduce){#startBtn,#startBtnBottom{transition:none!important}}
+</style>
+<script>
+function confirmRosterName(name,cls){
+ return new Promise(resolve=>{
+  const overlay=document.createElement('div');overlay.className='roster-confirm-overlay';
+  overlay.innerHTML='<section class="roster-confirm-card" role="alertdialog" aria-modal="true" aria-labelledby="rosterConfirmTitle" aria-describedby="rosterConfirmDesc"><div class="roster-confirm-icon" aria-hidden="true">?</div><h2 id="rosterConfirmTitle">Biztosan jó nevet adtál meg?</h2><p id="rosterConfirmDesc">A megadott név nem szerepel a <strong class="roster-class"></strong> osztály névsorában.</p><div class="roster-confirm-name"></div><p>Ha elírtad, javíthatod. Ha helyes, folytathatod a tesztet.</p><div class="roster-confirm-actions"><button type="button" class="roster-correct">✎ Név javítása</button><button type="button" class="roster-accept">✓ Így helyes</button></div></section>';
+  overlay.querySelector('.roster-class').textContent=cls;overlay.querySelector('.roster-confirm-name').textContent=name;
+  const prior=document.activeElement;document.body.append(overlay);
+  const cancel=overlay.querySelector('.roster-correct'),accept=overlay.querySelector('.roster-accept');
+  function finish(ok){overlay.remove();document.removeEventListener('keydown',keyHandler,true);if(ok){prior?.focus?.()}else{document.getElementById('studentName')?.focus()}resolve(ok)}
+  function keyHandler(e){if(e.key==='Escape'){e.preventDefault();finish(false)}if(e.key==='Tab'){const first=cancel,last=accept;if(e.shiftKey&&document.activeElement===first){e.preventDefault();last.focus()}else if(!e.shiftKey&&document.activeElement===last){e.preventDefault();first.focus()}}}
+  cancel.addEventListener('click',()=>finish(false));accept.addEventListener('click',()=>finish(true));document.addEventListener('keydown',keyHandler,true);cancel.focus();
+ });
+}
+/* Feloldás után az összes tanári vezérlő állapota egységesen frissül. */
+(function(){
+ const unlock=document.getElementById('teacherUnlockSubmit');if(!unlock)return;
+ unlock.addEventListener('click',()=>{setTimeout(()=>{if(typeof teacherSessionUnlocked!=='undefined'&&teacherSessionUnlocked){applyLock();updateBankSection();if(typeof updatePracticeOptions==='function')updatePracticeOptions();}},250)},false);
+})();
+</script>
+
+<style>
+/* A gyakorlási beállítások mindkét módban láthatók; a jogosultságot a JavaScript kezeli. */
+</style>
+<script>
+/* A feloldás és a módváltás után a tényleges jogosultságot újraszámoljuk. */
+(function(){
+ const modal=document.getElementById('teacherUnlockModal');
+ if(modal){new MutationObserver(()=>{
+   if(modal.classList.contains('hidden') && typeof teacherSessionUnlocked!=='undefined' && teacherSessionUnlocked){
+     if(typeof applyLock==='function')applyLock();
+     if(typeof practiceControls==='function')practiceControls();
+     if(typeof updateBankSection==='function')updateBankSection();
+   }
+ }).observe(modal,{attributes:true,attributeFilter:['class']});}
+ const checkbox=document.getElementById('practiceMode');
+ if(checkbox)checkbox.addEventListener('change',()=>{
+   if(typeof applyLock==='function')applyLock();
+   if(typeof practiceControls==='function')practiceControls();
+   if(typeof updateBankSection==='function')updateBankSection();
+ });
+})();
+</script>
+
+<!-- Alternatív témák: a később hozzáadott közös beállítások ne bontsák szét a tematikus paneleket. -->
+<style id="alternativeThemeLayoutRepair">
+@media screen {
+ body.screen-start:not([data-start-theme="original"]) .variant-layout{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;grid-auto-flow:row!important;gap:12px!important;width:100%;align-items:stretch}
+ body.screen-start:not([data-start-theme="original"]) .variant-layout>.v-panel{grid-column:auto!important;grid-row:auto!important;min-width:0!important;width:auto!important;height:auto!important;max-width:none!important;display:flex!important;flex-direction:column;gap:7px;overflow:visible!important;box-sizing:border-box}
+ body.screen-start:not([data-start-theme="original"]) .variant-layout>.v-identity{grid-column:1!important;grid-row:1!important}
+ body.screen-start:not([data-start-theme="original"]) .variant-layout>.v-teacher{grid-column:2!important;grid-row:1!important}
+ body.screen-start:not([data-start-theme="original"]) .variant-layout>.v-audio{grid-column:1!important;grid-row:2!important}
+ body.screen-start:not([data-start-theme="original"]) .variant-layout>.v-order{grid-column:2!important;grid-row:2!important}
+ body.screen-start:not([data-start-theme="original"]) .variant-layout>.v-practice{grid-column:1/-1!important;grid-row:3!important}
+ body.screen-start:not([data-start-theme="original"]) .variant-layout>.v-info{grid-column:1!important;grid-row:4!important}
+ body.screen-start:not([data-start-theme="original"]) .variant-layout>.v-footer{grid-column:2!important;grid-row:4!important}
+ body.screen-start:not([data-start-theme="original"]) .v-panel :is(input,select,button){max-width:100%;box-sizing:border-box}
+ body.screen-start:not([data-start-theme="original"]) .v-panel .start-settings-row,body.screen-start:not([data-start-theme="original"]) .v-panel .start-audio-row{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:8px!important;width:100%}
+ body.screen-start:not([data-start-theme="original"]) .v-panel .start-unlock-field{grid-column:1/-1}
+ body.screen-start:not([data-start-theme="original"]) .v-panel #taskOrderField{display:block!important;width:100%!important}
+ body.screen-start:not([data-start-theme="original"]) .v-panel #practiceOptions{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;width:100%!important;min-width:0;gap:8px!important}
+ body.screen-start:not([data-start-theme="original"]) .v-panel #unifiedBankSlot{display:flex!important;flex-wrap:wrap!important;gap:8px!important;min-width:0;grid-column:1/-1}
+ body.screen-start:not([data-start-theme="original"]) .v-panel #practiceAuxiliarySettings{display:flex!important;flex-wrap:wrap!important;min-width:0;grid-column:1/-1}
+ body.screen-start:not([data-start-theme="original"]) .v-panel #startModeTabs{grid-column:1/-1;width:100%}
+ body.screen-start:not([data-start-theme="original"]) .v-panel #startModeDescription{grid-column:1/-1}
+ body.screen-start:not([data-start-theme="original"]) .v-panel #practiceOptions>p,body.screen-start:not([data-start-theme="original"]) .v-panel #practiceOptions>#practiceSharedSettings{grid-column:1/-1}
+ body.screen-start:not([data-start-theme="original"]) #startPanel>.start-grid{display:none!important}
+ body.screen-start:not([data-start-theme="original"]) #startBottomActions{margin-top:12px}
+}
+@media screen and (max-width:760px){
+ body.screen-start:not([data-start-theme="original"]) .variant-layout{grid-template-columns:minmax(0,1fr)!important}
+ body.screen-start:not([data-start-theme="original"]) .variant-layout>.v-panel{grid-column:1!important;grid-row:auto!important}
+ body.screen-start:not([data-start-theme="original"]) .v-panel #practiceOptions{grid-template-columns:minmax(0,1fr)!important}
+ body.screen-start:not([data-start-theme="original"]) .v-panel .start-settings-row,body.screen-start:not([data-start-theme="original"]) .v-panel .start-audio-row{grid-template-columns:minmax(0,1fr)!important}
+}
+</style>
+
+
+<style id="unlockVisibilityFix">
+/* A tanári feloldás soha ne tűnjön el módváltáskor. */
+#practiceOptions .start-unlock-field,#practiceOptions.practice-view .start-unlock-field,
+#practiceSharedSettings .start-unlock-field{display:block!important;min-width:0}
+#unlockBtn:not(.hidden){display:inline-flex!important;align-items:center;justify-content:center;white-space:normal}
+#practiceOptions :is(#practiceTextKind,#practiceTime,#practiceSpeechRate):disabled{opacity:1}
+</style>
+<script>
+(function fixUnlockVisibility(){
+ const frame=document.getElementById('practiceOptions'),btn=document.getElementById('unlockBtn');
+ if(!frame||!btn)return;
+ const host=document.createElement('div');host.id='teacherUnlockAlwaysVisible';host.style.cssText='grid-column:1/-1;display:flex;justify-content:flex-end;align-items:center;gap:8px;flex-wrap:wrap';
+ const hint=document.createElement('span');hint.id='unlockStatusHint';hint.style.fontSize='.8rem';host.append(hint,btn);
+ frame.prepend(host);
+ function sync(){
+   const practice=!!document.getElementById('practiceMode')?.checked;
+   const unlocked=typeof teacherSessionUnlocked!=='undefined'&&teacherSessionUnlocked;
+   const pinFree=typeof teacherPinRequired!=='undefined'&&teacherPinRequired===false;
+   btn.classList.remove('hidden');btn.disabled=unlocked||pinFree;
+   btn.textContent=unlocked||pinFree?'✓ Tanári beállítások feloldva':'🔒 Tanári feloldás';
+   hint.textContent=practice?'Gyakorlás: szabadon állítható':'Éles teszt: módosításhoz tanári feloldás szükséges';
+   if(typeof practiceControls==='function')practiceControls();
+ }
+ document.getElementById('practiceMode')?.addEventListener('change',sync);
+ const modal=document.getElementById('teacherUnlockModal');
+ if(modal)new MutationObserver(()=>{if(modal.classList.contains('hidden'))sync()}).observe(modal,{attributes:true,attributeFilter:['class']});
+ sync();
+})();
+</script>
+
+<style id="finalThemeConsistency">
+/* Egységes, rugalmas panelek valamennyi kezdőlap-témában. */
+@media screen {
+ body.screen-start:not([data-start-theme="original"]) .variant-layout{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:12px!important;align-items:start!important}
+ body.screen-start:not([data-start-theme="original"]) .variant-layout>.v-panel{grid-column:auto!important;grid-row:auto!important;min-width:0!important;max-width:100%!important;height:auto!important;overflow:visible!important}
+ body.screen-start:not([data-start-theme="original"]) .variant-layout>.v-practice{grid-column:1/-1!important}
+ body.screen-start:not([data-start-theme="original"]) .variant-layout>.v-footer{grid-column:1/-1!important}
+ body.screen-start:not([data-start-theme="original"]) .v-panel #practiceOptions{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;gap:8px 12px!important;visibility:visible!important}
+ body.screen-start:not([data-start-theme="original"]) #practiceOptions>p,body.screen-start:not([data-start-theme="original"]) #practiceOptions>.practice-mode-heading,body.screen-start:not([data-start-theme="original"]) #practiceOptions>#teacherUnlockAlwaysVisible,body.screen-start:not([data-start-theme="original"]) #practiceOptions>#contentBankPractice{grid-column:1/-1!important}
+ body.screen-start #practiceOptions select{min-width:0!important;width:100%!important}
+ body.screen-start .v-panel .start-footer{display:flex!important;flex-wrap:wrap;gap:10px}
+ body.screen-start .v-panel .start-footer #startBtn{margin-left:auto}
+}
+@media screen and (max-width:760px){body.screen-start:not([data-start-theme="original"]) .variant-layout{grid-template-columns:minmax(0,1fr)!important}body.screen-start:not([data-start-theme="original"]) .variant-layout>.v-panel{grid-column:1!important}body.screen-start:not([data-start-theme="original"]) .v-panel #practiceOptions{grid-template-columns:minmax(0,1fr)!important}}
+</style>
+<script>
+(function(){
+ const box=document.getElementById('practiceOptions');
+ if(box){box.classList.remove('hidden');box.hidden=false;}
+ const mode=document.getElementById('practiceMode');
+ function refresh(){
+  if(box){box.classList.remove('hidden');box.hidden=false;}
+  if(typeof applyLock==='function')applyLock();
+  if(typeof practiceControls==='function')practiceControls();
+ }
+ mode?.addEventListener('change',refresh);
+ const unlock=document.getElementById('teacherUnlockModal');
+ if(unlock)new MutationObserver(()=>{if(unlock.classList.contains('hidden'))refresh()}).observe(unlock,{attributes:true,attributeFilter:['class']});
+ refresh();
+})();
+</script>
+
+<style id="v8-visibility-correction">
+/* Mindkét módban mindig jelenjen meg minden gyakorlási mező. */
+body.screen-start #practiceOptions{display:grid!important;visibility:visible!important}
+body.screen-start #practiceOptions > label[for="practiceTextKind"],
+body.screen-start #practiceOptions > label[for="practiceTime"],
+body.screen-start #practiceOptions > label[for="practiceSpeechRate"],
+body.screen-start #practiceOptions > #practiceTextKind,
+body.screen-start #practiceOptions > #practiceTime,
+body.screen-start #practiceOptions > #practiceSpeechRate{display:block!important;visibility:visible!important}
+body.screen-start #practiceOptions #teacherUnlockAlwaysVisible{display:flex!important}
+/* A másodlagos, téma által megjelenített indítógombot elrejtjük. */
+body.screen-start #startBtnBottom{display:none!important}
+body.screen-start:not([data-start-theme="original"]) .variant-layout>.v-panel{min-width:0;overflow-wrap:anywhere}
+body.screen-start:not([data-start-theme="original"]) .variant-layout>.v-panel input,
+body.screen-start:not([data-start-theme="original"]) .variant-layout>.v-panel select{max-width:100%;min-width:0}
+</style>
+<script>
+(function(){
+ const ids=['practiceTextKind','practiceTime','practiceSpeechRate'];
+ const frame=document.getElementById('practiceOptions');
+ if(!frame)return;
+ function sync(){
+   frame.classList.remove('hidden');frame.hidden=false;
+   const practice=!!document.getElementById('practiceMode')?.checked;
+   const unlocked=typeof teacherSessionUnlocked!=='undefined'&&teacherSessionUnlocked;
+   const pinFree=typeof teacherPinRequired!=='undefined'&&teacherPinRequired===false;
+   const running=typeof testActive!=='undefined'&&testActive&&!document.getElementById('testPanel')?.classList.contains('hidden');
+   for(const id of ids){const el=document.getElementById(id);if(el)el.disabled=!!running||(!practice&&!unlocked&&!pinFree);}
+ }
+ document.getElementById('practiceMode')?.addEventListener('change',()=>queueMicrotask(sync));
+ const modal=document.getElementById('teacherUnlockModal');
+ if(modal)new MutationObserver(()=>queueMicrotask(sync)).observe(modal,{attributes:true,attributeFilter:['class']});
+ sync();
+})();
+</script>
+<style>
+/* Tesztüzenetek: az oldal alján, lebegő értesítésként. */
+@media screen {
+ body #testPanel .msg-slot {height:0!important;min-height:0!important;max-height:0!important;overflow:visible!important;position:static!important;z-index:160!important;padding:0!important;margin:0!important}
+ body #testPanel .msg-slot #autoMsg {position:fixed!important;top:auto!important;bottom:calc(18px + env(safe-area-inset-bottom, 0px))!important;left:50%!important;right:auto!important;transform:translateX(-50%)!important;display:flex!important;align-items:center!important;justify-content:center!important;width:min(92vw,650px)!important;max-width:650px!important;max-height:min(30vh,160px)!important;height:auto!important;min-height:44px!important;margin:0!important;padding:10px 16px!important;text-align:center!important;line-height:1.35!important;font-size:clamp(.82rem,2.4vw,1rem)!important;border-radius:11px!important;box-shadow:0 8px 28px rgba(0,0,0,.23)!important;pointer-events:none!important;overflow:auto!important;z-index:160!important;box-sizing:border-box!important}
+ body #testPanel .msg-slot #autoMsg:empty {display:none!important;visibility:hidden!important;opacity:0!important}
+ body #testPanel .msg-slot #autoMsg:not(:empty) {visibility:visible!important;opacity:1!important;animation:bottom-toast-in .22s ease-out both}
+ @keyframes bottom-toast-in {from{opacity:0;translate:0 12px}to{opacity:1;translate:0 0}}
+}
+@media(prefers-reduced-motion:reduce){body #testPanel .msg-slot #autoMsg:not(:empty){animation:none!important}}
+@media print{body #testPanel .msg-slot{display:none!important}}
+</style>
+
+<script id="teacher-unlock-complete-fix">
+/* Egységes jogosultság minden kezdőlap-témában. A tanári feloldás csak
+   a sikeres szerveres PIN-ellenőrzés után áll be. */
+(function(){
+ const ids=['practiceTextKind','practiceTime','practiceSpeechRate','practiceDelivery','practiceBankStart'];
+ const modal=document.getElementById('teacherUnlockModal');
+ function sync(){
+   const practicing=!!document.getElementById('practiceMode')?.checked;
+   const granted=typeof teacherSessionUnlocked!=='undefined'&&teacherSessionUnlocked;
+   const noPin=typeof teacherPinRequired!=='undefined'&&teacherPinRequired===false;
+   const running=typeof testActive!=='undefined'&&testActive&&!document.getElementById('testPanel')?.classList.contains('hidden');
+   const allowed=practicing||granted||noPin;
+   for(const id of ids){
+     const field=document.getElementById(id);
+     if(!field)continue;
+     field.disabled=running||!allowed;
+     field.title=field.disabled?(running?'A folyamatban lévő teszt alatt nem módosítható':'Tanári feloldás szükséges'):'';
+   }
+   const bank=document.getElementById('testContentBank');
+   if(bank)bank.disabled=running||(!granted&&!noPin);
+   const order=document.getElementById('taskOrder');
+   if(order)order.disabled=running||(!allowed);
+   const btn=document.getElementById('unlockBtn');
+   if(btn){btn.classList.remove('hidden');btn.disabled=granted||noPin;btn.textContent=granted||noPin?'✓ Tanári beállítások feloldva':'🔒 Tanári feloldás';}
+ }
+ document.getElementById('practiceMode')?.addEventListener('change',()=>queueMicrotask(sync));
+ if(modal)new MutationObserver(()=>queueMicrotask(sync)).observe(modal,{attributes:true,attributeFilter:['class']});
+ const submit=document.getElementById('teacherUnlockSubmit');
+ submit?.addEventListener('click',()=>setTimeout(sync,0));
+ document.getElementById('unlockBtn')?.addEventListener('click',()=>{if(typeof teacherPinRequired!=='undefined'&&teacherPinRequired===null){modal?.classList.remove('hidden');document.getElementById('teacherUnlockPin')?.focus();}});
+ sync();
+})();
+</script>
+
+<style id="compact-teacher-bank-v12">
+@media screen{
+ body.screen-start #unifiedBankSlot{align-items:stretch!important;gap:8px!important;margin:3px 0!important}
+ body.screen-start #unifiedBankSlot>#contentBankSection{flex:0 1 380px!important;align-self:start!important;padding:8px 10px!important;margin:0!important}
+ body.screen-start #unifiedBankSlot #contentBankSection h3{margin:0 0 4px!important;font-size:.9rem!important}
+ body.screen-start #unifiedBankSlot #contentBankTeacher{display:flex!important;align-items:center!important;gap:6px!important;flex-wrap:wrap!important}
+ body.screen-start #unifiedBankSlot #contentBankTeacher label{margin:0!important;font-size:.8rem!important}
+ body.screen-start #unifiedBankSlot #contentBankTeacher select{width:auto!important;min-width:155px!important;max-width:220px!important;padding:5px!important}
+ body.screen-start #unifiedBankSlot #contentBankHelp{font-size:.72rem!important;margin:3px 0 0!important;line-height:1.2!important}
+ body.screen-start #unifiedBankSlot #practiceAuxiliarySettings{flex:1 1 460px!important;align-content:start!important;align-self:start!important;padding:3px 0!important;gap:6px!important}
+ body.screen-start #unifiedBankSlot #contentBankStatus:empty{display:none!important}
+ @media(max-width:1000px){body.screen-start #unifiedBankSlot>#contentBankSection{flex:1 1 100%!important}body.screen-start #unifiedBankSlot #practiceAuxiliarySettings{flex:1 1 100%!important;justify-content:flex-start!important}}
 }
 </style>
 </body>
