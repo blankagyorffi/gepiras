@@ -696,6 +696,42 @@ body.screen-start.practice-start #startPanel .start-grid>.start-field.identity-c
 .app-heading>.top-actions{display:flex!important;align-items:center;justify-content:flex-end;gap:8px;margin-left:auto!important;flex-wrap:wrap}
 @media(max-width:560px){.app-heading{gap:6px!important}.app-heading>.top-actions{gap:4px}.app-heading>.top-actions .access-btn{font-size:.75rem;padding:5px 7px}}
 </style>
+<style id="dictation-writing-space-v36">
+/* Tollbamondáskor az írható mező kapja a munkaterület nagyobb részét. */
+@media screen and (min-width:761px){
+ body.screen-test.dictation-writing #typingWorkspace,
+ body.screen-test.dictation-writing.keyboard-open #typingWorkspace{
+   grid-template-rows:minmax(65px,0.65fr) minmax(180px,2.35fr)!important;
+ }
+ body.screen-test.dictation-writing #typingWorkspace #answer{min-height:170px!important;}
+}
+@media screen and (max-width:760px){
+ body.screen-test.dictation-writing #typingWorkspace,
+ body.screen-test.dictation-writing.keyboard-open #typingWorkspace{
+   grid-template-rows:minmax(40px,0.5fr) minmax(120px,2.5fr)!important;
+ }
+}
+</style>
+<style id="copy-writing-space-v38">
+/* Másolásnál több hely az írható mezőnek, a forrásszöveg is jól látható marad. */
+@media screen and (min-width:761px){
+ body.screen-test:not(.dictation-writing) #typingWorkspace,
+ body.screen-test:not(.dictation-writing).keyboard-open #typingWorkspace{
+   grid-template-rows:minmax(100px,0.85fr) minmax(155px,1.4fr)!important;
+ }
+}
+@media screen and (max-width:760px){
+ body.screen-test:not(.dictation-writing) #typingWorkspace,
+ body.screen-test:not(.dictation-writing).keyboard-open #typingWorkspace{
+   grid-template-rows:minmax(65px,0.9fr) minmax(105px,1.25fr)!important;
+ }
+}
+</style>
+<style>
+.archive-day{margin:10px 0 14px;border:1px solid #b9c8c1;border-radius:8px;padding:8px;background:#fff;color:#172923}.archive-day h4{margin:0 0 7px;font-size:1rem}.archive-table{width:100%;border-collapse:collapse;text-align:left}.archive-table th,.archive-table td{padding:6px 10px;border-bottom:1px solid #dbe2df}.archive-table th:last-child,.archive-table td:last-child{text-align:center}.archive-table tbody tr:last-child td{border-bottom:0}body.high-contrast .archive-day{background:#fff!important;color:#000!important;border:2px solid #000!important}body.high-contrast .archive-table th,body.high-contrast .archive-table td{color:#000!important;border-color:#000!important}
+</style>
+
+
 </head>
 <body>
 <div id="loadingOverlay" class="hidden" role="status" aria-live="polite">
@@ -2248,7 +2284,24 @@ function readRecentResults(){
 }
 function historyDay(entry){if(entry.legacyDay&&!Number(entry.completedAt))return entry.legacyDay;const time=recentResultTime(entry);if(!Number.isFinite(time)||time<=0)return '';const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Budapest',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date(time));return ['year','month','day'].map(k=>parts.find(p=>p.type===k).value).join('-');}
 function dailyHistoryEntries(data,mode){const today=historyDay({completedAt:Date.now()}),entries=(readRecentResults()[historyIdentity(data)]||[]).filter(h=>h.mode===mode&&historyDay(h)===today).sort((a,b)=>recentResultTime(a)-recentResultTime(b));return entries.map((h,i)=>({...h,number:i+1,current:h.testId===data.testId}));}
-function fullHistoryHtml(data){const today=historyDay({completedAt:Date.now()});const entries=(readRecentResults()[historyIdentity(data)]||[]).filter(h=>historyDay(h)!==today).slice().sort((a,b)=>historyDay(a).localeCompare(historyDay(b))||recentResultTime(a)-recentResultTime(b));const counters={};const cards=entries.map(h=>{const day=historyDay(h)||'Ismeretlen dátum',key=day+'|'+h.mode;counters[key]=(counters[key]||0)+1;return '<div class="archive-result"><span>'+esc(day)+' · '+(h.mode==='practice'?'Gyakorlás':h.mode==='test'?'Éles teszt':'Korábbi eredmény')+'</span>'+resultHistoryCards([{...h,number:counters[key],current:h.testId===data.testId}])+'</div>';}).reverse().join('');return '<details class="all-results-history"><summary>Korábbi napok saját eredményei ('+entries.length+')</summary><p class="small">Ezen a böngészőn megőrzött eredmények. Naponta és módonként új számozás; legfrissebb napok felül.</p>'+cards+'</details>';}
+function fullHistoryHtml(data){
+ const today=historyDay({completedAt:Date.now()});
+ const entries=(readRecentResults()[historyIdentity(data)]||[]).filter(h=>historyDay(h)!==today);
+ const groups=new Map();
+ for(const h of entries){const day=historyDay(h)||'Ismeretlen dátum',mode=h.mode||'legacy',key=day+'|'+mode;if(!groups.has(key))groups.set(key,{day,mode,items:[]});groups.get(key).items.push(h);}
+ const ordered=[...groups.values()].sort((a,b)=>b.day.localeCompare(a.day)||a.mode.localeCompare(b.mode));
+ const html=ordered.map(group=>{
+  group.items.sort((a,b)=>recentResultTime(a)-recentResultTime(b));
+  const rows=group.items.map((h,i)=>{
+   const pct=Number(h.percent??h.accuracy),grade=Number(h.grade),kind=specialGradeKind(h);
+   const value=Number.isFinite(pct)?String(Math.round(pct*100)/100).replace('.',',')+'%':'–';
+   return '<tr><td>'+(i+1)+'. teszt</td><td>'+value+'</td><td><b class="special-grade-'+(kind||'normal')+'" title="'+esc(specialGradeNote(kind))+'">'+(grade>=1&&grade<=5?grade:'–')+'</b></td></tr>';
+  }).reverse().join('');
+  const label=group.mode==='practice'?'Gyakorlás':group.mode==='test'?'Éles teszt':'Korábbi eredmény';
+  return '<section class="archive-day"><h4>'+esc(group.day)+' · '+label+'</h4><table class="archive-table"><thead><tr><th>Teszt</th><th>Teljesítmény</th><th>Jegy</th></tr></thead><tbody>'+rows+'</tbody></table></section>';
+ }).join('');
+ return '<details class="all-results-history"><summary>Korábbi napok saját eredményei ('+entries.length+')</summary><p class="small">Dátum és mód szerint csoportosítva. A tesztszám minden nap 1-től indul; a legújabb eredmények felül láthatók.</p>'+(html||'<p>Nincs korábbi eredmény.</p>')+'</details>';
+}
 
 function recentResultTime(entry){return Number(entry.completedAt)||Date.parse(entry.testFinishedAt||'');}
 function withinRecentHour(entry,now){const time=recentResultTime(entry);return Number.isFinite(time)&&time>=now-3600000&&time<=now;}
@@ -2743,7 +2796,8 @@ function downloadCsv(){
 
 function downloadPdf(){
   // A böngésző nyomtatási párbeszédablakában válaszd a „Mentés PDF-ként” lehetőséget.
-  formattedPdf();
+  if(window.matchMedia('(max-width:760px)').matches){directPdf();return;}
+  try{formattedPdf();}catch(error){console.error('PDF nyomtatási nézet:',error);directPdf();}
 }
 
 async function checkPendingOnLoad(){
@@ -3272,6 +3326,7 @@ function readTask(){
  speak();
 }
 function prepareSpeech(t){
+ document.body.classList.toggle('dictation-writing',enabledFlag(t.dictation));
  $('dictationStartControls')?.classList.add('hidden');
  $('nextBtn').classList.remove('hidden');
  stopReading(); const on=enabledFlag(t.readAloud)||enabledFlag(t.dictation);
@@ -4244,17 +4299,18 @@ function renderResultRecentHistory(){
 
 function renderGradeGroupResults(progress){
  const special=progress.enabled&&progress.eligible&&Array.isArray(progress.tests)&&progress.tests.some(t=>specialGradeKind(t));
- $('gradeProgressTop').classList.toggle('special-average',!!special);$('gradeProgressTop').title=special?'Az átlag vészleállított vagy technikai kihagyással érintett teszt jegyét is tartalmazza.':'';
- let box=$('gradeGroupResults');if(!box){box=document.createElement('div');box.id='gradeGroupResults';box.className='result-history hidden';$('resultRecentHistory').after(box);}
+ $('gradeProgressTop').classList.toggle('special-average',!!special);
+ $('gradeProgressTop').title=special?'Az átlag vészleállított vagy technikai kihagyással érintett teszt jegyét is tartalmazza.':'';
+ let box=$('gradeGroupResults');
+ if(!box){box=document.createElement('div');box.id='gradeGroupResults';box.className='result-history hidden';$('resultRecentHistory').after(box);}
  const entries=progress.enabled&&progress.eligible&&Array.isArray(progress.tests)?progress.tests:[];
- box.classList.toggle('hidden',!entries.length);
  if(entries.length){
- const data=exportResult,all=readRecentResults(),key=historyIdentity(data),stored=Array.isArray(all[key])?all[key]:[];
- entries.forEach(test=>{if(!test.testId||!Number.isFinite(Number(test.completedAt))||Number(test.completedAt)<=0)return;const saved={...test,mode:'test',accuracy:test.percent};const i=stored.findIndex(h=>h.testId===test.testId);if(i>=0)stored[i]={...stored[i],...saved};else stored.push(saved);});all[key]=stored;recentResultsMemory=all;try{localStorage.setItem(RECENT_RESULTS_KEY,JSON.stringify(all));}catch(e){}
- const today=historyDay({completedAt:Date.now()}),older=entries.filter(t=>historyDay(t)!==today&&!t.current);
- box.classList.toggle('hidden',!older.length);
- box.innerHTML=older.length?'<details><summary>A jegyátlag korábbi napokról származó tesztjei</summary><div class="history-result-items">'+resultHistoryCards(older)+'</div></details>':'';
+  const data=exportResult,all=readRecentResults(),key=historyIdentity(data),stored=Array.isArray(all[key])?all[key]:[];
+  entries.forEach(test=>{if(!test.testId||!Number.isFinite(Number(test.completedAt))||Number(test.completedAt)<=0)return;const saved={...test,mode:'test',accuracy:test.percent};const i=stored.findIndex(h=>h.testId===test.testId);if(i>=0)stored[i]={...stored[i],...saved};else stored.push(saved);});
+  all[key]=stored;recentResultsMemory=all;try{localStorage.setItem(RECENT_RESULTS_KEY,JSON.stringify(all));}catch(e){}
  }
+ // A jegyátlag eredményeit nem ismételjük meg egy második, eltérően számozott sorban.
+ box.classList.add('hidden');box.innerHTML='';
  renderResultRecentHistory();
 }
 </script>
@@ -4299,7 +4355,7 @@ function updateBankSection(){
  let reference=$('practiceTeacherBankReference');if(reference)reference.textContent='A tanár éles teszthez kijelölt bankja: '+((contentBankCatalog||[]).find(b=>b.id===activeTestContentBank)?.label||activeTestContentBank)+'. Gyakorláshoz ettől függetlenül választhatsz.';$('contentBankTeacher').classList.toggle('hidden',practice);
  $('contentBankTitle').textContent=practice?'Feladatbank – szabad választás gyakorláshoz':'Feladatbank az éles teszthez';
  const real=$('testContentBank');real.replaceChildren(...(contentBankCatalog||[{id:'bank1',label:'Feladatbank 1',available:true},{id:'bank2',label:'Feladatbank 2',available:true},{id:'bank3',label:'Feladatbank 3',available:true},{id:'bank4',label:'Modulzáró',available:true}]).map(b=>{const o=document.createElement('option');o.value=b.id;o.textContent=b.label;o.disabled=!b.available;return o;}));real.value=activeTestContentBank;real.disabled=locked||teacherPinRequired===null;
- $('contentBankHelp').textContent=practice?'Bármelyik feltöltött bankból gyakorolhatsz. A többi beállítás közös.':locked?'Módosításhoz használd a feladatszám mellett lévő Tanári feloldás gombot.':'A bankválasztás automatikusan mentődik, és minden új éles tesztben érvényes.';
+ $('contentBankHelp').textContent=practice?'Bármelyik feltöltött bankból gyakorolhatsz. A többi beállítás közös.':locked?'':'A bankválasztás automatikusan mentődik, és minden új éles tesztben érvényes.';
 }
 async function saveUnlockedBankChoice(){
  const bank=requiredControl('testContentBank').value;$('testContentBank').disabled=true;
@@ -5255,5 +5311,28 @@ html body.high-contrast.screen-start #startPanel #studentCode::placeholder{color
  document.getElementById('practiceMode')?.addEventListener('change',place);
 })();
 </script>
+<style id="v40-mobile-corrections">
+/* A korábbi, egymásra rakódott mobil szabályok felülírása. */
+@media screen and (max-width:760px){
+ body.screen-start #startPanel,body.screen-start #startPanel *{box-sizing:border-box}
+ body.screen-start #startPanel{min-width:0;max-width:100%;overflow:visible}
+ body.screen-start #studentCode,body.screen-start #studentName{min-width:0!important;max-width:100%!important;width:100%!important}
+ body.screen-start #studentCodeVerify{position:static!important;float:none!important;transform:none!important;max-width:100%!important;width:auto!important;min-height:44px!important;margin:7px 0!important;white-space:normal!important}
+ body.screen-start #startPanel label[for="studentCode"],body.screen-start #startPanel label[for="studentName"]{display:block!important;max-width:100%!important;white-space:normal!important;overflow-wrap:anywhere}
+ body.screen-start #startPanel .start-grid,body.screen-start #startPanel .start-identity-row,body.screen-start #startPanel .start-code-row{min-width:0!important}
+ body.screen-start #startPanel .start-grid>*{min-width:0!important}
+ body.screen-start #startPanel .class-row{min-width:0!important;width:100%!important;display:flex!important;gap:6px!important}
+ body.screen-start #startPanel .class-row select{min-width:0!important;flex:1 1 0!important;width:0!important}
+ body.screen-start #startPanel #startBtn,body.screen-start #startBtnBottom{position:static!important;max-width:100%!important}
+ body.screen-start #backToTop{display:none!important}
+ body.screen-start #startPanel small,body.screen-start #startPanel .setting-help{overflow-wrap:anywhere}
+ body.screen-test #dictationStartControls:not(.hidden){max-height:none!important;overflow:visible!important;display:flex!important;flex-wrap:wrap!important;gap:5px!important}
+ body.screen-test #dictationStartControls:not(.hidden) button{flex:1 1 42%!important;min-width:0!important;min-height:38px!important;white-space:normal!important;line-height:1.2!important}
+ body.screen-test #testPanel #liveTestHistory{height:auto!important;max-height:72px!important;min-height:32px!important;flex:0 0 auto!important;overflow:visible!important;flex-wrap:wrap!important;align-content:start!important}
+ body.screen-test #testPanel #liveHistoryItems{display:flex!important;min-width:0!important;max-width:100%!important;width:100%!important;overflow-x:auto!important;overflow-y:hidden!important;gap:5px!important;scrollbar-width:thin}
+ body.screen-test #testPanel #liveHistoryItems .history-result-card,body.screen-test #testPanel #liveHistoryItems .history-result-card b{font-size:13px!important;line-height:1.35!important}
+ body.screen-test #testPanel #liveHistoryItems .history-result-card{flex:0 0 auto!important;min-width:max-content!important;padding:4px 6px!important}
+}
+</style>
 </body>
 </html>
