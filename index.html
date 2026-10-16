@@ -1076,7 +1076,7 @@ function rememberName(name){
 
 /* ---------- Feladatok betöltése és kiválasztása ---------- */
 
-function jsonp(params,timeoutMs){
+function jsonpOnce(params,timeoutMs){
   return new Promise((resolve,reject)=>{
     const callbackName="gcb_"+Date.now()+"_"+Math.random().toString(36).slice(2);
     const script=document.createElement("script");
@@ -1101,6 +1101,27 @@ function jsonp(params,timeoutMs){
     script.src=API_URL+"?"+qs+"&callback="+encodeURIComponent(callbackName)+"&_="+Date.now();
     document.body.appendChild(script);
   });
+}
+
+let settingsConnectionRequest=null;
+async function jsonp(params,timeoutMs){
+ if(params.action!=='getSettings')return jsonpOnce(params,timeoutMs);
+ if(settingsConnectionRequest)return settingsConnectionRequest;
+ settingsConnectionRequest=(async()=>{
+  const failures=[];
+  try{return await jsonpOnce(params,timeoutMs);}catch(error){failures.push(error.message);}
+  const controller=new AbortController(),timer=setTimeout(()=>controller.abort(),12000);
+  try{
+   const query=new URLSearchParams({...params,_:String(Date.now())});
+   const response=await fetch(API_URL+'?'+query,{method:'GET',redirect:'follow',cache:'no-store',credentials:'omit',signal:controller.signal});
+   if(!response.ok)throw new Error('A szerver HTTP '+response.status+' választ adott.');
+   const text=await response.text();let data;try{data=JSON.parse(text);}catch(error){throw new Error('A szerver nem programadatot küldött; ellenőrizni kell a webalkalmazás telepítését és hozzáférését.');}
+   if(!data||typeof data!=='object'||Array.isArray(data))throw new Error('Érvénytelen szerverválasz.');
+   return data;
+  }catch(error){failures.push(error.name==='AbortError'?'A közvetlen kapcsolat időtúllépéssel leállt.':error.message);}finally{clearTimeout(timer);}
+  try{return await jsonpOnce(params,15000);}catch(error){failures.push(error.message);}
+  const error=new Error('A tanári beállítások nem érhetők el. Éles teszt nem indítható friss szerverellenőrzés nélkül. Próbáld újra; tartós hiba esetén a tanár ellenőrizze az Apps Script webalkalmazás elérhetőségét és a honlapban megadott címét.');error.detail=failures.join(' | ');throw error;
+ })();try{return await settingsConnectionRequest;}finally{settingsConnectionRequest=null;}
 }
 
 let gradingMinEvaluatedPercentSetting=70;
@@ -1425,7 +1446,7 @@ async function startTest(){
  if(!allowLeavingResult())return;
  if(!selectedPractice()){
   if($('startBtn').disabled)return;$('startBtn').disabled=true;$('startBtn').textContent='Tanári bank ellenőrzése…';
-  try{await verifyCurrentRealBank();}catch(e){showError(e.message);return;}finally{$('startBtn').disabled=false;$('startBtn').textContent='Teszt indítása';}
+  try{await verifyCurrentRealBank();}catch(e){showError(e.message,e.detail);return;}finally{$('startBtn').disabled=false;$('startBtn').textContent='Teszt indítása';}
  }
  if(teacherSettingsPromise){
   if($('startBtn').disabled)return;
@@ -1573,17 +1594,41 @@ function startDictationWait(){
  saveDraft();
  const tick=()=>{
   if(!dictationWaiting||finished||stopped||idx!==currentIndex||epoch!==taskEpoch){clearDictationWait();return;}
+  if(dictationSkipPending)return;
   const elapsed=Date.now()-task._dictationWaitStartedAt;
   if(elapsed>=120000){skipWaitingDictation('no-response');return;}
   const left=Math.ceil((120000-elapsed)/1000),warn=elapsed>=60000;
   const controls=$('dictationStartControls');controls?.classList.toggle('dictation-wait-warning',warn);
-  const notice=$('dictationNotice');if(notice){notice.setAttribute('role',warn?'alert':'status');notice.textContent=warn?`⚠️ Indítsd el a felolvasást! Ha technikai gond van (például nincs fülhallgató vagy nem szól a felolvasó), válaszd a „Technikai okból kihagyom” gombot: ez nem rontja az eredményed. Ha nem választasz, ${left} mp múlva a feladat automatikusan kimarad és 0%-ot ér.`:dictationWaitingNotice()+` Indításra vagy választásra még ${left} mp áll rendelkezésre.`;}
+  const notice=$('dictationNotice');if(notice){notice.setAttribute('role',warn?'alert':'status');notice.classList.toggle('dictation-warning',warn);notice.classList.toggle('dictation-urgent',warn&&left<=15);notice.textContent=warn?`⚠️ Indítsd el, vagy jelezz technikai gondot! ${left} mp múlva automatikus kihagyás: 0 pont.`:dictationWaitingNotice()+` Indításra még ${left} mp.`;}
   if(warn){$('autoMsg').className='auto-msg warn';$('autoMsg').textContent='⚠️ Tollbamondás: indítsd el, vagy jelezd a technikai akadályt!';}
  };
  dictationWaitTimer=setInterval(tick,1000);tick();
 }
-function skipWaitingDictation(reason){
+let dictationSkipPending=false;
+function confirmDictationSkip(onConfirm){
+ if(dictationSkipPending||finished||stopped)return;
+ const idx=currentIndex,epoch=taskEpoch,task=tasks[idx],waiting=dictationWaiting,wasPaused=practicePaused,began=performance.now(),wall=Date.now();
+ const resumeSpeech=!speechDisabledForTest&&('speechSynthesis' in window)&&(speechSynthesis.speaking||speechSynthesis.pending||!!speechLoopTimer);
+ dictationSkipPending=true;if(!wasPaused){practicePaused=true;practicePausedAt=began;}stopReading();
+ const dialog=document.createElement('dialog');dialog.className='dictation-skip-confirm';dialog.setAttribute('aria-labelledby','dictationSkipTitle');
+ const consequence=waiting?'A kihagyott részfeladat 0 pontot ér, és ronthatja a jegyedet.':'Az eddig beírt szöveg megmarad, de a kihagyott részért nem kapsz pontot, és ez ronthatja a jegyedet.';
+ dialog.innerHTML='<h2 id="dictationSkipTitle">Biztosan kihagyod a tollbamondást?</h2><p>'+consequence+'</p><p>Technikai probléma esetén inkább a <b>Technikai okból kihagyom</b> lehetőséget válaszd: azt a részfeladatot a rendszer nem kezeli hibának.</p><p class="skip-confirm-countdown" role="status"></p><div class="skip-confirm-actions"><button type="button" data-choice="cancel">Mégsem – folytatom</button><button type="button" data-choice="skip">Igen, kihagyom</button>'+(waiting?'<button type="button" data-choice="technical">Technikai okból kihagyom</button>':'')+'</div>';
+ document.body.append(dialog);let timer=null,done=false;
+ function choose(choice){if(done)return;done=true;clearInterval(timer);const same=currentIndex===idx&&taskEpoch===epoch;dialog.close();dialog.remove();dictationSkipPending=false;
+  if(!same)return;
+  if(Number.isFinite(task._dictationWaitStartedAt))task._dictationWaitStartedAt+=Date.now()-wall;
+  if(!wasPaused){startTime+=Math.max(0,performance.now()-began);practicePaused=false;practicePausedAt=0;}
+  if(choice==='skip'){onConfirm();return;}if(choice==='technical'){skipWaitingDictation('technical');return;}
+  if(resumeSpeech&&!wasPaused&&!finished&&!stopped)readTask();if(!finished&&!stopped)$('answer').focus({preventScroll:true});
+ }
+ dialog.querySelectorAll('[data-choice]').forEach(button=>button.addEventListener('click',()=>choose(button.dataset.choice)));
+ dialog.addEventListener('cancel',event=>{event.preventDefault();choose('cancel');});
+ function tick(){if(idx!==currentIndex||epoch!==taskEpoch||stopped){choose('cancel');return;}const left=Math.max(0,60-Math.floor((Date.now()-wall)/1000));dialog.querySelector('.skip-confirm-countdown').textContent='A feladat ideje áll. Ha nem választasz, '+left+' másodperc múlva végrehajtjuk a kért kihagyást.';if(left===0)choose('skip');}
+ dialog.showModal();timer=setInterval(tick,250);tick();
+}
+function skipWaitingDictation(reason,confirmed=false){
  if(!dictationWaiting||finished||stopped)return;
+ if(reason==='student-skip'&&!confirmed){confirmDictationSkip(()=>skipWaitingDictation(reason,true));return;}
  clearDictationWait();dictationWaiting=false;dictationBegin=null;startTime=performance.now();
  finishCurrentTask(reason==='no-response');
  const r=results[results.length-1];if(!r)return;
@@ -2138,15 +2183,24 @@ function overallFeedback(analyses){
 const HISTORY_KEY="gepiras_progress_history_v1";
 function historyIdentity(data){return String(data.studentName||"").trim().toLocaleLowerCase("hu-HU")+"|"+String(data.studentClass||"").trim().toLocaleLowerCase("hu-HU");}
 function readProgressHistory(){try{const v=JSON.parse(localStorage.getItem(HISTORY_KEY)||"{}");return v&&typeof v==="object"?v:{}}catch(e){return {}}}
-const RECENT_RESULTS_KEY='gepiras_recent_results_1h_v1';
+const RECENT_RESULTS_KEY='gepiras_all_results_v1';
 let recentResultsMemory={};
-function readRecentResults(){try{const data=JSON.parse(localStorage.getItem(RECENT_RESULTS_KEY)||'{}');if(data&&typeof data==='object'&&!Array.isArray(data))recentResultsMemory=data;}catch(e){}return recentResultsMemory;}
+function readRecentResults(){
+ try{let data=JSON.parse(localStorage.getItem(RECENT_RESULTS_KEY)||'null');
+ if(!data){data=JSON.parse(localStorage.getItem('gepiras_recent_results_1h_v1')||'{}');const previous=readProgressHistory();Object.keys(previous).forEach(key=>{if(!Array.isArray(data[key]))data[key]=[];for(const old of previous[key]||[]){if(old.testId&&data[key].some(h=>h.testId===old.testId))continue;const parts=String(old.date||'').match(/^(\d{4})\.\s*(\d{1,2})\.\s*(\d{1,2})\.?$/);data[key].push({...old,legacyDay:parts?parts[1]+'-'+parts[2].padStart(2,'0')+'-'+parts[3].padStart(2,'0'):'',completedAt:0});}});localStorage.setItem(RECENT_RESULTS_KEY,JSON.stringify(data));}
+ if(data&&typeof data==='object'&&!Array.isArray(data))recentResultsMemory=data;
+ }catch(e){}return recentResultsMemory;
+}
+function historyDay(entry){if(entry.legacyDay&&!Number(entry.completedAt))return entry.legacyDay;const time=recentResultTime(entry);if(!Number.isFinite(time)||time<=0)return '';const parts=new Intl.DateTimeFormat('en-CA',{timeZone:'Europe/Budapest',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date(time));return ['year','month','day'].map(k=>parts.find(p=>p.type===k).value).join('-');}
+function dailyHistoryEntries(data,mode){const today=historyDay({completedAt:Date.now()}),entries=(readRecentResults()[historyIdentity(data)]||[]).filter(h=>h.mode===mode&&historyDay(h)===today).sort((a,b)=>recentResultTime(a)-recentResultTime(b));return entries.map((h,i)=>({...h,number:i+1,current:h.testId===data.testId}));}
+function fullHistoryHtml(data){const today=historyDay({completedAt:Date.now()});const entries=(readRecentResults()[historyIdentity(data)]||[]).filter(h=>historyDay(h)!==today).slice().sort((a,b)=>historyDay(a).localeCompare(historyDay(b))||recentResultTime(a)-recentResultTime(b));const counters={};const cards=entries.map(h=>{const day=historyDay(h)||'Ismeretlen dátum',key=day+'|'+h.mode;counters[key]=(counters[key]||0)+1;return '<div class="archive-result"><span>'+esc(day)+' · '+(h.mode==='practice'?'Gyakorlás':h.mode==='test'?'Éles teszt':'Korábbi eredmény')+'</span>'+resultHistoryCards([{...h,number:counters[key],current:h.testId===data.testId}])+'</div>';}).reverse().join('');return '<details class="all-results-history"><summary>Korábbi napok saját eredményei ('+entries.length+')</summary><p class="small">Ezen a böngészőn megőrzött eredmények. Naponta és módonként új számozás; legfrissebb napok felül.</p>'+cards+'</details>';}
+
 function recentResultTime(entry){return Number(entry.completedAt)||Date.parse(entry.testFinishedAt||'');}
 function withinRecentHour(entry,now){const time=recentResultTime(entry);return Number.isFinite(time)&&time>=now-3600000&&time<=now;}
 function rememberRecentResult(data){
  const all=readRecentResults(),now=Date.now(),key=historyIdentity(data);
- Object.keys(all).forEach(k=>{all[k]=(Array.isArray(all[k])?all[k]:[]).filter(h=>withinRecentHour(h,now));if(!all[k].length)delete all[k];});
- const completedAt=Date.parse(data.testFinishedAt||'');if(!Number.isFinite(completedAt)||completedAt>now||completedAt<now-3600000)return;
+ // A teljes előzményt megtartjuk; a napi nézet csak megjelenítési szűrés.
+ const completedAt=Date.parse(data.testFinishedAt||'');if(!Number.isFinite(completedAt)||completedAt>now)return;
  const entry={testId:data.testId||'',mode:data.practice?'practice':'test',completedAt,accuracy:Number(data.averagePercent)||0,grade:Number(data.grade)||0,emergencyStop:!!data.emergencyStop,technicalSkippedCount:Number(data.technicalSkippedCount)||0};
  const items=all[key]||[],existing=entry.testId?items.findIndex(h=>h.testId===entry.testId):-1;
  if(existing>=0)items[existing]=entry;else items.push(entry);
@@ -2162,18 +2216,11 @@ function updateModeLabel(){
 }
 
 function renderLiveTestHistory(){
- const mode=practiceMode?'practice':'test';
- const key=historyIdentity({studentName:studentNameVal,studentClass:studentClassVal});
- const now=Date.now(),stored=readRecentResults()[key]||[];
- const entries=stored.filter(h=>h.mode===mode&&withinRecentHour(h,now)).sort((a,b)=>recentResultTime(b)-recentResultTime(a));
- $('liveHistoryLabel').textContent=practiceMode?'Gyakorlás · ezen az eszközön, 1 óra:':'Éles teszt · ezen az eszközön, 1 óra:';
- $('liveTestHistory').title='Az ezen a böngészőn, ezzel a névvel és osztállyal az elmúlt 60 percben befejezett, azonos módú tesztek. Legújabb elöl; további eredmények oldalra görgethetők.';
- $('liveHistoryItems').innerHTML=entries.length?entries.map(h=>{
-  const pct=Math.round(Math.max(0,Math.min(100,Number(h.accuracy)||0))*100)/100;
-  const grade=Number(h.grade),gradeText=Number.isInteger(grade)&&grade>=1&&grade<=5?String(grade):'–';
-  return `<span class="live-history-result" title="${esc(new Date(h.completedAt).toLocaleTimeString('hu-HU',{hour:'2-digit',minute:'2-digit'}))}"><b>${String(pct).replace('.',',')}%</b><span>jegy: <b>${gradeText}</b></span></span>`;
- }).join(''):'<span class="live-history-empty">Az elmúlt 1 órában még nincs saját eredmény ebben a módban.</span>';
-
+ const data={studentName:studentNameVal,studentClass:studentClassVal},mode=practiceMode?'practice':'test',entries=dailyHistoryEntries(data,mode);
+ $('liveHistoryLabel').textContent=practiceMode?'Mai gyakorló tesztjeid:':'Mai éles tesztjeid:';
+ $('liveTestHistory').title='Mai saját eredmények, naponta 1-ről induló számozással.';
+ $('liveHistoryItems').innerHTML=entries.length?resultHistoryCards(entries):'<span class="live-history-empty">Ma még nincs saját eredmény ebben a módban.</span>';
+ let archive=$('liveFullHistory');if(!archive){archive=document.createElement('div');archive.id='liveFullHistory';$('liveTestHistory').after(archive);}if(!archive.querySelector('details')?.open)archive.innerHTML=fullHistoryHtml(data);
 }
 
 function renderProgress(data,viewMode,record=true){
@@ -3019,8 +3066,8 @@ function rememberPracticePrefs(){
   practiceMode:$('practiceMode').checked,textKind:requiredControl('practiceTextKind').value,timeFactor:Number(requiredControl('practiceTime').value),speechRate:Number(requiredControl('practiceSpeechRate').value),delivery:$('practiceDelivery')?.value||'all'};
  try{localStorage.setItem(PRACTICE_PREFS_KEY,JSON.stringify(savedPracticePrefs));}catch(e){}
 }
-function dictationReadingNotice(){return `🎧 Tollbamondás: minden mondat ${dictationRepeatCount} alkalommal hangzik el. Hallgasd a felolvasást, és gépeld be a szöveget.`;}
-function dictationWaitingNotice(){return `🎧 Tollbamondás következik: minden mondat ${dictationRepeatCount} alkalommal hangzik el. Saját tempóbeállítás nélkül a felolvasás 10%-kal lassabb. Az idő csak a felolvasás indulásakor kezdődik. Indítsd el a felolvasást, vagy válassz kihagyást. Technikai akadályt külön jelezhetsz; az így kihagyott feladat nem számít bele az értékelésbe.`;}
+function dictationReadingNotice(){return `🎧 Hallgasd, és gépeld le! Minden mondat ${dictationRepeatCount}× hangzik el.`;}
+function dictationWaitingNotice(){return `🎧 Indítsd el a felolvasást, majd gépeld le, amit hallasz! Mondatonként ${dictationRepeatCount} ismétlés. Az idő indításig áll.`;}
 function syncDictationRepeats(){
  ['dictationRepeatStart','dictationRepeatLive'].forEach(id=>{const control=$(id);if(control)control.value=String(dictationRepeatCount);});
  const notice=$('dictationNotice');if(notice)notice.textContent=dictationWaitingNotice();
@@ -3056,7 +3103,7 @@ if('speechSynthesis' in window){
  preferredVoiceURI=chosen;rememberPracticePrefs();
  if(!$('testPanel').classList.contains('hidden')&&!finished&&!speechDisabledForTest&&!dictationWaiting){stopReading();readTask();}
 }));
-$('skipDictationBtn').addEventListener('click',()=>{if(!finished&&!stopped)nextTask();});
+$('skipDictationBtn').addEventListener('click',()=>{if(!finished&&!stopped){if(!dictationWaiting){confirmDictationSkip(()=>nextTask());return;}nextTask();}});
 function stopReading(){
  speechGeneration++;clearTimeout(speechLoopTimer);speechLoopTimer=null;
  if('speechSynthesis' in window){try{speechSynthesis.pause();speechSynthesis.cancel();}catch(e){}}
@@ -3564,6 +3611,9 @@ function showDictationNotice(){
  const skip=document.createElement('button');skip.type='button';skip.textContent='Részfeladat kihagyása';skip.addEventListener('click',nextTask);
  const technical=document.createElement('button');technical.type='button';technical.className='dictation-technical-skip';technical.textContent='🛠 Technikai okból kihagyom – nem számít hibának';technical.addEventListener('click',()=>skipWaitingDictation('technical'));
  controls.classList.remove('hidden','dictation-wait-warning');controls.replaceChildren(start,technical,skip);box.append(notice);
+ const help=document.createElement('details');help.className='dictation-extra-help';
+ const summary=document.createElement('summary');summary.textContent='Segítség / technikai probléma';
+ const explanation=document.createElement('p');explanation.textContent='Ha nem szól a felolvasó vagy nincs fülhallgatód, válaszd a „Technikai okból kihagyom” gombot: ez a részfeladat nem számít hibának. A sima kihagyás 0 pontot ér. Saját tempóbeállítás nélkül a felolvasás 10%-kal lassabb.';help.append(summary,explanation);box.append(help);
 }
 function startDictationReading(){
  if(!dictationWaiting||finished||stopped)return;
@@ -4052,21 +4102,24 @@ function resultHistoryCards(entries){return entries.map((h,i)=>{
  }).join('');}
 function renderResultRecentHistory(){
  const data=exportResult,box=$('resultRecentHistory');if(!data||!box)return;
- const now=Date.now(),mode=data.practice?'practice':'test';
- const entries=(readRecentResults()[historyIdentity(data)]||[]).filter(h=>h.mode===mode&&withinRecentHour(h,now)).sort((a,b)=>a.completedAt-b.completedAt).map(h=>({...h,current:h.testId===data.testId}));
- box.classList.toggle('hidden',!entries.length);
- box.innerHTML=`<strong>${data.practice?'Gyakorló':'Éles'} eredményeid ezen az eszközön, az elmúlt 1 órában</strong><div class="history-result-items">${resultHistoryCards(entries)}</div>`;
+ const entries=dailyHistoryEntries(data,data.practice?'practice':'test');box.classList.remove('hidden');
+ box.innerHTML='<strong>'+(data.practice?'Mai gyakorló tesztjeid':'Mai éles tesztjeid')+'</strong><div class="history-result-items">'+(entries.length?resultHistoryCards(entries):'Ma még nincs eredmény ebben a módban.')+'</div>'+fullHistoryHtml(data);
 }
+
 function renderGradeGroupResults(progress){
  const special=progress.enabled&&progress.eligible&&Array.isArray(progress.tests)&&progress.tests.some(t=>specialGradeKind(t));
  $('gradeProgressTop').classList.toggle('special-average',!!special);$('gradeProgressTop').title=special?'Az átlag vészleállított vagy technikai kihagyással érintett teszt jegyét is tartalmazza.':'';
- let box=$('gradeGroupResults');if(!box){box=document.createElement('div');box.id='gradeGroupResults';box.className='result-history hidden';$('gradeProgressTop').after(box);}
+ let box=$('gradeGroupResults');if(!box){box=document.createElement('div');box.id='gradeGroupResults';box.className='result-history hidden';$('resultRecentHistory').after(box);}
  const entries=progress.enabled&&progress.eligible&&Array.isArray(progress.tests)?progress.tests:[];
  box.classList.toggle('hidden',!entries.length);
  if(entries.length){
- box.innerHTML='<strong>A Sheetben mentett átlagolási csoport tesztjegyei (nem csak az elmúlt óra):</strong><div class="history-result-items">'+resultHistoryCards(entries)+'</div>';
- $('resultRecentHistory').classList.add('hidden');
+ const data=exportResult,all=readRecentResults(),key=historyIdentity(data),stored=Array.isArray(all[key])?all[key]:[];
+ entries.forEach(test=>{if(!test.testId||!Number.isFinite(Number(test.completedAt))||Number(test.completedAt)<=0)return;const saved={...test,mode:'test',accuracy:test.percent};const i=stored.findIndex(h=>h.testId===test.testId);if(i>=0)stored[i]={...stored[i],...saved};else stored.push(saved);});all[key]=stored;recentResultsMemory=all;try{localStorage.setItem(RECENT_RESULTS_KEY,JSON.stringify(all));}catch(e){}
+ const today=historyDay({completedAt:Date.now()}),older=entries.filter(t=>historyDay(t)!==today&&!t.current);
+ box.classList.toggle('hidden',!older.length);
+ box.innerHTML=older.length?'<details><summary>A jegyátlag korábbi napokról származó tesztjei</summary><div class="history-result-items">'+resultHistoryCards(older)+'</div></details>':'';
  }
+ renderResultRecentHistory();
 }
 </script>
 <script>
@@ -4478,5 +4531,95 @@ body.high-contrast .special-grade-emergency,body.high-contrast .special-grade-te
  new MutationObserver(sync).observe($('resultPanel'),{childList:true,subtree:true});
 })();
 </script>
+<style>.all-results-history{margin:7px 0;font-size:13px}.all-results-history summary{cursor:pointer;font-weight:650}.archive-result{display:flex;flex-wrap:wrap;align-items:center;gap:5px;padding:3px 0;border-bottom:1px solid #aaa4}.archive-result>span{font-size:12px}#liveFullHistory{font-size:12px;flex:0 0 auto}#liveHistoryItems .history-result-card{white-space:nowrap;flex:0 0 auto;font-size:12px}</style><style>.dictation-skip-confirm{max-width:520px;width:calc(100% - 32px);box-sizing:border-box;padding:20px;border:2px solid #b98224;border-radius:12px;background:#fffaf0;color:#382c17}.dictation-skip-confirm::backdrop{background:#0009}.dictation-skip-confirm h2{font-size:20px;margin:0 0 10px}.skip-confirm-actions{display:flex;gap:8px;flex-wrap:wrap}.skip-confirm-actions button{font-size:15px;padding:9px 12px}.skip-confirm-countdown{font-weight:650}body.high-contrast .dictation-skip-confirm{background:#000;color:#fff;border-color:#ffdf83}@media(max-width:760px){.dictation-skip-confirm{max-height:calc(100dvh - 16px);overflow:auto;padding:12px}.dictation-skip-confirm p{font-size:14px}}</style>
+<style>
+@media screen{
+ #resultPanel #newTestBtn,#resultPanel #newTestBtnTop,#resultPanel #newTestBtnSaved,body:not(.high-contrast)[data-typing-mode="practice"] #resultPanel #newTestBtn,body:not(.high-contrast)[data-typing-mode="practice"] #resultPanel #newTestBtnTop,body:not(.high-contrast)[data-typing-mode="practice"] #resultPanel #newTestBtnSaved{background:#d51d60!important;color:#fff!important;border:2px solid #960b3c!important;font-weight:800!important;box-shadow:0 3px 0 #960b3c,0 4px 10px #d51d6033!important;padding:10px 18px!important}
+ #resultPanel #newTestBtn:hover:not(:disabled),#resultPanel #newTestBtnTop:hover:not(:disabled),#resultPanel #newTestBtnSaved:hover:not(:disabled){filter:brightness(1.12)}
+ #resultPanel #newTestBtn:focus-visible,#resultPanel #newTestBtnTop:focus-visible,#resultPanel #newTestBtnSaved:focus-visible{outline:3px solid #ffdc72;outline-offset:3px}
+ #resultPanel #newTestBtn:disabled,#resultPanel #newTestBtnTop:disabled,#resultPanel #newTestBtnSaved:disabled{background:#777!important;color:#fff!important;box-shadow:none!important;border-color:#555!important}
+ #sendBar #resultRecentHistory{order:-2;flex:0 0 100%;box-sizing:border-box;width:100%;background:#fff!important;color:#253c33!important;border:1px solid #bbd2c6;margin:5px 0!important;padding:8px!important}
+ body.high-contrast #sendBar #resultRecentHistory{background:#000!important;color:#fff!important;border-color:#ffdf83!important}
+ body.high-contrast #resultPanel #newTestBtn,body.high-contrast #resultPanel #newTestBtnTop,body.high-contrast #resultPanel #newTestBtnSaved{background:#000!important;color:#ffdf83!important;border-color:#ffdf83!important}
+}
+</style>
+<script>
+(function keepTodayResultsVisible(){const box=$('resultRecentHistory');if(box)$('gradeProgressTop').after(box);})();
+</script>
+<style>.dictation-extra-help{font-size:13px;line-height:1.4;margin:8px 0}.dictation-extra-help summary{cursor:pointer;font-weight:600}.dictation-extra-help p{margin:5px 0}#dictationNotice{margin:5px 0;line-height:1.35}</style>
+<style>
+#dictationNotice.dictation-warning{display:block;margin:7px 0!important;padding:12px 14px!important;border:3px solid #bf6200;border-left-width:8px;border-radius:9px;background:#fff0b8!important;color:#542b00!important;font-weight:750;line-height:1.4!important;box-shadow:0 3px 10px #bf620025;animation:dictationNoticeAlert .9s ease-in-out 3}
+#dictationNotice.dictation-warning::before{content:'VÁLASZTÁS SZÜKSÉGES';display:block;font-size:13px;font-weight:850;letter-spacing:.04em;margin-bottom:5px}
+#dictationNotice.dictation-urgent{border-color:#ba251d!important;background:#ffe0db!important;color:#7b1712!important;box-shadow:0 0 0 3px #ba251d22}
+#dictationNotice.dictation-urgent::before{content:'UTOLSÓ MÁSODPERCEK – VÁLASSZ MOST!'}
+@keyframes dictationNoticeAlert{50%{box-shadow:0 0 0 5px #bf620044}}
+body.high-contrast #dictationNotice.dictation-warning,body.high-contrast #dictationNotice.dictation-urgent{background:#000!important;color:#fff!important;border-color:#ffdf83!important}
+body.high-contrast #dictationNotice.dictation-warning::before{color:#ffdf83!important}
+@media(max-width:760px){#dictationNotice.dictation-warning{padding:7px 8px!important;border-left-width:5px;font-size:15px!important}#dictationNotice.dictation-warning::before{font-size:12px}}
+@media(prefers-reduced-motion:reduce){#dictationNotice.dictation-warning{animation:none!important}}
+</style>
+
+<style>
+@media screen and (max-width:760px){
+ body.screen-test{overflow:hidden!important}
+ body.screen-test .wrap{display:block!important;height:auto!important;padding:0!important;margin:0!important;min-height:0!important}
+ body.screen-test .wrap>.card:first-child{display:none!important}
+ body.screen-test #testPanel{position:fixed!important;top:var(--mobile-test-top,0px)!important;left:var(--mobile-test-left,0px)!important;width:var(--mobile-test-width,100vw)!important;height:var(--mobile-test-height,100dvh)!important;margin:0!important;padding:0!important;box-sizing:border-box;z-index:40;overflow:hidden!important}
+ body.screen-test #testPanel>.card{display:flex!important;flex-direction:column!important;height:100%!important;width:100%!important;min-height:0!important;box-sizing:border-box;overflow:hidden!important;gap:4px!important;padding:5px!important;margin:0!important;border-radius:6px!important}
+ body.screen-test #testPanel>.card>.row,body.screen-test #testPanel .total-line,body.screen-test #testPanel .bar,body.screen-test #testPanel>.card>.size-row,body.screen-test #testPanel #capNote,body.screen-test #testPanel #mobileExtraControls{display:none!important}
+ body.screen-test #testPanel #typingWorkspace,body.screen-test.keyboard-open #testPanel #typingWorkspace{position:static!important;display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;grid-template-rows:auto minmax(0,1fr)!important;flex:1 1 0!important;height:0!important;min-height:0!important;min-width:0!important;max-height:none!important;width:100%!important;padding:0!important;margin:0!important;gap:5px!important;overflow:hidden!important;box-sizing:border-box}
+ body.screen-test #testPanel #typingWorkspace>.answer-timer{grid-column:1/-1!important;grid-row:1!important;display:flex!important;flex-wrap:nowrap!important;justify-content:flex-start!important;gap:4px!important;padding:3px!important;margin:0!important;min-width:0!important;line-height:1.2!important;font-size:14px!important;min-height:32px!important;box-sizing:border-box}
+ body.screen-test #testPanel #typingWorkspace>.answer-timer>span:not(#mobileSessionInfo){display:none!important}
+ body.screen-test #testPanel #typingWorkspace #mobileSessionInfo{display:inline-block!important;font-size:10px!important;line-height:1.15!important;max-width:65px;white-space:normal;flex:0 1 65px}
+ body.screen-test #testPanel #typingWorkspace>.answer-timer strong{font-size:15px!important;line-height:1!important;min-width:40px;white-space:nowrap}
+ body.screen-test #testPanel #typingWorkspace>.answer-timer button{font-size:12px!important;line-height:1.2!important;padding:5px!important;min-height:30px!important;height:auto!important;min-width:0!important;border-width:1px!important;white-space:nowrap;margin:0!important;box-shadow:none!important}
+ body.screen-test #testPanel #typingWorkspace>.answer-timer #openMobileSettingsTyping{width:30px;flex:0 0 30px}
+ body.screen-test #testPanel #typingWorkspace>.answer-timer #stopBtn{margin-left:auto!important;font-size:11px!important}
+ body.screen-test #testPanel #typingWorkspace>#taskText{grid-column:1!important;grid-row:2!important;display:block!important;min-width:0!important;min-height:0!important;width:100%!important;height:100%!important;max-height:none!important;padding:7px!important;margin:0!important;box-sizing:border-box;overflow:auto!important;overscroll-behavior:contain;overflow-wrap:anywhere;font-size:calc(16px * var(--task-scale,.95))!important;line-height:1.4!important}
+ body.screen-test #testPanel #typingWorkspace>.answer-wrap{grid-column:2!important;grid-row:2!important;display:flex!important;flex-direction:column!important;min-width:0!important;min-height:0!important;width:100%!important;height:100%!important;max-height:none!important;overflow:hidden!important;padding:0!important;margin:0!important;box-sizing:border-box}
+ body.screen-test #testPanel #typingWorkspace #answer{display:block!important;flex:1 1 0!important;min-width:0!important;min-height:0!important;width:100%!important;height:100%!important;max-height:none!important;padding:7px!important;margin:0!important;box-sizing:border-box;resize:none!important;overflow:auto!important;font-size:max(16px,calc(16px * var(--answer-scale,.95)))!important;line-height:1.4!important}
+ body.screen-test #testPanel #liveTestHistory{display:flex!important;flex:0 0 25px!important;min-height:0!important;height:25px!important;max-height:25px!important;overflow:hidden!important;margin:0!important;padding:2px 5px!important;gap:4px!important;box-sizing:border-box;font-size:11px!important;line-height:1.2!important}
+ body.screen-test #testPanel #liveHistoryLabel{font-size:10px!important;line-height:1.1!important;max-width:65px;white-space:normal}
+ body.screen-test #testPanel #liveHistoryItems .history-result-card,body.screen-test #testPanel #liveHistoryItems .history-result-card b,body.screen-test #testPanel #liveHistoryItems .live-history-empty{font-size:11px!important;line-height:1.1!important;padding:1px 3px!important;white-space:nowrap}
+ body.screen-test #testPanel #liveFullHistory{flex:0 0 auto;max-height:40px;overflow:auto;font-size:11px!important}
+ body.screen-test #dictationStartControls{flex:0 0 auto;max-height:92px;overflow:auto;gap:4px!important;margin:0!important;padding:3px!important}
+ body.screen-test #dictationStartControls button{font-size:12px!important;padding:6px!important;min-height:30px!important}
+ body.screen-test #backToTop{display:none!important}
+}
+</style>
+<script>
+(function usableMobileTest(){
+ const workspace=$('typingWorkspace'),wrap=workspace?.querySelector('.answer-wrap'),timer=workspace?.querySelector('.answer-timer');if(!workspace||!wrap||!timer)return;
+ const media=window.matchMedia('(max-width:760px)'),placements=[];
+ function register(node,target){if(!node)return;const marker=document.createComment('mobil javítás eredeti helye');node.before(marker);placements.push({node,target,marker});}
+ const card=$('testPanel').querySelector('.card');register($('liveTestHistory'),card);
+ // A teljes előzmény a beállítások között elérhető; a mai eredmények végig a mezők alatt maradnak.
+ let archiveMarker=null;
+ const info=document.createElement('span');info.id='mobileSessionInfo';timer.prepend(info);
+ const labels=new Map();['nextBtn','practicePauseBtn','stopBtn'].forEach(id=>{const node=$(id);if(node)labels.set(node,node.textContent);});
+ function update(){
+  const mobile=media.matches,viewport=window.visualViewport;
+  const style=document.documentElement.style;style.setProperty('--mobile-test-top',(viewport?.offsetTop||0)+'px');style.setProperty('--mobile-test-left',(viewport?.offsetLeft||0)+'px');style.setProperty('--mobile-test-width',(viewport?.width||window.innerWidth)+'px');style.setProperty('--mobile-test-height',(viewport?.height||window.innerHeight)+'px');
+  for(const {node,target,marker} of placements){if(mobile){if(node.parentNode!==target)target.append(node);}else if(node.parentNode===target)marker.after(node);}
+  const archive=$('liveFullHistory');if(archive&&mobile&&$('drawerStats')&&!$('drawerStats').contains(archive)){if(!archiveMarker){archiveMarker=document.createComment('előzmény eredeti helye');archive.before(archiveMarker);}$('drawerStats').append(archive);}else if(archive&&!mobile&&archiveMarker&&$('drawerStats')?.contains(archive))archiveMarker.after(archive);
+  const text=(practiceMode?'Gyakorlás ':'Éles teszt ')+$('progressText').textContent;if(info.textContent!==text)info.textContent=text;info.hidden=!mobile;
+  for(const [node,original] of labels){if(mobile){const short=node.id==='nextBtn'?'Tovább':node.id==='stopBtn'?'⛔ Leállítás':practicePaused?'▶':'⏸';if(node.textContent!==short)node.textContent=short;node.title=node.id==='stopBtn'?'A teszt végleges leállítása':node.id==='practicePauseBtn'?'Gyakorlás szüneteltetése / folytatása':'Következő feladat';}else if(node.id!=='practicePauseBtn'&&node.textContent!==original)node.textContent=original;}
+ }
+ let queued=false;function schedule(){if(queued)return;queued=true;requestAnimationFrame(()=>{queued=false;update();});}
+ media.addEventListener('change',schedule);window.addEventListener('resize',schedule);window.visualViewport?.addEventListener('resize',schedule);window.visualViewport?.addEventListener('scroll',schedule);
+ new MutationObserver(schedule).observe($('progressText'),{childList:true,subtree:true,characterData:true});new MutationObserver(schedule).observe($('testPanel'),{attributes:true,attributeFilter:['class'],childList:true,subtree:true});
+ update();
+})();
+</script>
+
+<style>
+/* Mobilon az állapotüzenet a mezők alatt saját helyet kap, nem lebeg a gombok fölött. */
+@media screen and (max-width:760px){
+ body #testPanel>.card>.msg-slot{position:static!important;order:100!important;flex:0 0 auto!important;width:100%!important;height:auto!important;min-height:0!important;max-height:68px!important;margin:0!important;padding:0!important;z-index:auto!important;box-sizing:border-box;overflow:hidden}
+ body #testPanel .msg-slot #autoMsg{position:static!important;top:auto!important;bottom:auto!important;left:auto!important;right:auto!important;transform:none!important;display:block!important;width:100%!important;max-width:none!important;height:auto!important;min-height:0!important;max-height:68px!important;margin:0!important;padding:6px 9px!important;font-size:13px!important;line-height:1.35!important;text-align:left!important;border-width:2px!important;border-radius:6px!important;box-shadow:none!important;box-sizing:border-box;pointer-events:auto!important;overflow:auto!important;overscroll-behavior:contain}
+ body #testPanel .msg-slot #autoMsg:empty{display:none!important;padding:0!important;border:0!important}
+ body #testPanel .msg-slot #autoMsg:not(:empty){opacity:1!important;visibility:visible!important}
+}
+</style>
 </body>
 </html>
