@@ -4027,7 +4027,8 @@ function setupStartScreenFit(){
  window.addEventListener('resize',schedule);window.visualViewport?.addEventListener('resize',schedule);
  new MutationObserver(schedule).observe(document.body,{attributes:true,attributeFilter:['class']});
  new MutationObserver(schedule).observe(document.documentElement,{attributes:true,attributeFilter:['class']});
- new MutationObserver(schedule).observe(card,{childList:true,subtree:true,characterData:true});
+ // A teljes kártya minden szövegváltozásának figyelése görgetéskor felesleges újraméretezést okozhat.
+ // A mód- és ablakméret-változás továbbra is ütemezi a méretezést.
  ['studentGrade','practiceMode'].forEach(id=>$(id).addEventListener('change',schedule));
  if(document.fonts?.ready)document.fonts.ready.then(schedule);schedule();
 }
@@ -4065,11 +4066,29 @@ async function refreshGradeProgress(id){
  if(gradeProgressRequests.has(id))return;
  gradeProgressRequests.add(id);
  try{
-  const r=await jsonp({action:'gradeProgress',id},12000);
+  let response=null,lastError=null;
+  for(let attempt=0;attempt<2;attempt++){
+   if(exportResult?.testId!==id||!$('testPanel').classList.contains('hidden'))return;
+   try{response=await jsonp({action:'gradeProgress',id},30000);break;}
+   catch(error){lastError=error;}
+  }
   if(exportResult?.testId!==id||!$('testPanel').classList.contains('hidden'))return;
-  if(r?.success&&r.progress?.testId===id){confirmedResultIds.add(id);savedOk=true;showSaveBanner(false);$('saveActions').classList.add('hidden');if(lastReal?.testId===id){lastReal=null;clearPending();}if(exportResult)exportResult.gradingRequired=r.progress.enabled===true&&r.progress.eligible===true;$('sendBar').className='send-bar ok';$('sendBarText').textContent='✅ A Google-táblázatba mentés visszaigazolva – új tesztet indíthatsz.';$('saveStatus').textContent='✅ Az eredmény mentése visszaigazolva.';syncResultSaveGate();setGradeProgressText(gradeProgressMessage(r.progress));renderGradeGroupResults(r.progress);}
-  else setGradeProgressText('A jegyszerzési előrehaladás nem kérhető le. Ellenőrizd az Apps Script telepített verzióját.');
- }catch(e){gradeProgressRequests.delete(id);if(exportResult?.testId===id)setGradeProgressText('Az eredmény mentésétől függetlenül a jegyszerzési előrehaladás most nem kérhető le.');}
+  if(response?.success&&response.progress?.testId===id){
+   confirmedResultIds.add(id);savedOk=true;showSaveBanner(false);
+   $('saveActions').classList.add('hidden');
+   if(lastReal?.testId===id){lastReal=null;clearPending();}
+   if(exportResult)exportResult.gradingRequired=response.progress.enabled===true&&response.progress.eligible===true;
+   $('sendBar').className='send-bar ok';
+   $('sendBarText').textContent='✅ A Google-táblázatba mentés visszaigazolva – új tesztet indíthatsz.';
+   $('saveStatus').textContent='✅ Az eredmény mentése visszaigazolva.';
+   syncResultSaveGate();setGradeProgressText(gradeProgressMessage(response.progress));renderGradeGroupResults(response.progress);
+  }else{
+   console.warn('gradeProgress: nem érkezett megfelelő válasz',response,lastError);
+   setGradeProgressText(response?.success&&response.progress===null
+    ?'A mentett teszt még nem található a jegyösszesítőben. A jegyátlag később kérhető le.'
+    :'A jegyátlag most nem kérhető le. Ellenőrizd a háttérkód telepítését és az összesítő munkalapot.');
+  }
+ }finally{gradeProgressRequests.delete(id);}
 }
 </script>
 <script>
@@ -5192,7 +5211,7 @@ body.screen-start:not([data-start-theme="original"]) .variant-layout>.v-panel se
   if(start){
    const usage=[...document.querySelectorAll('details')].find(x=>(x.querySelector('summary')?.textContent||'').includes('Használati útmutató'));
    const browser=document.getElementById('browserRecommendation');
-   if(usage&&browser){let links=document.getElementById('v31-guide-links');if(!links){links=document.createElement('div');links.id='v31-guide-links';usage.before(links);}links.append(usage);const details=browser.closest('details');if(details&&details!==usage)links.append(details);}
+   if(usage&&browser){let links=document.getElementById('v31-guide-links');if(!links){links=document.createElement('div');links.id='v31-guide-links';usage.before(links);}if(usage.parentElement!==links)links.append(usage);const details=browser.closest('details');if(details&&details!==usage&&details.parentElement!==links)links.append(details);}
    const label=start.querySelector('label[for="studentName"]');if(label){label.id='v31-name-label';if(!label.querySelector('.v31-hint')){const hint=document.createElement('span');hint.className='v31-hint';hint.textContent='Használj tanulói azonosítót, vagy írd be a neved.';label.append(hint);}}
   }
   const panel=document.getElementById('practiceOptions');
@@ -5200,7 +5219,8 @@ body.screen-start:not([data-start-theme="original"]) .variant-layout>.v-panel se
  }
  function run(){arrange();requestAnimationFrame(()=>{arrange();requestAnimationFrame(arrange)});window.addEventListener('load',arrange,{once:true});}
  if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run,{once:true});else run();
- let busy=false;const observer=new MutationObserver(()=>{if(busy)return;busy=true;requestAnimationFrame(()=>{arrange();busy=false;});});observer.observe(document.body,{childList:true,subtree:true});
+ // Ne figyeljük az egész oldalt: az átrendezés saját DOM-módosításai ismétlődő munkát okozhatnak mobilon.
+ document.getElementById('practiceMode')?.addEventListener('change',()=>requestAnimationFrame(arrange));
 })();
 </script>
 
@@ -5354,5 +5374,37 @@ html body.high-contrast.screen-start #startPanel #studentCode::placeholder{color
  body.screen-test #testPanel #liveHistoryItems .history-result-card{flex:0 0 auto!important;min-width:max-content!important;padding:4px 6px!important}
 }
 </style>
+<style id="v44-mobile-live-alerts">
+/* Éles tesztben a visszajelzések mobilon is a látható képernyő alján jelennek meg. */
+@media screen and (max-width:760px){
+ body.screen-test #testPanel .msg-slot #autoMsg:not(:empty){
+  position:fixed!important;top:auto!important;
+  bottom:calc(var(--v44-keyboard-bottom, 0px) + 12px + env(safe-area-inset-bottom, 0px))!important;
+  left:50%!important;right:auto!important;transform:translateX(-50%)!important;
+  width:calc(100vw - 24px)!important;max-width:540px!important;
+  min-height:44px!important;max-height:110px!important;
+  display:flex!important;align-items:center!important;justify-content:center!important;
+  padding:9px 12px!important;margin:0!important;overflow:auto!important;
+  font-size:14px!important;line-height:1.35!important;text-align:center!important;
+  border-radius:10px!important;box-shadow:0 5px 20px #0004!important;
+  opacity:1!important;visibility:visible!important;z-index:2147483000!important;
+  pointer-events:none!important;
+ }
+ body.screen-test #testPanel .msg-slot #autoMsg:empty{display:none!important}
+}
+</style>
+<script id="v44-visible-viewport-alerts">
+(function(){
+ const root=document.documentElement;
+ function adjust(){
+  const v=window.visualViewport;
+  const bottom=v?Math.max(0,window.innerHeight-v.height-v.offsetTop):0;
+  root.style.setProperty('--v44-keyboard-bottom',Math.round(bottom)+'px');
+ }
+ window.addEventListener('resize',adjust,{passive:true});
+ window.visualViewport?.addEventListener('resize',adjust,{passive:true});
+ adjust();
+})();
+</script>
 </body>
 </html>
