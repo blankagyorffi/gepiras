@@ -490,6 +490,7 @@ body.high-contrast #startPanel input[readonly],body.high-contrast #startPanel se
 body.high-contrast .setting-help{color:#eee}body.high-contrast .settings-memory{background:#222;color:#fff}
 @media(max-width:600px){#browserRecommendation{grid-template-columns:1fr;gap:10px}.start-audio-row{gap:8px}}
 
+#startPanel > #taskOrderField{width:100%;margin-top:12px}#startPanel > .settings-memory{margin:8px 0 12px}
 /* Mobile settings drawer: the working area is reserved for reading and typing. */
 .mobile-settings-open{display:none}
 #mobileSettingsDrawer{position:fixed;inset:0 0 0 auto;margin:0;width:min(92vw,420px);max-width:100%;height:100dvh;max-height:100dvh;padding:0;border:0;border-radius:16px 0 0 16px;background:#f4f0ff;color:#202124;box-shadow:-6px 0 24px #0003;overflow:hidden}
@@ -661,8 +662,40 @@ body:not(.screen-start) .student-theme-picker{display:none!important}
 <meta name="theme-color" content="#215347">
 <link rel="icon" type="image/png" href="./icons/icon-192.png">
 <link rel="apple-touch-icon" href="./icons/icon-192.png">
+<script>var teacherPinRequired=null,teacherSettingsPromise=null,bankSettingsApplied=false,teacherSessionUnlocked=false;</script>
 <script src="./pwa.js" defer></script>
 <style>@media print{#installApp,#updateApp{display:none!important}}#installApp[hidden],#updateApp[hidden]{display:none!important}#installApp,#updateApp{font-size:.8rem;padding:5px 8px}</style>
+
+<style id="compactModeV21">
+/* Mindkét mód közös, sűrűbb kezdőfelülete. */
+body.screen-start .wrap{max-width:1120px}
+body.screen-start #startPanel .start-grid{gap:8px;margin:6px 0;grid-template-columns:repeat(2,minmax(0,1fr))}
+body.screen-start #startPanel .start-grid>.start-field{min-width:0}
+body.screen-start #startPanel .start-grid>.start-field input,body.screen-start #startPanel .start-grid>.start-field select{width:100%;box-sizing:border-box}
+body.screen-start #startPanel .start-settings-row,body.screen-start #startPanel .start-audio-row{grid-column:1/-1;gap:8px}
+body.screen-start #startPanel .start-settings-row{grid-template-columns:minmax(100px,1fr) minmax(100px,1fr) auto}
+body.screen-start #startPanel #taskOrderField{column-gap:8px;grid-template-columns:minmax(0,1fr) minmax(0,1.5fr)}
+body.screen-start #startPanel .setting-help,body.screen-start #startPanel .muted{line-height:1.25}
+body.screen-start #startPanel #practiceOptions{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px 9px;padding:8px;margin:5px 0}
+body.screen-start #practiceOptions>label{grid-row:1}
+body.screen-start #practiceOptions>select{grid-row:2;min-width:0;width:100%}
+body.screen-start #practiceOptions>p{grid-row:3;grid-column:1/-1}
+body.screen-start #browserRecommendation{padding:6px 9px;margin:4px 0;font-size:.78rem}
+body.screen-start #browserRecommendation p{margin:2px 0}
+body.screen-start .start-footer{margin-top:6px}
+body.screen-start #studentCodeBox{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 6px;align-items:end}
+body.screen-start #studentCodeBox>label,body.screen-start #studentCodeBox>small{grid-column:1/-1}
+body.screen-start #studentCodeBox>input{min-width:0}
+body.screen-start.practice-start #studentCodeBox{display:none!important}
+body.screen-start.practice-start #startPanel .start-grid>.start-field.identity-name{grid-column:1}
+body.screen-start.practice-start #startPanel .start-grid>.start-field.identity-class{grid-column:2}
+@media(max-width:700px){body.screen-start #startPanel .start-grid{grid-template-columns:1fr}body.screen-start.practice-start #startPanel .start-grid>.start-field.identity-name,body.screen-start.practice-start #startPanel .start-grid>.start-field.identity-class{grid-column:1}body.screen-start #startPanel #practiceOptions{grid-template-columns:1fr}body.screen-start #practiceOptions>label,body.screen-start #practiceOptions>select,body.screen-start #practiceOptions>p{grid-row:auto;grid-column:1}body.screen-start #startPanel #taskOrderField{grid-template-columns:1fr}body.screen-start #startPanel #taskOrderHelp{grid-column:1;grid-row:auto}}
+/* v28: cím balra, akadálymentesítési gombok a címsor jobb oldalán */
+.app-heading{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:12px!important;flex-wrap:wrap}
+.app-heading #appModeTitle{flex:0 1 auto;max-width:none!important;min-width:0;margin:0!important}
+.app-heading>.top-actions{display:flex!important;align-items:center;justify-content:flex-end;gap:8px;margin-left:auto!important;flex-wrap:wrap}
+@media(max-width:560px){.app-heading{gap:6px!important}.app-heading>.top-actions{gap:4px}.app-heading>.top-actions .access-btn{font-size:.75rem;padding:5px 7px}}
+</style>
 </head>
 <body>
 <div id="loadingOverlay" class="hidden" role="status" aria-live="polite">
@@ -2939,6 +2972,8 @@ function verifyStudentCodeUI(){
   let host;try{host=new URL(e.origin).hostname;}catch(_){return;}
   if(!(host==='script.google.com'||host.endsWith('.googleusercontent.com')))return;
   const p=e.data;if(p?.type!=='gepiras-code-ack'||p.nonce!==nonce)return;
+  // Ha a tanuló közben átírta a kódot, a régi válasz nem tölthet be nevet.
+  if(document.getElementById('studentCode').value.trim().toUpperCase()!==code){finish();return;}
   if(p.success&&p.session&&p.name&&p.cls){
    studentCodeSession=p.session;studentCodeIdentity={name:p.name,cls:p.cls};
    const name=document.getElementById('studentName');name.value=p.name;
@@ -2955,11 +2990,36 @@ function verifyStudentCodeUI(){
  document.body.append(frame,form);form.submit();setTimeout(()=>{if(!done){status.textContent='Nem érkezett válasz. Ellenőrizd a telepítést.';finish();}},12000);
 }
 
+
+// Automatikus ellenőrzés kizárólag akkor, amikor a kód teljes (5+5 karakter).
+// Kis- és nagybetű azonos; a kézi gomb és az Enter továbbra is működik.
+const studentCodeInput=document.getElementById('studentCode');
+let lastAutoCode='';
+studentCodeInput?.addEventListener('input',()=>{
+ if(studentCodeSession)clearStudentCodeSession();
+ const code=studentCodeInput.value.trim().toUpperCase();
+ if(!/^[A-Z0-9]{5}-[A-Z0-9]{5}$/.test(code)){
+  lastAutoCode='';
+  return;
+ }
+ // Ugyanazt a teljes kódot ne küldjük el többször puszta kis-/nagybetű-váltásra.
+ if(code===lastAutoCode)return;
+ lastAutoCode=code;
+ const btn=document.getElementById('studentCodeVerify');
+ if(btn&&!btn.disabled)verifyStudentCodeUI();
+});
+studentCodeInput?.addEventListener('keydown',e=>{
+ if(e.key==='Enter'){
+  e.preventDefault();
+  if(!document.getElementById('studentCodeVerify').disabled)verifyStudentCodeUI();
+ }
+});
+
 function loadRoster(){
  ROSTER=[];
  try{for(const k of Object.keys(localStorage)){if(/^gepiras_roster/i.test(k))localStorage.removeItem(k);}}catch(e){}
  const status=document.getElementById('rosterLoadStatus');
- if(status)status.textContent='A teljes névsor nem hozzáférhető. Használj tanulói azonosítót, vagy írd be a neved.';
+ if(status)status.textContent='Használj tanulói azonosítót, vagy írd be a neved.';
  const retry=document.getElementById('rosterRetry');if(retry)retry.classList.add('hidden');
  return Promise.resolve();
 }
@@ -3482,7 +3542,7 @@ function formattedPdf(){
 </script>
 <div id="teacherUnlockModal" class="modal-bg hidden" role="dialog" aria-modal="true" aria-labelledby="teacherUnlockTitle"><div class="modal"><h2 id="teacherUnlockTitle">Tanári feloldás</h2><label for="teacherUnlockPin">Tanári jelszó</label><input type="password" id="teacherUnlockPin" autocomplete="off"><p id="teacherUnlockError" role="alert"></p><button type="button" id="teacherUnlockSubmit">Feloldás</button> <button type="button" id="teacherUnlockCancel">Mégsem</button></div></div><script>
 // A zárolás csak sikeres szerverválasz után oldható fel. Üres szerveroldali jelszó esetén minden beállítás szabad.
-let teacherPinRequired=null,teacherSettingsPromise=null,bankSettingsApplied=false,teacherSessionUnlocked=false;
+
 let bankFieldsLocallyEdited=false,practiceFieldsLocallyEdited=false,forceBankFieldsRefresh=false;
 
 function settingsSyncMessage(r){
@@ -3602,6 +3662,9 @@ function setupScreenFit(){
  const memoryHelp=document.createElement('p');memoryHelp.className='settings-memory';memoryHelp.textContent='A hang, a mondatonkénti ismétlésszám, a feladatsorrend és a gyakorlási beállítások az utolsó módosítástól számított 1 óráig megmaradnak ebben a böngészőben.';grid.after(memoryHelp);
  const practice=start.querySelector('label.chk');if(practice)practice.classList.add('start-wide');
  const footer=document.createElement('div');footer.className='start-footer';start.append(footer);
+ // A feladatsorrend és a beállítások megjegyzése a beállítások végére kerül.
+ start.insertBefore(orderField,footer);
+ start.insertBefore(memoryHelp,footer);
  const sound=$('soundOn')?.closest('label');if(sound)footer.append(sound);footer.append($('connChip'),$('startBtn'));
  start.querySelectorAll(':scope > br').forEach(n=>n.remove());
  const intro=document.querySelector('.app-heading')?.nextElementSibling;
@@ -3617,6 +3680,26 @@ function setupScreenFit(){
 }
 $('speechTools').after($('speechStatus'));
 setupScreenFit();
+// A kódos azonosítás csak éles módban jelenik meg; gyakorlásban a név kézzel írható.
+(function setupCompactModeIdentity(){
+ const start=document.getElementById('startPanel');
+ const name=document.getElementById('studentName');
+ const nameField=name?.closest('.start-field');
+ const classField=document.getElementById('studentGrade')?.closest('.start-field');
+ if(!start||!nameField)return;
+ nameField.classList.add('identity-name');
+ classField?.classList.add('identity-class');
+ const codeBox=document.createElement('div');codeBox.id='studentCodeBox';
+ const label=start.querySelector('label[for="studentCode"]');
+ const code=document.getElementById('studentCode');
+ const verify=document.getElementById('studentCodeVerify');
+ const status=document.getElementById('studentCodeStatus');
+ [label,code,verify,status].filter(Boolean).forEach(n=>codeBox.append(n));
+ nameField.prepend(codeBox);
+ const mode=document.getElementById('practiceMode');
+ function refresh(){document.body.classList.toggle('practice-start',!!mode?.checked);}
+ mode?.addEventListener('change',refresh);refresh();
+})();
 
 </script>
 <script>
@@ -3762,11 +3845,13 @@ themeField.innerHTML='<label for="studentTheme">Vzhled začátku</label><select 
 themeField.querySelector('label').textContent='Kezdőlap témája';
 document.querySelector('.app-heading h1').after(themeField);requiredControl('studentTheme').value=activeStartTheme;document.body.dataset.startTheme=activeStartTheme;themeField.querySelector('label').textContent='Téma';
 // A témaválasztó a javítások idejére nem jelenik meg.
-themeField.hidden=true;themeField.style.display='none';
+themeField.hidden=true;themeField.style.setProperty('display','none','important');themeField.querySelector('select').disabled=true;
 const optimizedThemeStyle=document.createElement('style');optimizedThemeStyle.textContent="\n@media screen{\n .app-heading{display:grid!important;grid-template-columns:auto minmax(180px,1fr) auto;align-items:center;gap:14px!important}\n .app-heading h1{font-size:1.65rem!important;font-weight:800!important;letter-spacing:-.025em;line-height:1.15}\n .app-heading .student-theme-picker{margin:0;justify-self:end;display:flex;gap:8px;align-items:center}\n .app-heading .student-theme-picker label{font-size:.85rem!important;margin:0!important}\n .app-heading .student-theme-picker select{font-size:16px!important;width:220px!important;max-width:100%!important;padding:7px 9px!important}\n body.screen-test .student-theme-picker{display:none}\n body.screen-test .app-heading{grid-template-columns:1fr auto}\n body.screen-start:not([data-start-theme=\"original\"]) .wrap{max-width:1280px;padding:6px}\n body.screen-start:not([data-start-theme=\"original\"]) .wrap>.card:first-child{padding:10px;border-radius:14px}\n body.screen-start:not([data-start-theme=\"original\"]) .app-heading{padding-bottom:7px;margin-bottom:7px}\n body.screen-start:not([data-start-theme=\"original\"]) .variant-layout{gap:8px}\n body.screen-start:not([data-start-theme=\"original\"]) .v-panel{padding:9px;border-radius:10px}\n body.screen-start:not([data-start-theme=\"original\"]) .v-panel h2{font-size:1.05rem!important;margin:0 0 7px!important}\n body.screen-start:not([data-start-theme=\"original\"]) .v-caption{font-size:.9rem;line-height:1.35;margin-bottom:7px}\n body.screen-start:not([data-start-theme=\"original\"]) .v-panel .start-field{margin-bottom:6px}\n body.screen-start:not([data-start-theme=\"original\"]) #startPanel label{font-size:1rem!important}\n body.screen-start:not([data-start-theme=\"original\"]) #startPanel input,body.screen-start:not([data-start-theme=\"original\"]) #startPanel select{font-size:17px!important;padding:7px 9px!important}\n body.screen-start:not([data-start-theme=\"original\"]) .setting-help,body.screen-start:not([data-start-theme=\"original\"]) #taskOrderHelp,body.screen-start:not([data-start-theme=\"original\"]) #browserRecommendation,body.screen-start:not([data-start-theme=\"original\"]) #practiceOptions p,body.screen-start:not([data-start-theme=\"original\"]) .settings-memory{font-size:.92rem!important;line-height:1.3!important}\n body.screen-start:not([data-start-theme=\"original\"]) #browserRecommendation{padding:7px 9px}\n body.screen-start:not([data-start-theme=\"original\"]) #browserRecommendation strong{font-size:.95rem}\n body.screen-start:not([data-start-theme=\"original\"]) #practiceOptions{padding:6px;gap:4px;margin:3px 0}\n body.screen-start:not([data-start-theme=\"original\"]) .settings-memory{margin:4px 0;padding:5px 8px}\n body.screen-start:not([data-start-theme=\"original\"]) .v-footer{padding:7px 9px}\n body.screen-start[data-start-theme=\"blue\"] .variant-layout,body.screen-start[data-start-theme=\"mint\"] .variant-layout{grid-template-columns:minmax(260px,.85fr) minmax(0,2fr)}\n body.screen-start[data-start-theme=\"mint\"] .v-teacher,body.screen-start[data-start-theme=\"mint\"] .v-audio,body.screen-start[data-start-theme=\"mint\"] .v-order,body.screen-start[data-start-theme=\"mint\"] .v-practice{padding:6px 0}\n body.screen-start[data-start-theme=\"cards\"] .variant-layout{grid-template-columns:1fr 1fr 1.2fr;gap:8px}\n body.screen-start[data-start-theme=\"cards\"] .v-teacher .start-settings-row{display:grid;grid-template-columns:1fr 1fr;gap:6px}\n body.screen-start[data-start-theme=\"cards\"] .v-teacher .start-unlock-field{grid-column:1/-1}\n body.screen-start[data-start-theme=\"cards\"] .v-teacher .start-unlock-field button{width:100%}\n html.big-text body.screen-start:not([data-start-theme=\"original\"]) #startPanel label{font-size:1.25rem!important}\n html.big-text body.screen-start:not([data-start-theme=\"original\"]) #startPanel input,html.big-text body.screen-start:not([data-start-theme=\"original\"]) #startPanel select{font-size:21px!important}\n}\n@media(max-width:760px){\n .app-heading{grid-template-columns:auto minmax(0,1fr) auto;gap:5px!important}\n .app-heading h1{font-size:1.2rem!important;max-width:100px}\n .app-heading .student-theme-picker label{position:absolute;width:1px;height:1px;overflow:hidden;clip-path:inset(50%)}\n .app-heading .student-theme-picker{min-width:0;width:100%}\n .app-heading .student-theme-picker select{width:100%!important;min-width:0;padding:6px!important;font-size:14px!important}\n .app-heading .top-actions{gap:3px}\n .app-heading .mobile-settings-open{padding:6px;font-size:.78rem;min-height:34px}\n body.screen-start:not([data-start-theme=\"original\"]) .wrap{padding:4px}\n}\n";document.head.append(optimizedThemeStyle);const fullScreenTypeStyle=document.createElement("style");fullScreenTypeStyle.textContent="\n@media screen and (min-width:761px){\n body.screen-start:not([data-start-theme=\"original\"]) .wrap{max-width:none!important;width:100%;padding:6px!important}\n body.screen-start:not([data-start-theme=\"original\"]) .wrap>.card:first-child{width:100%;padding:10px!important;box-sizing:border-box}\n body.screen-start:not([data-start-theme=\"original\"]) .variant-layout{width:100%;gap:8px!important}\n body.screen-start:not([data-start-theme=\"original\"]) #startPanel label,body.screen-start:not([data-start-theme=\"original\"]) #startPanel input,body.screen-start:not([data-start-theme=\"original\"]) #startPanel select,body.screen-start:not([data-start-theme=\"original\"]) #startPanel button{font-size:var(--alt-font,20px)!important}\n body.screen-start:not([data-start-theme=\"original\"]) .v-panel h2{font-size:calc(var(--alt-font,20px)*1.04)!important}\n body.screen-start:not([data-start-theme=\"original\"]) .setting-help,body.screen-start:not([data-start-theme=\"original\"]) #taskOrderHelp,body.screen-start:not([data-start-theme=\"original\"]) #practiceOptions p,body.screen-start:not([data-start-theme=\"original\"]) .settings-memory,body.screen-start:not([data-start-theme=\"original\"]) .v-caption,body.screen-start:not([data-start-theme=\"original\"]) #browserRecommendation{font-size:calc(var(--alt-font,20px)*.84)!important;line-height:1.3!important}\n body.screen-start:not([data-start-theme=\"original\"]) #browserRecommendation strong{font-size:calc(var(--alt-font,20px)*.94)!important}\n body.screen-start:not([data-start-theme=\"original\"]) #startPanel input,body.screen-start:not([data-start-theme=\"original\"]) #startPanel select{padding:7px 9px!important}\n body.screen-start:not([data-start-theme=\"original\"]) .v-panel{padding:8px!important}\n body.screen-start:not([data-start-theme=\"original\"]) .v-panel .start-field{margin-bottom:5px!important}\n body.screen-start:not([data-start-theme=\"original\"]) .v-identity{grid-row:auto!important}\n body.screen-start[data-start-theme=\"blue\"] .variant-layout,body.screen-start[data-start-theme=\"mint\"] .variant-layout{grid-template-columns:1fr 1.3fr!important}\n body.screen-start[data-start-theme=\"blue\"] .v-identity,body.screen-start[data-start-theme=\"mint\"] .v-identity{grid-column:1;grid-row:1/3!important}\n body.screen-start[data-start-theme=\"blue\"] .v-audio,body.screen-start[data-start-theme=\"mint\"] .v-audio{grid-column:1!important;grid-row:3!important}\n body.screen-start[data-start-theme=\"blue\"] .v-teacher,body.screen-start[data-start-theme=\"mint\"] .v-teacher{grid-column:2;grid-row:1!important}\n body.screen-start[data-start-theme=\"blue\"] .v-order,body.screen-start[data-start-theme=\"mint\"] .v-order{grid-column:2;grid-row:2!important}\n body.screen-start[data-start-theme=\"blue\"] .v-practice,body.screen-start[data-start-theme=\"mint\"] .v-practice{grid-column:2;grid-row:3!important}\n}\n@media(max-width:760px){\n body.screen-start:not([data-start-theme=\"original\"]) #startPanel input,body.screen-start:not([data-start-theme=\"original\"]) #startPanel select{font-size:18px!important}\n body.screen-start:not([data-start-theme=\"original\"]) .v-panel h2{font-size:1.1rem!important}\n}\n";document.head.append(fullScreenTypeStyle);const actualLargeTextStyle=document.createElement("style");actualLargeTextStyle.textContent="\n@media screen and (min-width:761px){\n html.big-text body.screen-start:not([data-start-theme=\"original\"]) #startPanel label,\n html.big-text body.screen-start:not([data-start-theme=\"original\"]) #startPanel input,\n html.big-text body.screen-start:not([data-start-theme=\"original\"]) #startPanel select,\n html.big-text body.screen-start:not([data-start-theme=\"original\"]) #startPanel button{font-size:calc(var(--alt-font,24px)*1.25)!important}\n html.big-text body.screen-start:not([data-start-theme=\"original\"]) .v-panel h2{font-size:calc(var(--alt-font,24px)*1.3)!important}\n html.big-text body.screen-start:not([data-start-theme=\"original\"]) #browserRecommendation{font-size:calc(var(--alt-font,24px)*1.1)!important}\n html.big-text body.screen-start:not([data-start-theme=\"original\"]) #browserRecommendation strong{font-size:calc(var(--alt-font,24px)*1.2)!important}\n body.screen-start:not([data-start-theme=\"original\"]) .v-panel{height:auto;min-height:0}\n body.screen-start:not([data-start-theme=\"original\"]) .v-identity{display:flex!important;flex-direction:column;justify-content:center;gap:8px}\n body.screen-start[data-start-theme=\"notebook\"] .v-identity{display:grid!important;grid-template-columns:1fr 1fr;gap:8px}\n body.screen-start:not([data-start-theme=\"original\"]) .v-identity .start-field{width:100%}\n body.screen-start:not([data-start-theme=\"original\"]) .start-footer #startBtn{padding:10px 20px!important}\n body.screen-start:not([data-start-theme=\"original\"]) #nameClassStatus,\n body.screen-start:not([data-start-theme=\"original\"]) #rosterLoadStatus,\n body.screen-start:not([data-start-theme=\"original\"]) .start-footer .conn{font-size:calc(var(--alt-font,22px)*.8)!important;line-height:1.25}\n}\n";document.head.append(actualLargeTextStyle);
 const largeHelp=document.createElement('details');largeHelp.className='large-mode-help';const helpSummary=document.createElement('summary');helpSummary.textContent='Beállítások részletes magyarázata';largeHelp.append(helpSummary);['voiceHelp','repeatHelp','timeLimitHelp','taskOrderHelp'].forEach(id=>{const p=document.createElement('p');p.textContent=$(id).textContent;largeHelp.append(p);});$('startPanel').prepend(largeHelp);
 try{const input=JSON.parse(sessionStorage.getItem('themeSwitchInputs')||'null');if(input){['studentName','studentGrade','studentLetter','studentClassOther'].forEach(id=>{if(typeof input[id]==='string')$(id).value=input[id];});syncClassFields();sessionStorage.removeItem('themeSwitchInputs');}}catch(e){}
 $('studentTheme').addEventListener('change',e=>{
+ e.target.value='original'; return; // A témaválasztás véglegesen letiltva.
+
  try{const input={};['studentName','studentGrade','studentLetter','studentClassOther'].forEach(id=>input[id]=$(id).value);sessionStorage.setItem('themeSwitchInputs',JSON.stringify(input));localStorage.setItem(START_THEME_KEY,e.target.value);}catch(err){}
  location.reload();
 });
@@ -4450,6 +4535,10 @@ body.high-contrast #practiceOptions .practice-mode-heading{background:#000!impor
  body.high-contrast #practiceOptions,body.high-contrast #startModeTabs button{background:#000!important;color:#fff!important;border-color:#fff!important}
  @media(max-width:700px){body.screen-start .start-grid{grid-template-columns:1fr 1fr!important}#startIdentityActions{grid-column:1/-1}#startIdentityActions #startBtn{width:100%}body.screen-start #practiceOptions{grid-template-columns:auto minmax(0,1fr)!important}#practiceOptions .start-settings-row{grid-template-columns:1fr 1fr!important}#startModeTabs button{font-size:15px!important}#unifiedBankSlot #contentBankPractice select{width:100%}}
 }
+@media screen{
+ body.screen-start #startPanel .start-connection-status{display:inline-flex;align-items:center;width:fit-content;max-width:100%;margin:3px 0 9px;padding:7px 11px;border-radius:9px;font-weight:700;line-height:1.35;box-sizing:border-box}
+ body.screen-start.practice-start #startPanel .start-connection-status{display:inline-flex!important}
+}
 </style>
 <script>
 (function unifiedStartModes(){
@@ -4457,6 +4546,9 @@ body.high-contrast #practiceOptions .practice-mode-heading{background:#000!impor
  const tabs=document.createElement('div');tabs.id='startModeTabs';tabs.setAttribute('role','group');tabs.setAttribute('aria-label','Gépírás módja');
  tabs.innerHTML='<button type="button" id="realModeTab" aria-pressed="true">Gépírás – ÉLES TESZT</button><button type="button" id="practiceModeTab" aria-pressed="false">Gépírás – GYAKORLÁS</button>';
  const description=document.createElement('p');description.id='startModeDescription';description.setAttribute('aria-live','polite');start.prepend(tabs,description);
+ // A feladatbank elérhetősége mindkét módban, még a beállítások előtt látszik.
+ const connectionBadge=$('connChip');
+ if(connectionBadge){description.after(connectionBadge);connectionBadge.classList.add('start-connection-status');}
  const grid=start.querySelector('.start-grid'),actions=document.createElement('div');actions.id='startIdentityActions';grid.append(actions);actions.append($('startBtn'));
  grid.after(frame);
  const bank=document.createElement('div');bank.id='unifiedBankSlot';frame.prepend(bank);bank.append($('contentBankSection'),$('contentBankPractice'));
@@ -4924,5 +5016,244 @@ body.screen-start:not([data-start-theme="original"]) .variant-layout>.v-panel se
  @media(max-width:1000px){body.screen-start #unifiedBankSlot>#contentBankSection{flex:1 1 100%!important}body.screen-start #unifiedBankSlot #practiceAuxiliarySettings{flex:1 1 100%!important;justify-content:flex-start!important}}
 }
 </style>
+<style id="disableThemePickerFinal">
+.student-theme-picker, body.screen-start .student-theme-picker, #practiceAuxiliarySettings .student-theme-picker, body.screen-start #unifiedBankSlot #practiceAuxiliarySettings .student-theme-picker { display:none!important; visibility:hidden!important; }
+</style>
+<style id="v23-layout-repair">
+/* A korábbi négysávos rács szétszórta a feliratokat és a mezőket. */
+@media screen {
+ body.screen-start #practiceOptions,
+ body.screen-start #practiceOptions.practice-view {
+   display:flex!important;flex-direction:column!important;align-items:stretch!important;
+   gap:10px!important;padding:14px!important;margin:10px 0!important;
+   height:auto!important;min-height:0!important;
+ }
+ body.screen-start #practiceOptions .v23-fields {
+   display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr))!important;
+   gap:10px!important;align-items:start!important;width:100%!important;
+ }
+ body.screen-start #practiceOptions .v23-field{display:flex!important;flex-direction:column!important;gap:5px!important;min-width:0!important}
+ body.screen-start #practiceOptions .v23-field label{font-weight:650!important;font-size:13px!important;line-height:1.3!important;margin:0!important;white-space:normal!important}
+ body.screen-start #practiceOptions .v23-field select{width:100%!important;max-width:100%!important;min-width:0!important;min-height:36px!important}
+ body.screen-start #practiceOptions #teacherUnlockAlwaysVisible{justify-content:flex-start!important;gap:8px!important;order:0}
+ body.screen-start #practiceOptions #unifiedBankSlot{display:flex!important;flex-wrap:wrap!important;align-items:flex-start!important;gap:10px!important;width:100%!important;min-height:0!important;order:1}
+ body.screen-start #practiceOptions #unifiedBankSlot>#contentBankSection,
+ body.screen-start #practiceOptions #unifiedBankSlot>#contentBankPractice{flex:0 1 290px!important;max-width:100%!important}
+ body.screen-start #practiceOptions #unifiedBankSlot>#practiceAuxiliarySettings{flex:1 1 300px!important;justify-content:flex-start!important;flex-wrap:wrap!important;align-self:flex-start!important;padding:4px 0!important}
+ body.screen-start #practiceOptions .v23-fields{order:2}
+ body.screen-start #practiceOptions .start-settings-row,
+ body.screen-start #practiceOptions .start-audio-row{display:grid!important;grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px!important;align-items:end!important;width:100%!important;min-height:0!important;order:3}
+ body.screen-start #practiceOptions #taskOrderField,
+ body.screen-start #practiceOptions #teacherConfigStatus,
+ body.screen-start #practiceOptions .settings-memory,
+ body.screen-start #practiceOptions #practiceAvailability{width:100%!important;max-width:100%!important;min-height:0!important;margin:0!important}
+ body.screen-start #practiceOptions p{margin:0!important;line-height:1.35!important}
+ body.screen-start #practiceOptions .hidden{display:none!important}
+ body.screen-start #practiceOptions #practiceSharedSettings{display:contents!important}
+ body.screen-start #practiceOptions select{box-sizing:border-box!important}
+ body.screen-start #startPanel{min-height:0!important}
+ body.screen-start #startPanel .start-grid{gap:10px!important}
+ body.screen-start #startModeTabs{margin-bottom:7px!important}
+ body.screen-start #startModeDescription{margin-bottom:4px!important}
+}
+@media screen and (max-width:760px){
+ body.screen-start #practiceOptions .v23-fields{grid-template-columns:1fr!important}
+ body.screen-start #practiceOptions .start-settings-row,
+ body.screen-start #practiceOptions .start-audio-row{grid-template-columns:1fr!important}
+}
+</style>
+<script id="v23-layout-repair-script">
+(function(){
+ function organize(){
+  const panel=document.getElementById('practiceOptions');if(!panel||panel.querySelector('.v23-fields'))return;
+  const pairs=[['practiceTextKind'],['practiceTime'],['practiceSpeechRate']];
+  const fields=document.createElement('div');fields.className='v23-fields';
+  for(const [id] of pairs){
+   const input=document.getElementById(id);if(!input)continue;
+   const label=panel.querySelector('label[for="'+id+'"]')||document.querySelector('label[for="'+id+'"]');
+   const field=document.createElement('div');field.className='v23-field';
+   if(label)field.appendChild(label);field.appendChild(input);fields.appendChild(field);
+  }
+  if(fields.children.length)panel.appendChild(fields);
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',organize,{once:true});else organize();
+})();
+</script>
+
+<style id="v31-layout">
+@media screen {
+ body.screen-start .app-heading{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:12px!important;flex-wrap:wrap!important}
+ body.screen-start .app-heading .top-actions{display:flex!important;align-items:center!important;justify-content:flex-end!important;gap:8px!important;margin-left:auto!important;visibility:visible!important}
+ body.screen-start .app-heading .top-actions .access-btn{display:inline-flex!important;visibility:visible!important;white-space:nowrap!important;font-size:13px!important;padding:7px 10px!important}
+ body.screen-start #v31-guide-links{display:flex!important;align-items:center!important;flex-wrap:wrap!important;gap:12px!important;margin:3px 0 7px!important}
+ body.screen-start #v31-guide-links details{margin:0!important}
+ body.screen-start #v31-name-label{display:flex!important;align-items:baseline!important;gap:9px!important;flex-wrap:wrap!important}
+ body.screen-start #v31-name-label .v31-hint{font-weight:400;font-size:12px;color:#43616a}
+ body.screen-start #studentCodeStatus{display:none!important}
+ body.screen-start #rosterLoadStatus{display:none!important}
+ body.screen-start #practiceOptions{display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:9px!important}
+ body.screen-start #practiceOptions>#taskOrderField{order:100!important;width:100%!important;display:block!important}
+ body.screen-start #practiceOptions>#teacherConfigStatus{order:101!important}
+ body.screen-start #practiceOptions>.settings-memory{order:102!important}
+ body.screen-start #practiceOptions>#practiceAvailability{order:103!important}
+ body.screen-start #practiceOptions>#unifiedBankSlot{order:2!important}
+ body.screen-start #practiceOptions>.v23-fields{order:3!important}
+ body.screen-start #practiceOptions>.start-settings-row,body.screen-start #practiceOptions>.start-audio-row{order:4!important}
+ body.screen-start #practiceOptions>#teacherUnlockAlwaysVisible{order:1!important}
+ body.screen-start #practiceOptions>#practiceSharedSettings{display:contents!important}
+ body.screen-start #practiceOptions #practiceAuxiliarySettings .access-btn{display:none!important}
+ body.screen-start #startModeDescription{text-align:left!important;width:100%!important}
+ body.screen-start[data-typing-mode="practice"] #startModeDescription{text-align:right!important}
+}
+@media screen and (max-width:650px){body.screen-start .app-heading .top-actions .access-btn{font-size:11px!important;padding:5px 7px!important}}
+</style>
+<script id="v31-layout-script">
+(function(){
+ function arrange(){
+  const heading=document.querySelector('.app-heading');
+  if(heading){let actions=heading.querySelector('.top-actions');if(!actions){actions=document.createElement('div');actions.className='top-actions';heading.append(actions);}for(const id of ['bigTextToggle','contrastToggle']){const btn=document.getElementById(id);if(btn&&btn.parentElement!==actions)actions.append(btn);}}
+  const start=document.getElementById('startPanel');
+  if(start){
+   const usage=[...document.querySelectorAll('details')].find(x=>(x.querySelector('summary')?.textContent||'').includes('Használati útmutató'));
+   const browser=document.getElementById('browserRecommendation');
+   if(usage&&browser){let links=document.getElementById('v31-guide-links');if(!links){links=document.createElement('div');links.id='v31-guide-links';usage.before(links);}links.append(usage);const details=browser.closest('details');if(details&&details!==usage)links.append(details);}
+   const label=start.querySelector('label[for="studentName"]');if(label){label.id='v31-name-label';if(!label.querySelector('.v31-hint')){const hint=document.createElement('span');hint.className='v31-hint';hint.textContent='Használj tanulói azonosítót, vagy írd be a neved.';label.append(hint);}}
+  }
+  const panel=document.getElementById('practiceOptions');
+  if(panel){for(const id of ['taskOrderField']){const el=document.getElementById(id);if(el&&el.parentElement!==panel)panel.append(el);}const availability=document.getElementById('practiceAvailability');if(availability&&availability.parentElement!==panel)panel.append(availability);}
+ }
+ function run(){arrange();requestAnimationFrame(()=>{arrange();requestAnimationFrame(arrange)});window.addEventListener('load',arrange,{once:true});}
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',run,{once:true});else run();
+ let busy=false;const observer=new MutationObserver(()=>{if(busy)return;busy=true;requestAnimationFrame(()=>{arrange();busy=false;});});observer.observe(document.body,{childList:true,subtree:true});
+})();
+</script>
+
+<style id="v32-layout">
+@media screen {
+ body.screen-start #practiceOptions #unifiedBankSlot>#practiceAuxiliarySettings{display:flex!important;flex-direction:column!important;align-items:stretch!important;justify-content:flex-start!important;flex:1 1 350px!important;min-width:280px!important;gap:9px!important}
+ body.screen-start #practiceAuxiliarySettings #v32-filter-help{display:flex;flex-direction:column;gap:7px;min-width:0;width:100%}
+ body.screen-start #practiceAuxiliarySettings #practiceDeliveryField{display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:5px!important;min-width:0!important;font-weight:650}
+ body.screen-start #practiceAuxiliarySettings #practiceDeliveryField select{width:100%!important;min-width:0!important;max-width:100%!important}
+ body.screen-start #practiceAuxiliarySettings #v32-filter-help .settings-memory,
+ body.screen-start #practiceAuxiliarySettings #v32-filter-help p{font-size:12px!important;line-height:1.4!important;margin:0!important;max-width:100%!important}
+ body.screen-start #teacherUnlockAlwaysVisible{display:flex!important;align-items:center!important;flex-wrap:wrap!important;gap:8px!important}
+ body.screen-start #teacherUnlockAlwaysVisible #teacherConfigStatus{display:inline-flex!important;align-items:center!important;flex-wrap:wrap!important;gap:6px!important;width:auto!important;max-width:100%!important;min-width:0!important;margin:0!important;padding:0!important;font-size:12px!important}
+ body.screen-start #teacherUnlockAlwaysVisible #teacherConfigStatus button{margin:0!important}
+ @media(max-width:760px){body.screen-start #practiceOptions #unifiedBankSlot>#practiceAuxiliarySettings{flex-basis:100%!important;min-width:0!important}}
+}
+</style>
+<script id="v32-layout-script">
+(function(){
+ function arrange(){
+  const panel=document.getElementById('practiceOptions'),toolbar=document.getElementById('practiceAuxiliarySettings');
+  const unlock=document.getElementById('teacherUnlockAlwaysVisible');
+  if(!panel||!toolbar||!unlock)return;
+  const sync=document.getElementById('teacherConfigStatus');
+  if(sync&&sync.parentElement!==unlock)unlock.append(sync);
+  let area=document.getElementById('v32-filter-help');
+  if(!area){area=document.createElement('div');area.id='v32-filter-help';toolbar.append(area);}
+  const memory=panel.querySelector('.settings-memory');if(memory&&memory.parentElement!==area)area.append(memory);
+  const explanatory=[...panel.querySelectorAll('p')].find(p=>p.textContent.includes('A szövegtípus és a feladat módja együtt szűrhető.'));
+  if(explanatory&&explanatory.parentElement!==area)area.append(explanatory);
+  const delivery=document.getElementById('practiceDeliveryField');if(delivery&&delivery.parentElement!==area)area.append(delivery);
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',arrange,{once:true});else arrange();
+ window.addEventListener('load',arrange,{once:true});
+ document.getElementById('practiceMode')?.addEventListener('change',arrange);
+})();
+</script>
+<!-- v33: Világos, magas kontrasztú akadálymentes mód; felülírja a régi sötét témát. -->
+<style id="light-high-contrast-v33">
+html body.high-contrast,html body.high-contrast[data-typing-mode="practice"]{background:#fff!important;color:#000!important;color-scheme:light!important}
+body.high-contrast :is(.card,.answer-wrap,.progress-section,.progress-chart,.task-text,.stat,.mini div,.answer-timer,.total-line,.cap-note,.result-meta,.send-bar,.conn,.weak-box,.fb-box,.fb,details.explain,.diff-block,.diff-block .txt,.task-res,.legend,.rest-note,.stop-banner,.modal,.error,.save-banner,.score-explain,.pill,.tag,.hero-stat,.auto-msg,.roster-confirm-card,.roster-confirm-name,.dictation-skip-confirm,.all-results-history,.archive-result),
+body.high-contrast[data-typing-mode="practice"] :is(#testPanel>.card,#resultPanel>.card,#typingWorkspace,#taskText,#answer,.result-history,#resultPanel .result-highlight,#resultPanel .progress-section,#practiceOptions,#contentBankPractice,#unifiedBankSlot,#livePracticeOptions,#practiceTag,#liveTestHistory,#startModeDescription,#practiceOptions.practice-view,#typingWorkspace>.answer-timer){background:#fff!important;color:#000!important;border-color:#000!important}
+body.high-contrast :is(input,textarea,select,#answer,#taskText),body.high-contrast[data-typing-mode="practice"] :is(#startPanel input,#startPanel select,#livePracticeOptions select,#taskText,#answer){background:#fff!important;color:#000!important;border:2px solid #000!important;caret-color:#000!important;color-scheme:light!important}
+body.high-contrast :is(input,select,textarea):disabled,body.high-contrast[data-typing-mode="practice"] :is(#startPanel input:disabled,#startPanel select:disabled){background:#ededed!important;color:#333!important;opacity:1!important}
+body.high-contrast :is(label,output,.lbl-t,.summary-label,.summary-unit,.meta-label,.meta-value,.score-explain,.score-explain *,.grade-note,.rest-note,.rest-note *,.mono,.muted,.small,small,.explain *,.fb-box *,.fb *,.legend *,.task-res *,.total-line *,.cap-note *,.conn,.weak-box b,.weak-box span,.send-bar span,.stats-row .lbl,.stats-row .u,dt,dd,summary,h1,h2,h3,h4,.chart-last,.progress-section p,.grade-state-label,#appModeTitle),body.high-contrast[data-typing-mode="practice"] #appModeTitle{color:#000!important}
+html body.high-contrast.high-contrast button,html body.high-contrast.high-contrast button *{color:#fff!important}
+html body.high-contrast.high-contrast button{background:#000!important;color:#fff!important;border:2px solid #000!important}
+html body.high-contrast.high-contrast button:disabled{background:#dedede!important;color:#333!important}
+body.high-contrast :is(button,input,textarea,select,a,summary):focus-visible{outline:3px solid #005fcc!important;outline-offset:3px!important}
+body.high-contrast .progress-chart svg text{fill:#000!important}
+body.high-contrast .bar{background:#777!important}
+body.high-contrast .pill,body.high-contrast .tag{color:#000!important;border:2px solid #000!important}
+body.high-contrast .hero-stat.grade-5,body.high-contrast .hero-stat.grade-low{border-color:#000!important}
+body.high-contrast .hero-stat :is(strong,span),body.high-contrast .grade-state-value,body.high-contrast .grade-state-label{color:#000!important;background:#fff!important}
+body.high-contrast .auto-msg.warn{background:#fff2b3!important;color:#000!important}
+body.high-contrast .auto-msg.info{background:#e5f1ff!important;color:#000!important;border-color:#005fcc!important}
+body.high-contrast .answer-timer,body.high-contrast .answer-timer *{color:#000!important}
+body.high-contrast .send-bar.ok,body.high-contrast .send-bar.ok *,body.high-contrast .conn.ok{color:#075c27!important}
+body.high-contrast .conn.bad,body.high-contrast .conn.bad *,body.high-contrast .skipped{color:#9d1010!important}
+body.high-contrast .modal-bg,body.high-contrast #loadingOverlay{background:rgba(0,0,0,.65)!important}
+body.high-contrast #resultPanel #gradeProgressTop,body.high-contrast #resultPanel #gradeProgressTop.grade-complete,body.high-contrast #sendBar #resultRecentHistory{background:#fff!important;color:#000!important;border-color:#000!important}
+body.high-contrast .special-grade-emergency,body.high-contrast .special-grade-technical,body.high-contrast .special-grade-mixed{background:#fff!important;color:#000!important;border:2px solid #000!important}
+body.high-contrast #dictationNotice.dictation-warning,body.high-contrast #dictationNotice.dictation-urgent{background:#fff!important;color:#000!important;border-color:#000!important}
+body.high-contrast #resultPanel :is(#newTestBtn,#newTestBtnTop,#newTestBtnSaved){background:#000!important;color:#fff!important;border-color:#000!important}
+</style>
+
+<!-- v35: unified start layout and readable light high contrast -->
+<style id="v35-layout-and-contrast">
+@media screen {
+ body.screen-start #v35-status-line{display:flex!important;align-items:center!important;justify-content:space-between!important;gap:12px!important;flex-wrap:wrap!important;margin:5px 0 9px!important}
+ body.screen-start #v35-status-line #connChip{flex:1 1 280px!important;margin:0!important;min-width:0!important}
+ body.screen-start #v35-status-line #teacherConfigStatus{flex:0 1 auto!important;width:auto!important;max-width:100%!important;margin:0!important;font-size:12px!important}
+ body.screen-start #practiceOptions #teacherUnlockAlwaysVisible{margin:0!important;gap:8px!important}
+ body.screen-start[data-typing-mode="practice"] #teacherUnlockAlwaysVisible,
+ body.screen-start[data-typing-mode="practice"] #unlockBtn,
+ body.screen-start[data-typing-mode="practice"] #teacherUnlockAlwaysVisible button{display:none!important}
+ body.screen-start #practiceOptions #v32-filter-help{gap:5px!important}
+ body.screen-start #practiceOptions #unifiedBankSlot{align-items:flex-start!important;gap:12px!important}
+ body.screen-start #practiceOptions #unifiedBankSlot #practiceAuxiliarySettings{border-top:0!important;padding-top:0!important}
+ body.screen-start #practiceOptions .v23-fields{grid-template-columns:repeat(3,minmax(0,1fr))!important}
+ body.screen-start #practiceOptions #taskOrderField{margin-top:8px!important}
+ body.screen-start #practiceOptions .start-settings-row,
+ body.screen-start #practiceOptions .start-audio-row{gap:12px!important}
+ body.screen-start #practiceOptions{gap:9px!important;padding:12px!important}
+ body.screen-start #v35-status-line #teacherConfigStatus:empty{display:none!important}
+}
+@media screen and (max-width:760px){body.screen-start #practiceOptions .v23-fields{grid-template-columns:1fr!important}}
+/* Earlier dark-mode declarations must not override the accessible light palette. */
+html body.high-contrast.screen-start #startPanel,
+html body.high-contrast.screen-start #practiceOptions,
+html body.high-contrast.screen-start #practiceOptions.practice-view,
+html body.high-contrast.screen-start #unifiedBankSlot,
+html body.high-contrast.screen-start #practiceAuxiliarySettings,
+html body.high-contrast.screen-start #contentBankSection,
+html body.high-contrast.screen-start #v35-status-line,
+html body.high-contrast.screen-start #v32-filter-help{background:#fff!important;color:#000!important;border-color:#222!important}
+html body.high-contrast.screen-start #practiceOptions :is(label,p,small,span,strong,h3,summary),
+html body.high-contrast.screen-start #contentBankSection :is(label,p,small,span,strong,h3),
+html body.high-contrast.screen-start #v35-status-line :is(span,small,p){color:#000!important;text-shadow:none!important}
+html body.high-contrast.screen-start #practiceOptions :is(select,input,textarea){background:#fff!important;color:#000!important;border:2px solid #111!important}
+html body.high-contrast.screen-start #practiceOptions :is(select,input):disabled{background:#eee!important;color:#333!important}
+html body.high-contrast.screen-start #practiceOptions :is(button,button *),
+html body.high-contrast.screen-start .app-heading button{background:#000!important;color:#fff!important;border-color:#000!important}
+html body.high-contrast.screen-start #practiceOptions #teacherUnlockAlwaysVisible button:disabled{background:#eee!important;color:#333!important}
+html body.high-contrast.screen-start #startModeTabs button[aria-pressed="true"],
+html body.high-contrast.screen-start #startModeTabs .active{background:#114f6b!important;color:#fff!important;border:3px solid #000!important}
+html body.high-contrast.screen-start #startModeTabs button:not([aria-pressed="true"]):not(.active){background:#fff!important;color:#000!important;border:2px solid #000!important}
+html body.high-contrast.screen-start #practiceOptions .settings-memory{background:#f2f2f2!important;color:#000!important;border-left:4px solid #111!important}
+html body.high-contrast.screen-start #practiceOptions .settings-memory *{color:#000!important}
+html body.high-contrast.screen-start #practiceOptions #practiceAvailability{background:#fff!important;color:#000!important}
+html body.high-contrast.screen-start #practiceOptions #practiceAvailability *{color:#000!important}
+html body.high-contrast.screen-start #contentBankSection{border:2px solid #111!important}
+html body.high-contrast.screen-start #startPanel #studentCode::placeholder{color:#555!important;opacity:1!important}
+</style>
+<script id="v35-status-position">
+(function(){
+ function place(){
+  const start=document.getElementById('startPanel'),chip=document.getElementById('connChip');
+  if(!start||!chip)return;
+  let line=document.getElementById('v35-status-line');
+  if(!line){line=document.createElement('div');line.id='v35-status-line';chip.parentNode.insertBefore(line,chip);}
+  if(chip.parentNode!==line)line.prepend(chip);
+  const sync=document.getElementById('teacherConfigStatus');
+  if(sync&&sync.parentNode!==line)line.append(sync);
+ }
+ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',place,{once:true});else place();
+ window.addEventListener('load',place,{once:true});
+ document.getElementById('practiceMode')?.addEventListener('change',place);
+})();
+</script>
 </body>
 </html>
