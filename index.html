@@ -1482,18 +1482,30 @@ function selectTasksInOrder(all,n,order){
 }
 
 // A tanári kód ellenőrzése a szerveren: "ok", "bad", "blocked" vagy "offline".
+// Tanári PIN: a hálózati hibát ne tévesszük össze a hibás jelszóval.
+let lastTeacherPinError='';
 async function checkPinServer(pin){
-  try{
-    const r=await jsonp({action:"checkPin",pin},10000);
-    if(r?.success&&r.pinRequired===false){teacherPinRequired=false;applyLock();}
-    if(r?.ok&&r.bankToken)teacherBankSessionToken=r.bankToken;
-    if(r&&r.success){ return r.ok?"ok":(r.blocked?"blocked":"bad"); }
-  }catch(e){}
+  lastTeacherPinError='';
+  for(let attempt=0;attempt<2;attempt++){
+    try{
+      const r=await jsonpOnce({action:"checkPin",pin},attempt===0?20000:30000);
+      if(r?.success&&r.pinRequired===false){teacherPinRequired=false;applyLock();}
+      if(r?.ok&&r.bankToken)teacherBankSessionToken=r.bankToken;
+      if(r?.success===true)return r.ok?"ok":(r.blocked?"blocked":"bad");
+      lastTeacherPinError=String(r?.error||'A szerver nem adott érvényes PIN-ellenőrzési választ.');
+      // A szerveroldali hiba nem hibás jelszó.
+      if(r?.success===false)return "serverError";
+    }catch(e){
+      lastTeacherPinError=String(e?.message||e);
+      if(attempt===0)await new Promise(resolve=>setTimeout(resolve,450));
+    }
+  }
   return "offline";
 }
 function pinMessage(st){
   return st==="blocked"?"Túl sok hibás próbálkozás, próbáld 10 perc múlva."
-    :st==="offline"?"A kód ellenőrzése nem sikerült (nincs kapcsolat, vagy a Google script még nem frissült)."
+    :st==="serverError"?"A szerver nem tudta ellenőrizni a jelszót: "+lastTeacherPinError
+    :st==="offline"?"A tanári jelszó ellenőrzése nem érte el a Google Apps Scriptet ("+lastTeacherPinError+"). Ellenőrizd a kapcsolatot és a telepített webalkalmazás címét."
     :"Hibás kód.";
 }
 
