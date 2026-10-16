@@ -732,6 +732,26 @@ body.screen-start.practice-start #startPanel .start-grid>.start-field.identity-c
 </style>
 
 
+<style id="v41-mobile-layout-fix">
+@media(max-width:760px){
+ body.screen-start #startPanel .start-grid{display:grid!important;grid-template-columns:minmax(0,1fr)!important;gap:8px!important}
+ body.screen-start #startPanel .start-grid>.start-field,body.screen-start #startPanel #startIdentityActions{grid-column:1/-1!important;min-width:0!important;width:100%!important;max-width:100%!important}
+ body.screen-start #studentCodeBox{display:flex!important;flex-direction:column!important;align-items:stretch!important;gap:5px!important;width:100%!important;min-width:0!important;position:static!important}
+ body.screen-start #studentCodeBox>label,body.screen-start #studentCodeBox>input,body.screen-start #studentCodeBox>button,body.screen-start #studentCodeBox>small{position:static!important;grid-column:auto!important;float:none!important;display:block!important;width:100%!important;max-width:100%!important;min-width:0!important;margin:0!important;transform:none!important;white-space:normal!important;box-sizing:border-box!important}
+ body.screen-start #studentCodeBox>button{min-height:44px!important;height:auto!important;padding:8px 12px!important;line-height:1.25!important}
+ body.screen-start #startPanel .identity-name,body.screen-start #startPanel .identity-class{grid-column:1/-1!important;min-width:0!important;width:100%!important}
+ body.screen-start #startPanel .identity-name>input,body.screen-start #startPanel .identity-class>input{width:100%!important;min-width:0!important;max-width:100%!important}
+ body.screen-start #startPanel .class-row{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;gap:8px!important;width:100%!important}
+ body.screen-start #startPanel .class-row select{width:100%!important;min-width:0!important;max-width:100%!important}
+ body.screen-start #startPanel label,body.screen-start #startPanel small{overflow-wrap:anywhere!important;word-break:normal!important;max-width:100%!important}
+ body.screen-test #dictationStartControls:not(.hidden){position:relative!important;display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;gap:5px!important;max-height:none!important;overflow:visible!important;min-height:0!important;padding:5px!important}
+ body.screen-test #dictationStartControls:not(.hidden)>button{display:block!important;width:100%!important;min-width:0!important;max-width:100%!important;min-height:40px!important;height:auto!important;padding:6px!important;line-height:1.2!important;white-space:normal!important;font-size:13px!important}
+ body.screen-test #dictationStartControls:not(.hidden)>button:first-child{grid-column:1/-1!important}
+ body.screen-test.dictation-writing #typingWorkspace{min-height:0!important}
+ body.screen-test #speechTools:not(.hidden){display:flex!important;flex-wrap:wrap!important;gap:5px!important;max-width:100%!important}
+ body.screen-test #speechTools:not(.hidden)>button{white-space:normal!important;min-height:36px!important}
+}
+</style>
 </head>
 <body>
 <div id="loadingOverlay" class="hidden" role="status" aria-live="polite">
