@@ -2827,9 +2827,10 @@ function downloadCsv(){
 }
 
 function downloadPdf(){
-  // A böngésző nyomtatási párbeszédablakában válaszd a „Mentés PDF-ként” lehetőséget.
-  if(window.matchMedia('(max-width:760px)').matches){directPdf();return;}
-  try{formattedPdf();}catch(error){console.error('PDF nyomtatási nézet:',error);directPdf();}
+  // Mobilon is az eredménylap formázott HTML-nyomtatását használjuk.
+  // A directPdf() csak szöveges PDF-et készít, ezért nem használjuk automatikus tartalékként.
+  try{formattedPdf();}
+  catch(error){console.error('Formázott PDF:',error);alert('Nem sikerült megnyitni a formázott nyomtatási nézetet: '+(error?.message||error));}
 }
 
 async function checkPendingOnLoad(){
@@ -3045,7 +3046,7 @@ function verifyStudentCodeUI(){
  const code=document.getElementById('studentCode').value.trim().toUpperCase();
  const status=document.getElementById('studentCodeStatus'),btn=document.getElementById('studentCodeVerify');
  if(!/^[A-Z0-9-]{9,24}$/.test(code)){status.textContent='Adj meg egy érvényes tanulói azonosítót.';return;}
- btn.disabled=true;status.textContent='Azonosító ellenőrzése…';clearStudentCodeSession();
+ clearStudentCodeSession();btn.disabled=true;btn.classList.add('code-loading');btn.setAttribute('aria-busy','true');btn.textContent='Név betöltése…';status.textContent='⏳ A név betöltése folyamatban…';
  const frame=document.createElement('iframe'),form=document.createElement('form');
  const nonce=(crypto.randomUUID?crypto.randomUUID():String(Date.now())+Math.random());
  const frameName='codeFrame_'+nonce.replace(/[^a-z0-9]/gi,'');frame.name=frameName;frame.hidden=true;
@@ -3053,7 +3054,7 @@ function verifyStudentCodeUI(){
  for(const [k,v] of Object.entries({action:'verifyStudentCode',code,replyNonce:nonce,replyOrigin:location.origin})){
   const input=document.createElement('input');input.type='hidden';input.name=k;input.value=v;form.appendChild(input);
  }
- let done=false;const finish=()=>{if(done)return;done=true;btn.disabled=false;window.removeEventListener('message',receive);form.remove();setTimeout(()=>frame.remove(),500);};
+ let done=false;const finish=()=>{if(done)return;done=true;btn.disabled=false;btn.classList.remove('code-loading');btn.removeAttribute('aria-busy');btn.textContent='Saját név betöltése';window.removeEventListener('message',receive);form.remove();setTimeout(()=>frame.remove(),500);};
  const receive=e=>{
   let host;try{host=new URL(e.origin).hostname;}catch(_){return;}
   if(!(host==='script.google.com'||host.endsWith('.googleusercontent.com')))return;
@@ -3073,7 +3074,7 @@ function verifyStudentCodeUI(){
   finish();
  };
  window.addEventListener('message',receive);
- document.body.append(frame,form);form.submit();setTimeout(()=>{if(!done){status.textContent='Nem érkezett válasz. Ellenőrizd a telepítést.';finish();}},12000);
+ document.body.append(frame,form);form.submit();setTimeout(()=>{if(!done){status.textContent='⚠️ A név betöltése nem sikerült. Ellenőrizd az internetkapcsolatot, majd próbáld újra. Ha továbbra sem működik, add meg a neved kézzel.';finish();}},12000);
 }
 
 
@@ -3588,27 +3589,34 @@ function formattedPdf(){
  const root=$('resultPanel').cloneNode(true);root.classList.remove('hidden');root.querySelectorAll('button,script,.export-actions,.hidden,#saveActions,#saveStatus,#resultSaveGate,#saveBanner,#csvTeacherReminder').forEach(n=>n.remove());root.querySelectorAll('details').forEach(n=>n.open=true);
  const styles=Array.from(document.querySelectorAll('style')).map(n=>n.textContent).join('\n');
  const safeTitle=title.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
- const compact=`@page{size:A4;margin:5mm}html,body{margin:0!important;padding:0!important;background:#fff!important;color:#202124!important;font-size:8pt!important;line-height:1.1!important}*{animation:none!important;transition:none!important;print-color-adjust:exact;-webkit-print-color-adjust:exact}.wrap,#resultPanel{width:auto!important;max-width:none!important;margin:0!important;padding:0!important;overflow:visible!important}.card{box-shadow:none!important}.task-res,.diff-block{break-inside:auto!important}.diff-row .txt{white-space:pre-wrap!important;overflow-wrap:anywhere!important}.result-meta{grid-template-columns:repeat(2,minmax(0,1fr))!important}.result-highlight .hero-stat{background:#e3eee8!important;color:#215347!important}.progress-chart svg{height:55px!important}.legend{font-size:7pt!important}.pdf-toolbar{padding:8px;margin-bottom:8px;background:#e3eee8;font:14px Arial}button{display:inline-block!important}@media print{.pdf-toolbar{display:none!important}}
-/* A hosszú részletek folytonosan töltsék ki az oldalakat. */
-#resultPanel,#resultPanel details,#resultPanel .explain,#resultPanel .progress-section,#resultPanel .fb-box,#resultPanel .task-res,#resultPanel .diff-block,#detail{break-inside:auto!important;page-break-inside:auto!important;break-before:auto!important;page-break-before:auto!important;break-after:auto!important;page-break-after:auto!important;height:auto!important;min-height:0!important;max-height:none!important;overflow:visible!important;position:static!important}
-#resultPanel details>summary{display:block!important;font-weight:700;font-size:8pt!important;line-height:1.15!important;margin:3pt 0!important;break-after:avoid!important;page-break-after:avoid!important;list-style:none}
-#resultPanel details>summary::marker{content:''}
-#resultPanel .progress-chart{break-inside:avoid!important}
-#resultPanel .progress-chart svg{height:45px!important;max-height:45px!important}
-#resultPanel .diff-row{break-inside:auto!important;page-break-inside:auto!important}
-#resultPanel .diff-row .txt{white-space:pre-wrap!important;overflow:visible!important;height:auto!important;max-height:none!important;min-height:0!important}
-#resultPanel .progress-header,#resultPanel .result-top-actions{margin:0 0 3pt!important}
-#resultPanel .result-meta{gap:2pt!important;margin:2pt 0!important}
-#resultPanel .meta-item{padding:2pt!important}
-#resultPanel .send-bar{display:block!important;margin:3pt 0!important;padding:4pt!important;font-size:8pt!important;border-width:1pt!important;box-shadow:none!important;animation:none!important}
-#resultPanel .send-bar::before{display:none!important}
-#resultPanel #gradeProgressTop,#resultPanel #gradeGroupResults{font-size:8pt!important;margin:0 0 2pt!important;padding:0!important}
-#resultPanel .result-history,#resultPanel .history-result-card{font-size:7pt!important;padding:2pt!important;margin:1pt!important}
-#resultPanel .legend{gap:2pt 6pt!important;margin:2pt 0!important}
-#resultPanel .mini{gap:2pt!important}
-#resultPanel .feedback-compact details{font-size:7pt!important}
-#resultPanel .fb-box p,#resultPanel .task-res p{margin:1pt 0!important}
-`;
+ const compact=`/* Tömör, de továbbra is formázott A4-es eredménylap */
+@page{size:A4;margin:8mm 9mm}
+html,body{background:#fff!important;margin:0!important;padding:0!important}
+body{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!important;font-size:10pt!important;line-height:1.24!important}
+.pdf-toolbar{position:sticky;top:0;z-index:99;padding:10px;background:#eaf0f6;color:#18324b;border-bottom:1px solid #9db5c9}
+#resultPanel{display:block!important;visibility:visible!important;max-width:100%!important}
+#resultPanel details{display:block!important}
+#resultPanel details>summary{font-weight:700}
+@media print{
+ .pdf-toolbar{display:none!important}
+ html,body{width:auto!important;overflow:visible!important}
+ .wrap{max-width:none!important;width:100%!important;margin:0!important;padding:0!important}
+ #resultPanel{box-shadow:none!important;margin:0!important;padding:0!important}
+ #resultPanel h1{font-size:17pt!important;margin:5px 0!important}
+ #resultPanel h2{font-size:13pt!important;margin:6px 0 4px!important}
+ #resultPanel h3{font-size:11pt!important;margin:5px 0 3px!important}
+ #resultPanel p{margin:3px 0!important}
+ #resultPanel .card,#resultPanel .result-card,#resultPanel .task-res,#resultPanel .panel,#resultPanel section{padding:7px 9px!important;margin:5px 0!important;min-height:0!important;max-height:none!important;box-shadow:none!important}
+ #resultPanel table{width:100%!important;border-collapse:collapse!important;font-size:9pt!important}
+ #resultPanel th,#resultPanel td{padding:3px 5px!important;line-height:1.2!important}
+ #resultPanel ul,#resultPanel ol{margin:3px 0!important;padding-left:18px!important}
+ #resultPanel li{margin:1px 0!important}
+ #resultPanel pre,#resultPanel blockquote{white-space:pre-wrap!important;overflow-wrap:anywhere!important;font-size:9pt!important;margin:3px 0!important;padding:5px!important}
+ #resultPanel .card,#resultPanel .result-card,#resultPanel .task-res{break-inside:auto!important;page-break-inside:auto!important}
+ #resultPanel h2,#resultPanel h3,#resultPanel summary{break-after:avoid-page!important}
+ #resultPanel tr{break-inside:avoid-page!important}
+ button,.export-actions{display:none!important}
+}`;
 
  popup.document.open();popup.document.write('<!doctype html><html lang="hu"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+safeTitle+'</title><style>'+styles+'\n'+compact+'</style></head><body><div class="pdf-toolbar">A nyomtatási ablakban válaszd a Mentés PDF-ként lehetőséget. A fejlécek/láblécek kikapcsolásával több hely marad.<br><button type="button" onclick="window.print()">PDF mentése / nyomtatás</button> <button type="button" id="returnToResults">Vissza az eredménylapra</button><span id="pdfReturnHint" role="status"></span></div><main class="wrap">'+root.outerHTML+'</main></body></html>');popup.document.close();
  const returnToResults=()=>{
@@ -4072,6 +4080,12 @@ function gradeProgressMessage(p){
  if(p.complete)return `✅ ${p.size} egymás utáni teszt elkészült. Átlagjegyed: ${mean} · Kerekített jegy: ${p.roundedGrade}${p.note?' '+p.note:''}`;
  return `${p.size} egymás utáni tesztből még ${p.remaining} hátra van. Eddigi átlagjegyed: ${mean}${p.note?' · '+p.note:''}`;
 }
+function showGradeRetryButton(id){
+ const box=$('gradeProgressTop');if(!box||!id)return;
+ let btn=box.querySelector('.grade-retry-button');
+ if(!btn){btn=document.createElement('button');btn.type='button';btn.className='grade-retry-button';btn.textContent='↻ Jegyátlag újrapróbálása';btn.style.cssText='display:block;margin:8px 0 0;padding:8px 12px;background:#087e83;color:white;border-radius:7px;border:1px solid #07575b;';box.append(btn);}
+ btn.onclick=()=>{btn.disabled=true;btn.textContent='Lekérdezés folyamatban…';refreshGradeProgress(id).finally(()=>{btn.disabled=false;btn.textContent='↻ Jegyátlag újrapróbálása';});};
+}
 const gradeProgressRequests=new Set();
 async function refreshGradeProgress(id){
  if(!id||exportResult?.testId!==id||!$('testPanel').classList.contains('hidden'))return;
@@ -4079,10 +4093,11 @@ async function refreshGradeProgress(id){
  gradeProgressRequests.add(id);
  try{
   let response=null,lastError=null;
-  for(let attempt=0;attempt<2;attempt++){
+  for(let attempt=0;attempt<3;attempt++){
    if(exportResult?.testId!==id||!$('testPanel').classList.contains('hidden'))return;
-   try{response=await jsonp({action:'gradeProgress',id},30000);break;}
+   try{response=await jsonp({action:'gradeProgress',id},30000);if(response?.success&&response.progress?.testId===id)break;lastError=new Error(response?.error||'A teszt még nem található a jegyösszesítőben.');}
    catch(error){lastError=error;}
+   if(attempt<2)await new Promise(resolve=>setTimeout(resolve,(attempt+1)*1800));
   }
   if(exportResult?.testId!==id||!$('testPanel').classList.contains('hidden'))return;
   if(response?.success&&response.progress?.testId===id){
@@ -4098,7 +4113,8 @@ async function refreshGradeProgress(id){
    console.warn('gradeProgress: nem érkezett megfelelő válasz',response,lastError);
    setGradeProgressText(response?.success&&response.progress===null
     ?'A mentett teszt még nem található a jegyösszesítőben. A jegyátlag később kérhető le.'
-    :'A jegyátlag most nem kérhető le. Ellenőrizd a háttérkód telepítését és az összesítő munkalapot.');
+    :'A jegyátlag most nem kérhető le. '+String(response?.error||lastError?.message||'Ellenőrizd a háttérkód telepítését és az összesítő munkalapot.'));
+   showGradeRetryButton(id);
   }
  }finally{gradeProgressRequests.delete(id);}
 }
@@ -4681,7 +4697,7 @@ body.high-contrast #practiceOptions .practice-mode-heading{background:#000!impor
  body.screen-start #unifiedBankSlot #practiceAuxiliarySettings input[type=checkbox]{width:16px!important;height:16px!important;min-height:0!important;flex:0 0 16px}
  #startModeTabs button[aria-pressed="false"]{background:#f4f6f5!important;color:#50635d!important;border-color:#c0cbc6!important;box-shadow:none!important}
  #startModeTabs #realModeTab[aria-pressed="true"]{background:#125174!important;color:white!important;border:3px solid #083c58!important;box-shadow:0 0 0 2px #c0e4f7!important}
- #startModeTabs #practiceModeTab[aria-pressed="true"]{background:#895708!important;color:white!important;border:3px solid #654005!important;box-shadow:0 0 0 2px #ffdf96!important}
+ #startModeTabs #practiceModeTab[aria-pressed="true"]{background:#087e83!important;color:white!important;border:3px solid #07575b!important;box-shadow:0 0 0 2px #b9ece6!important}
  body.high-contrast #startModeTabs button[aria-pressed="true"]{background:#fff!important;color:#000!important;border-color:#ffeb3b!important}
  @media(max-width:1000px){body.screen-start #unifiedBankSlot{flex-wrap:wrap!important}body.screen-start #unifiedBankSlot>#practiceAuxiliarySettings{flex:1 1 100%;justify-content:flex-end;padding:0!important}}
  @media(max-width:560px){body.screen-start #unifiedBankSlot>#practiceAuxiliarySettings{flex-wrap:wrap!important;justify-content:flex-start}body.screen-start #unifiedBankSlot #practiceAuxiliarySettings select{width:120px!important}}
@@ -4698,7 +4714,7 @@ body.high-contrast #practiceOptions .practice-mode-heading{background:#000!impor
 @media screen{
  body:not(.high-contrast)[data-typing-mode="practice"]{background:#fff8e8!important}
  body:not(.high-contrast)[data-typing-mode="practice"] .app-heading{border-color:#b47c21!important}
- body:not(.high-contrast)[data-typing-mode="practice"] #appModeTitle{color:#76500c!important}
+ body:not(.high-contrast)[data-typing-mode="practice"] #appModeTitle{color:#087e83!important}
  body:not(.high-contrast)[data-typing-mode="practice"] #testPanel>.card,body:not(.high-contrast)[data-typing-mode="practice"] #resultPanel>.card{background:#fffbf1!important;border:2px solid #d6b16b!important}
  body:not(.high-contrast)[data-typing-mode="practice"] #typingWorkspace{background:#fff4d9!important;border-color:#d6b16b!important}
  body:not(.high-contrast)[data-typing-mode="practice"] #taskText{background:#fff9eb!important;border-color:#dbbd86!important}
@@ -5418,5 +5434,43 @@ html body.high-contrast.screen-start #startPanel #studentCode::placeholder{color
  adjust();
 })();
 </script>
+<style id="v48-practice-pastel-yellow">
+/* Gyakorló mód: pasztellsárga, barna és aranybarna nélkül. */
+body:not(.high-contrast)[data-typing-mode="practice"]{background:#fffdf2!important}
+body:not(.high-contrast)[data-typing-mode="practice"] .app-heading{border-color:#e9dc89!important}
+body:not(.high-contrast)[data-typing-mode="practice"] #appModeTitle{color:#42483d!important;border-color:#e9dc89!important}
+body:not(.high-contrast)[data-typing-mode="practice"] :is(#practiceTag,#liveTestHistory,.result-history){background:#fff6c8!important;color:#30372c!important;border-color:#e9dc89!important}
+body:not(.high-contrast)[data-typing-mode="practice"] #nextBtn{background:#f5e79a!important;border-color:#d5c66e!important;color:#293329!important}
+body.screen-start:not(.high-contrast) #startModeTabs #practiceModeTab[aria-pressed="true"]{background:#f5e79a!important;border-color:#d5c66e!important;box-shadow:0 0 0 2px #fff7cf!important;color:#293329!important}
+/* A tesztablak meglévő sárgás színe változatlan. */
+</style>
+<style id="v49-practice-medium-pastel-yellow">
+/* Középsötét pasztellsárga, barna nélkül; a sárgás tesztablakhoz nem nyúlunk. */
+html body:not(.high-contrast)[data-typing-mode="practice"] #appModeTitle,
+html body.screen-start:not(.high-contrast)[data-typing-mode="practice"] #appModeTitle{color:#6A650F!important;border-left-color:#E1CD66!important}
+html body.screen-start:not(.high-contrast) #startModeTabs #practiceModeTab[aria-pressed="true"],
+html body.screen-start:not(.high-contrast)[data-typing-mode="practice"] #startModeTabs #practiceModeTab[aria-pressed="true"]{
+ background:#E6D574!important;background-image:none!important;color:#34350F!important;
+ border:3px solid #C9B84E!important;box-shadow:0 0 0 2px #FFF5C4!important;
+}
+html body:not(.high-contrast)[data-typing-mode="practice"] #nextBtn{
+ background:#E6D574!important;color:#34350F!important;border-color:#C9B84E!important;
+}
+</style>
+<style id="v50-practice-heading-blue">
+/* A gyakorló mód címe hűvös, sötét palakék; a pasztellsárga gombok és tesztablak változatlanok. */
+html body:not(.high-contrast)[data-typing-mode="practice"] #appModeTitle,
+html body.screen-start:not(.high-contrast)[data-typing-mode="practice"] #appModeTitle{
+ color:#294E70!important;
+ border-left-color:#9DB5C9!important;
+}
+</style>
+
+<style id="v52-code-loading-indicator">
+#studentCodeVerify.code-loading{display:inline-flex!important;align-items:center;justify-content:center;gap:9px;opacity:.88;cursor:progress!important;}
+#studentCodeVerify.code-loading::before{content:"";display:inline-block;width:16px;height:16px;flex:0 0 16px;border:3px solid currentColor;border-right-color:transparent;border-radius:50%;animation:student-code-spin .75s linear infinite;}
+@keyframes student-code-spin{to{transform:rotate(360deg)}}
+@media(prefers-reduced-motion:reduce){#studentCodeVerify.code-loading::before{animation:none;border-right-color:currentColor}}
+</style>
 </body>
 </html>
