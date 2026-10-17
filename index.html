@@ -752,7 +752,14 @@ body.screen-start.practice-start #startPanel .start-grid>.start-field.identity-c
  body.screen-test #speechTools:not(.hidden)>button{white-space:normal!important;min-height:36px!important}
 }
 </style>
-</head>
+<style id="v61-print-preview">
+@media print{
+ body:has(#mobilePrintPreview)>:not(#mobilePrintPreview){display:none!important}
+ #mobilePrintPreview{position:static!important;overflow:visible!important;padding:0!important}
+ #mobilePrintPreview .mobile-print-controls{display:none!important}
+ #mobilePrintPreview #resultPanel{display:block!important;max-height:none!important;overflow:visible!important}
+}
+</style></head>
 <body>
 <div id="loadingOverlay" class="hidden" role="status" aria-live="polite">
   <div class="loading-card"><div class="loading-spinner" aria-hidden="true"></div><h2 id="loadingTitle">Feladatok betöltése</h2><p id="loadingText">Kapcsolódás a feladatbankhoz… Ez néhány másodpercig eltarthat.</p><div class="loading-track"><span></span></div></div>
@@ -3602,7 +3609,21 @@ initPracticeSettings();
 function formattedPdf(){
  const data=getExportData();if(!data){alert('Előbb fejezz be egy tesztet.');return;}
  const popup=window.open('','_blank');
- if(!popup){alert('A formázott PDF-nézet megnyitásához engedélyezd a felugró ablakot, majd kattints újra a PDF mentése / nyomtatása gombra.');return;}
+ if(!popup){
+   // Mobilos felugróablak-tiltás esetén ugyanazon a lapon nyitható nyomtatási nézet.
+   const existing=document.getElementById('mobilePrintPreview');if(existing)existing.remove();
+   const preview=document.createElement('div');preview.id='mobilePrintPreview';
+   preview.style.cssText='position:fixed;inset:0;z-index:2147483646;overflow:auto;background:white;color:#18283a;padding:12px;box-sizing:border-box;';
+   const controls=document.createElement('div');controls.className='mobile-print-controls';
+   controls.style.cssText='position:sticky;top:0;background:white;padding:8px;display:flex;gap:8px;z-index:2';
+   const printBtn=document.createElement('button');printBtn.textContent='🖨 PDF mentése / nyomtatás';printBtn.onclick=()=>window.print();
+   const closeBtn=document.createElement('button');closeBtn.textContent='Vissza az eredményhez';closeBtn.onclick=()=>preview.remove();
+   controls.append(printBtn,closeBtn);preview.append(controls);
+   const copy=$('resultPanel').cloneNode(true);copy.classList.remove('hidden');
+   copy.querySelectorAll('button,script,.export-actions,.hidden,#saveActions,#saveStatus,#resultSaveGate,#saveBanner,#csvTeacherReminder').forEach(n=>n.remove());
+   copy.querySelectorAll('details').forEach(n=>n.open=true);
+   preview.append(copy);document.body.append(preview);return;
+ }
  const title=exportFilename(data,'pdf').replace(/\.pdf$/,'');
  const root=$('resultPanel').cloneNode(true);root.classList.remove('hidden');root.querySelectorAll('button,script,.export-actions,.hidden,#saveActions,#saveStatus,#resultSaveGate,#saveBanner,#csvTeacherReminder').forEach(n=>n.remove());root.querySelectorAll('details').forEach(n=>n.open=true);
  const styles=Array.from(document.querySelectorAll('style')).map(n=>n.textContent).join('\n');
@@ -3649,7 +3670,7 @@ body{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!importa
  // A nyomtatás és a Mégsem után is az eredeti eredménylapra térünk vissza.
  popup.addEventListener('afterprint',()=>setTimeout(returnToResults,0),{once:true});
  const print=()=>{if(popup.closed)return;try{popup.focus();popup.print();}catch(e){}};
- if(popup.document.fonts?.ready)popup.document.fonts.ready.then(()=>setTimeout(print,300));else setTimeout(print,500);
+ // Mobilon a böngésző az automatikus print() hívást gyakran blokkolja; a gomb felhasználói kattintásra indítja.
 }
 
 </script>
