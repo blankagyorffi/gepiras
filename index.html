@@ -5530,7 +5530,7 @@ function preTestAudioCheck(){
   };
   box.querySelector('#audioCheckProceed').onclick=()=>{if(!played){box.querySelector('#audioCheckStatus').textContent='Előbb nyomd meg a Próbahang lejátszása gombot!';return;}cleanup(true);};
   box.querySelector('#audioCheckSkip').onclick=()=>{
-   if(window.confirm('Nem sikerült a hangpróba, vagy nem hallod a felolvasást. A hangos feladatok így nehezen vagy egyáltalán nem teljesíthetők. Biztosan elindítod a tesztet?'))cleanup(true);
+   cleanup(true);
   };
   box.querySelector('#audioCheckCancel').onclick=()=>cleanup(false);
   box.querySelector('#audioCheckPlay').focus();
