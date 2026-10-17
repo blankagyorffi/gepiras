@@ -1393,6 +1393,51 @@ function rememberPresentedTask(task){
  try{localStorage.setItem(varietyScope,JSON.stringify(varietyHistory));}catch(e){}
 }
 
+// Az éles tesztek utolsó négy kiosztása tanulónként; a gyakorlás nem számít bele.
+function noRepeatScope(name,cls){return 'gepiras_live_five_v1_'+varietyHash(nameChoiceKey(name)+'|'+normCls(cls));}
+function readNoRepeatHistory(name,cls){
+ try{const value=JSON.parse(localStorage.getItem(noRepeatScope(name,cls))||'[]');
+ return Array.isArray(value)?value.filter(x=>x&&Array.isArray(x.keys)).slice(-4):[];}catch(_){return [];}
+}
+function recordNoRepeatTest(name,cls,selected){
+ const key=noRepeatScope(name,cls),history=readNoRepeatHistory(name,cls);
+ history.push({at:Date.now(),testId:String(testId||""),keys:[...new Set(selected.map(varietyTextKey))]});
+ try{localStorage.setItem(key,JSON.stringify(history.slice(-4)));}catch(_){}
+}
+async function serverNoRepeatHistory(){
+ if(!studentCodeSession)return null;
+ try{
+  const r=await jsonpOnce({action:'recentLiveTaskTexts',session:studentCodeSession},18000);
+  if(r?.success&&Array.isArray(r.tests))return r.tests.map(test=>({testId:String(test.testId||''),keys:(test.texts||[]).map(text=>varietyHash(String(text||'').normalize('NFC').replace(/\s+/g,' ').trim()))})).slice(-4);
+ }catch(e){console.warn('Korábbi feladatok lekérése:',e);}
+ return null;
+}
+function noRepeatPool(all,history){
+ const forbidden=new Set(history.flatMap(t=>t.keys||[]));
+ const fresh=all.filter(t=>!forbidden.has(varietyTextKey(t)));
+ // Ha kevés az új feladat, csendben visszaengedjük a korábban látottakat.
+ // A friss feladatok mindig elsőbbséget élveznek, az eredeti feladattípus-arányok megmaradnak.
+ return {fresh,used:new Set(fresh.map(varietyTextKey))};
+}
+function selectNoRepeatTasks(all,n,order,history){
+ if(order==='bank')return selectTasksInOrder(all,n,order);
+ const {fresh}=noRepeatPool(all,history);
+ if(fresh.length>=n){
+  const selection=selectTasksInOrder(fresh,n,order);
+  if(selection.fits)return selection;
+ }
+ // Kevés új feladat esetén a keverés a frisseket előnyben részesíti.
+ const recentKeys=new Set(history.flatMap(t=>t.keys||[]));
+ const chosen=selectTasksInOrder(all,n,order);
+ if(!recentKeys.size)return chosen;
+ const pool=shuffle(fresh);
+ const seen=new Set(),result=[];
+ for(const t of pool){const key=varietyTextKey(t);if(!seen.has(key)&&result.length<n){result.push(t);seen.add(key);}}
+ for(const t of chosen.list.concat(shuffle(all))){const key=varietyTextKey(t);if(!seen.has(key)&&result.length<n){result.push(t);seen.add(key);}}
+ // A normál időkeret-vizsgálat továbbra is működik.
+ const total=totalTime(result);return {list:shuffle(result),total,fits:total<=MAX_TOTAL_SEC};
+}
+
 // Ha a feladatbankban van "Nehézség" oszlop, a könnyű/közepes/nehéz feladatok egyenlően keverednek.
 function interleaveDiff(arr){
   const g=new Map();
@@ -1628,7 +1673,15 @@ async function startTest(){
     }
     loadVarietyHistory(name,cls);
     const wanted=Math.min(count,all.length);
-    let sel=selectTasksInOrder(all,wanted,taskOrder);
+    const localHistory=practice?[]:readNoRepeatHistory(name,cls);
+    const serverHistory=practice?null:await serverNoRepeatHistory();
+    // A szerverről lekért korábbi tesztek és a helyi, még nem mentett kiosztások egyaránt számítanak.
+    const noRepeatHistory=serverHistory?(()=>{
+      const combined=[...serverHistory];
+      for(const item of localHistory){if(!item.testId||!combined.some(x=>x.testId===item.testId))combined.push(item);}
+      return combined.slice(-4);
+    })():localHistory;
+    let sel=practice?selectTasksInOrder(all,wanted,taskOrder):selectNoRepeatTasks(all,wanted,taskOrder,noRepeatHistory);
     let note=sel.list.length<wanted?'ℹ️ A beállított típusarányokhoz kevés feladat érhető el: '+sel.list.length+' feladat kerül a tesztbe.':'';
     note+=practice&&practiceTextKind!=="all"&&wanted<count?`ℹ️ Ebben a szövegcsoportban ${wanted} megfelelő feladat érhető el, ezért ennyi kerül a gyakorlásba.`:"";
 
@@ -1640,7 +1693,7 @@ async function startTest(){
         let n=wanted;
         while(!sel.fits&&n>1){
           n--;
-          sel=selectTasksInOrder(all,n,taskOrder);
+          sel=practice?selectTasksInOrder(all,n,taskOrder):selectNoRepeatTasks(all,n,taskOrder,noRepeatHistory);
         }
         if(!sel.fits){
           const shortest=taskOrder==='bank'?all[0]:all.slice().sort((x,y)=>taskTime(x)-taskTime(y))[0];
@@ -1659,6 +1712,7 @@ async function startTest(){
     }
     enableSpeechForNewTest();
     tasks=dictationLast(sel.list);
+    if(!practice)recordNoRepeatTest(name,cls,tasks);
     tasks.forEach(t=>delete t._dictationWaitStartedAt);
     autoRetryN=0;
     results=[];
@@ -3354,7 +3408,7 @@ function readTask(){
   const hu=available.find(v=>v.voiceURI===chosen)||available.find(v=>/natural|online|neural/i.test(v.name))||available[0];if(hu)u.voice=hu;
   const customRate=typeof practiceMode!=='undefined'&&practiceMode&&practiceSpeechRate>0;
   const baseRate=Math.max(.5,Math.min(1.5,customRate?practiceSpeechRate:Number(t.speechRate)||.85));
-  u.rate=baseRate*(dictation ? .82 : 1);
+  u.rate=(dictation&&fullReading)?1.0:baseRate*(dictation ? .82 : 1);
   u.onstart=()=>{
    if(active())setSpeechLiveIndicator(true,fullReading);
    if(!active()||!dictationWaiting||!dictationBegin)return;
