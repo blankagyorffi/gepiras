@@ -2538,7 +2538,9 @@ function finishTest(){
     if(!skippedIdx.has(i)&&r.totalTyped>=20&&r.speed>SPEED_LIMIT) flagList.push(`${i+1}. feladat túl gyors (${r.speed}/perc)`);
   });
 
+  const actualTestSeconds=results.reduce((sum,r)=>sum+(Number(r.timeSpent)||0),0);
   pendingResult={
+    actualTestSeconds,
     studentName:studentNameVal,
     studentClass:studentClassVal,
     taskCount:results.length,
@@ -3317,22 +3319,28 @@ function readTask(){
  if(!('speechSynthesis' in window)){ $('speechStatus').textContent='Ezen a böngészőn a felolvasás nem támogatott.';if(dictationWaiting)$('autoMsg').textContent='A felolvasás itt nem támogatott. Az idő áll; ezt a részfeladatot kihagyhatod.';return; }
  stopReading(); const generation=speechGeneration, index=currentIndex;
  const dictation=enabledFlag(t.dictation),sentences=dictation?dictationSentences(t.text):[String(t.text||'')];
- const progress=dictation?(t._dictationSpeech??={sentenceIndex:0,sentenceRepeat:0,completed:false}):{sentenceIndex:0,sentenceRepeat:0};
+ const progress=dictation?(t._dictationSpeech??={sentenceIndex:0,sentenceRepeat:0,fullRepeat:0,completed:false}):{sentenceIndex:0,sentenceRepeat:0};
  const active=()=>!speechDisabledForTest&&generation===speechGeneration&&index===currentIndex&&!finished&&(typeof stopped==='undefined'||!stopped);
  const speak=()=>{
   if(!active())return;
   if(dictation&&progress.sentenceRepeat>=dictationRepeatCount){progress.sentenceRepeat=0;progress.sentenceIndex++;}
-  if(dictation&&progress.sentenceIndex>=sentences.length){
+  if(dictation&&progress.sentenceIndex>=sentences.length&&progress.fullRepeat<2){
+   progress.sentenceIndex=sentences.length;progress.sentenceRepeat=0;
+  }
+  if(dictation&&progress.sentenceIndex>=sentences.length&&progress.fullRepeat>=2){
    progress.completed=true;clearTimeout(speechLoopTimer);speechLoopTimer=null;refreshSpeechSwitch();
    $('speechStatus').textContent='A tollbamondás felolvasása befejeződött. Új felolvasás a következő feladatnál indítható.';return;
   }
-  const u=new SpeechSynthesisUtterance(sentences[progress.sentenceIndex]);u.lang='hu-HU';
+  const fullReading=dictation&&progress.sentenceIndex>=sentences.length;
+  const spokenText=fullReading?String(t.text||''):sentences[progress.sentenceIndex];
+  // A dupla szóköz nem minden hangmotornál eredményez szünetet; az alacsonyabb tempó segít.
+  const u=new SpeechSynthesisUtterance(spokenText);u.lang='hu-HU';
   const available=speechSynthesis.getVoices().filter(v=>/^hu(?:-|$)/i.test(v.lang));
   const chosen=document.getElementById('speechVoice').value;
   const hu=available.find(v=>v.voiceURI===chosen)||available.find(v=>/natural|online|neural/i.test(v.name))||available[0];if(hu)u.voice=hu;
   const customRate=typeof practiceMode!=='undefined'&&practiceMode&&practiceSpeechRate>0;
   const baseRate=Math.max(.5,Math.min(1.5,customRate?practiceSpeechRate:Number(t.speechRate)||.85));
-  u.rate=baseRate*(dictation&&!customRate ? .9 : 1);
+  u.rate=baseRate*(dictation ? .82 : 1);
   u.onstart=()=>{
    if(!active()||!dictationWaiting||!dictationBegin)return;
    clearDictationWait();
@@ -3346,14 +3354,15 @@ function readTask(){
   u.onerror=()=>{if(!active())return;clearTimeout(speechLoopTimer);if(dictationWaiting)$('autoMsg').textContent='A felolvasás nem indult el. Az idő áll; próbáld újra az indítást, vagy hagyd ki a részfeladatot.';$('speechStatus').textContent='Nem indult el a felolvasás. Nyomd meg a Felolvasás gombot; szükség lehet magyar hang telepítésére.';};
   u.onend=()=>{
    if(!active())return;
-   if(dictation)progress.sentenceRepeat++;
-   if(dictation&&progress.sentenceIndex===sentences.length-1&&progress.sentenceRepeat>=dictationRepeatCount){
+   if(dictation){if(fullReading)progress.fullRepeat++;else progress.sentenceRepeat++;}
+   if(dictation&&progress.fullRepeat>=2){progress.completed=true;speechLoopTimer=null;refreshSpeechSwitch();$('speechStatus').textContent='A tollbamondás és a két teljes ismétlés befejeződött.';return;}
+   if(false){
     progress.completed=true;speechLoopTimer=null;refreshSpeechSwitch();
     $('speechStatus').textContent='A tollbamondás felolvasása befejeződött. Új felolvasás a következő feladatnál indítható.';return;
    }
-   $('speechStatus').textContent=dictation?'A tollbamondás folytatódik.':'A felolvasás ismétlődik a feladat végéig.';speechLoopTimer=setTimeout(speak,500);
+   $('speechStatus').textContent=dictation?'A tollbamondás folytatódik.':'A felolvasás ismétlődik a feladat végéig.';speechLoopTimer=setTimeout(speak,dictation?850:500);
   };
-  $('speechStatus').textContent=hu?(dictation?`Tollbamondás: ${progress.sentenceIndex+1}. mondat, ${progress.sentenceRepeat+1}/${dictationRepeatCount}. felolvasás.`:'Felolvasás ismételve a feladat végéig.'):'Magyar hangot nem találtam; az alapértelmezett hanggal olvasok fel.';
+  $('speechStatus').textContent=hu?(dictation?(fullReading?`Teljes szöveg ismétlése: ${progress.fullRepeat+1}/2.`:`Tollbamondás: ${progress.sentenceIndex+1}. mondat, ${progress.sentenceRepeat+1}/${dictationRepeatCount}. felolvasás.`):'Felolvasás ismételve a feladat végéig.'):'Magyar hangot nem találtam; az alapértelmezett hanggal olvasok fel.';
   speechSynthesis.resume();speechSynthesis.speak(u);
  };
  speak();
@@ -4073,12 +4082,14 @@ function setGradeProgressText(text){
  }
  const bottom=$('gradeProgressBottom');if(bottom){bottom.textContent='';bottom.classList.add('hidden');}
 }
+function durationLabel(seconds){const s=Math.max(0,Math.round(Number(seconds)||0));return `${s} mp (≈ ${Math.round(s/60)} perc)`;}
 function gradeProgressMessage(p){
  if(!p.enabled)return 'A jegy elmentve, de az átlagba nem számít: a tanár kikapcsolta a jegyszerzést.';
  const mean=p.average===null?'–':Number(p.average).toFixed(2).replace('.',',');
+ const duration=p.groupDurationSeconds===null||p.groupDurationSeconds===undefined?'':` · Tesztidő összesen: ${durationLabel(p.groupDurationSeconds)}`;
  if(!p.eligible)return `${p.exclusionReason||'Ez a teszt nem számít jegyszerzéshez.'} A következő ${p.size} tesztes csoportból még ${p.nextGroupRemaining} hátra van.`;
- if(p.complete)return `✅ ${p.size} egymás utáni teszt elkészült. Átlagjegyed: ${mean} · Kerekített jegy: ${p.roundedGrade}${p.note?' '+p.note:''}`;
- return `${p.size} egymás utáni tesztből még ${p.remaining} hátra van. Eddigi átlagjegyed: ${mean}${p.note?' · '+p.note:''}`;
+ if(p.complete)return `✅ ${p.size} egymás utáni teszt elkészült. Átlagjegyed: ${mean} · Kerekített jegy: ${p.roundedGrade}${duration}${p.note?' '+p.note:''}`;
+ return `${p.size} egymás utáni tesztből még ${p.remaining} hátra van. Eddigi átlagjegyed: ${mean}${duration}${p.note?' · '+p.note:''}`;
 }
 function showGradeRetryButton(id){
  const box=$('gradeProgressTop');if(!box||!id)return;
