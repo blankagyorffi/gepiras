@@ -5500,6 +5500,7 @@ html body.screen-start:not(.high-contrast)[data-typing-mode="practice"] #appMode
 #audioPreflight button{flex:1 1 150px;min-height:46px}
 #audioPreflight #audioCheckPlay{background:#215b84}
 #audioPreflight #audioCheckProceed{background:#287254}
+#audioPreflight #audioCheckSkip{background:#f0d983;color:#273344;border:1px solid #bba64c;font-weight:700}
 #audioPreflight #audioCheckCancel{background:#65707a}
 #speechLiveIndicator{display:none;align-items:center;gap:7px;padding:6px 10px;margin:4px 0;background:#dcefff;color:#123b61;border:2px solid #4286bb;border-radius:8px;font-weight:800;font-size:14px;line-height:1.3}
 #speechLiveIndicator.speaking{display:flex!important}
@@ -5513,7 +5514,7 @@ function preTestAudioCheck(){
  return new Promise(resolve=>{
   let box=document.getElementById('audioPreflight');if(box)box.remove();
   box=document.createElement('div');box.id='audioPreflight';box.setAttribute('role','dialog');box.setAttribute('aria-modal','true');box.setAttribute('aria-label','Fülhallgató és hang ellenőrzése');
-  box.innerHTML='<div class="audio-card"><h2>🎧 Fülhallgató és hang ellenőrzése</h2><p>Ebben a tesztben felolvasás vagy tollbamondás is lesz. Csatlakoztasd a fülhallgatót, és ellenőrizd, hogy hallod-e a magyar próbaszöveget.</p><p id="audioCheckStatus" role="status">A teszt ideje még nem indult el.</p><div class="audio-buttons"><button id="audioCheckPlay" type="button">🔊 Próbahang lejátszása</button><button id="audioCheckProceed" type="button">✓ Hallom, teszt indítása</button><button id="audioCheckCancel" type="button">Vissza</button></div></div>';
+  box.innerHTML='<div class="audio-card"><h2>🎧 Fülhallgató és hang ellenőrzése</h2><p>Ebben a tesztben felolvasás vagy tollbamondás is lesz. Csatlakoztasd a fülhallgatót, és ellenőrizd, hogy hallod-e a magyar próbaszöveget.</p><p id="audioCheckStatus" role="status">A teszt ideje még nem indult el.</p><div class="audio-buttons"><button id="audioCheckPlay" type="button">🔊 Próbahang lejátszása</button><button id="audioCheckProceed" type="button">✓ Hallom, teszt indítása</button><button id="audioCheckSkip" type="button">Hangpróba nélkül is indítom</button><button id="audioCheckCancel" type="button">Vissza</button></div></div>';
   document.body.append(box);
   let played=false;
   const cleanup=(ok)=>{try{speechSynthesis.cancel();}catch(e){}box.remove();resolve(ok);};
@@ -5528,6 +5529,9 @@ function preTestAudioCheck(){
    }catch(e){box.querySelector('#audioCheckStatus').textContent='Hanghiba: '+String(e.message||e);}
   };
   box.querySelector('#audioCheckProceed').onclick=()=>{if(!played){box.querySelector('#audioCheckStatus').textContent='Előbb nyomd meg a Próbahang lejátszása gombot!';return;}cleanup(true);};
+  box.querySelector('#audioCheckSkip').onclick=()=>{
+   if(window.confirm('Nem sikerült a hangpróba, vagy nem hallod a felolvasást. A hangos feladatok így nehezen vagy egyáltalán nem teljesíthetők. Biztosan elindítod a tesztet?'))cleanup(true);
+  };
   box.querySelector('#audioCheckCancel').onclick=()=>cleanup(false);
   box.querySelector('#audioCheckPlay').focus();
  });
