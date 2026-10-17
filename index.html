@@ -826,7 +826,7 @@ body.screen-start.practice-start #startPanel .start-grid>.start-field.identity-c
 <button type="button" id="stopBtn" class="stop-btn">⛔ Vészleállítás</button>
 </div>
 
-<div class="total-line">⏱ A teljes teszt hossza: <b id="totalLen">--</b> &nbsp;·&nbsp; Összesen még hátra (legfeljebb): <b id="totalLeft">--:--</b></div>
+<div class="total-line">⏱ A teljes teszt hossza: <b id="totalLen">--</b> &nbsp;·&nbsp; Összesen még hátra (legfeljebb): <b id="totalLeft">--:--</b><span id="speechLiveIndicator" role="status" aria-live="off" aria-label="Felolvasás állapota"><span class="audio-pulse" aria-hidden="true">🔊</span><span id="speechLiveIndicatorText">Felolvasás zajlik</span></span></div>
 <div id="capNote" class="cap-note hidden"></div>
 
 <div class="bar"><div id="progressBar"></div></div>
@@ -5502,12 +5502,30 @@ html body.screen-start:not(.high-contrast)[data-typing-mode="practice"] #appMode
 #audioPreflight #audioCheckProceed{background:#287254}
 #audioPreflight #audioCheckSkip{background:#f0d983;color:#273344;border:1px solid #bba64c;font-weight:700}
 #audioPreflight #audioCheckCancel{background:#65707a}
-#speechLiveIndicator{display:none;align-items:center;gap:7px;padding:6px 10px;margin:4px 0;background:#dcefff;color:#123b61;border:2px solid #4286bb;border-radius:8px;font-weight:800;font-size:14px;line-height:1.3}
-#speechLiveIndicator.speaking{display:flex!important}
-#speechLiveIndicator .audio-pulse{font-size:22px;animation:audioPulse .9s ease-in-out infinite alternate}
-@keyframes audioPulse{to{transform:scale(1.22);opacity:.55}}
-@media(prefers-reduced-motion:reduce){#speechLiveIndicator .audio-pulse{animation:none}}
-body.screen-test #testPanel #speechLiveIndicator{flex:0 0 auto;min-height:30px;margin:0!important;padding:3px 8px!important;z-index:2}
+/* v60: stabil méretű, beágyazott felolvasásjelző az időinformációs sorban. */
+#testPanel .total-line{overflow:visible;overflow-wrap:break-word}
+#testPanel #speechLiveIndicator{
+  display:inline-flex!important;visibility:hidden;opacity:0;
+  align-items:center;justify-content:center;gap:4px;
+  vertical-align:middle;box-sizing:border-box;
+  width:164px;max-width:100%;height:22px;min-height:22px;
+  padding:0 3px;margin:0 0 0 10px!important;
+  border:0!important;border-radius:0!important;background:transparent!important;
+  box-shadow:none!important;color:inherit!important;
+  font-size:12px!important;line-height:20px!important;font-weight:700;
+  white-space:nowrap;overflow:hidden;
+}
+#testPanel #speechLiveIndicator.speaking{visibility:visible;opacity:1}
+#testPanel #speechLiveIndicator .audio-pulse{display:inline-block;flex:0 0 auto;font-size:14px;line-height:1;animation:audioPulseV60 1s ease-in-out infinite alternate}
+#testPanel #speechLiveIndicatorText{overflow:hidden;text-overflow:ellipsis;min-width:0;white-space:nowrap}
+@keyframes audioPulseV60{from{opacity:1}to{opacity:.45}}
+@media (prefers-reduced-motion:reduce){#testPanel #speechLiveIndicator .audio-pulse{animation:none}}
+@media screen and (max-width:760px){
+  body.screen-test #testPanel .total-line{display:flex!important;flex-wrap:wrap;align-items:center;justify-content:center;gap:0 4px;
+    width:100%;max-width:100%;padding:3px 5px!important;margin:2px 0!important;
+    font-size:clamp(10px,2.65vw,12px)!important;line-height:1.3!important;min-width:0}
+  body.screen-test #testPanel #speechLiveIndicator{width:164px;max-width:100%;height:20px;min-height:20px;margin:0 0 0 5px!important;padding:0 2px!important;font-size:11px!important;line-height:18px!important;flex:0 0 164px}
+}
 </style>
 <script id="v57-audio-check">
 function preTestAudioCheck(){
@@ -5537,8 +5555,8 @@ function preTestAudioCheck(){
  });
 }
 function setSpeechLiveIndicator(on,full){
- let el=document.getElementById('speechLiveIndicator');if(!el){el=document.createElement('div');el.id='speechLiveIndicator';el.setAttribute('role','status');el.setAttribute('aria-live','off');el.innerHTML='<span class="audio-pulse" aria-hidden="true">🔊</span><span id="speechLiveIndicatorText">Felolvasás folyamatban</span>';document.getElementById('taskText')?.before(el);}
- el.classList.toggle('speaking',!!on);if(on)document.getElementById('speechLiveIndicatorText').textContent=full?'🔊 A teljes szöveg felolvasása zajlik':'🔊 Felolvasás zajlik';
+ const el=document.getElementById('speechLiveIndicator');if(!el)return;
+ el.classList.toggle('speaking',!!on);if(on)document.getElementById('speechLiveIndicatorText').textContent=full?'Teljes szöveg felolvasása':'Felolvasás zajlik';
 }
 </script>
 </body>
