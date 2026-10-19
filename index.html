@@ -3411,7 +3411,7 @@ function readTask(){
   const hu=available.find(v=>v.voiceURI===chosen)||available.find(v=>/natural|online|neural/i.test(v.name))||available[0];if(hu)u.voice=hu;
   const customRate=typeof practiceMode!=='undefined'&&practiceMode&&practiceSpeechRate>0;
   const baseRate=Math.max(.5,Math.min(1.5,customRate?practiceSpeechRate:Number(t.speechRate)||.85));
-  u.rate=(dictation&&fullReading)?1.0:baseRate*(dictation ? .82 : 1);
+  u.rate=(dictation&&fullReading)?0.93:baseRate*(dictation ? .82 : 1);
   u.onstart=()=>{
    if(active())setSpeechLiveIndicator(true,fullReading);
    if(!active()||!dictationWaiting||!dictationBegin)return;
@@ -3429,7 +3429,9 @@ function readTask(){
    if(!active())return;
    if(dictation){if(fullReading)progress.fullRepeat++;else progress.sentenceRepeat++;}
    if(dictation&&progress.fullRepeat>=2){progress.completed=true;speechLoopTimer=null;refreshSpeechSwitch();$('speechStatus').textContent='A tollbamondás és a két teljes ismétlés befejeződött.';return;}
-   $('speechStatus').textContent=dictation?'A tollbamondás folytatódik.':'A felolvasás ismétlődik a feladat végéig.';speechLoopTimer=setTimeout(speak,dictation?(spokenText.trim().length<=5?430:spokenText.trim().length<=10?570:850):500);
+   $('speechStatus').textContent=dictation?'A tollbamondás folytatódik.':'A felolvasás ismétlődik a feladat végéig.';const sentenceBoundary=dictation&&!fullReading&&progress.sentenceRepeat>=dictationRepeatCount&&progress.sentenceIndex<sentences.length-1;
+   const originalPause=dictation?(spokenText.trim().length<=5?430:spokenText.trim().length<=10?570:850):500;
+   speechLoopTimer=setTimeout(speak,originalPause+(sentenceBoundary?1000:0));
   };
   $('speechStatus').textContent=hu?(dictation?(fullReading?`Teljes szöveg ismétlése: ${progress.fullRepeat+1}/2.`:`Tollbamondás: ${progress.sentenceIndex+1}. mondat, ${progress.sentenceRepeat+1}/${dictationRepeatCount}. felolvasás.`):'Felolvasás ismételve a feladat végéig.'):'Magyar hangot nem találtam; az alapértelmezett hanggal olvasok fel.';
   speechSynthesis.resume();speechSynthesis.speak(u);
