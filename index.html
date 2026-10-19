@@ -1225,6 +1225,7 @@ async function jsonp(params,timeoutMs){
 }
 
 let gradingMinEvaluatedPercentSetting=70;
+let technicalSkipCountsSetting=false;
 let teacherBankSessionToken='';
 let activeTestContentBank='bank1',currentPracticeContentBank='bank1',bankSwitchSerial=0,contentBankCatalog=null;
 function requestedContentContext(bankOverride){const practice=testActive?practiceMode:selectedPractice();return {practice,bank:bankOverride||(practice?requiredControl('practiceBankStart').value:activeTestContentBank)};}
@@ -2502,8 +2503,9 @@ function finishTest(){
   $("testPanel").classList.add("hidden");
   $("resultPanel").classList.remove("hidden");
 
-  const evaluated=results.filter(r=>!r.technicalSkip);
-  const technicalCount=results.length-evaluated.length;
+  if(technicalSkipCountsSetting)results.forEach(r=>{if(r.technicalSkip){r.technicalZero=true;r.percent=0;r.score=0;r.correct=0;r.correctWords=0;r.characterPercent=0;r.wordPercent=0;}});
+  const evaluated=results.filter(r=>!r.technicalSkip||r.technicalZero);
+  const technicalCount=results.filter(r=>r.technicalSkip).length;
   const evaluatedCoverage=results.length?100*evaluated.length/results.length:0;
   const coverageEligible=evaluatedCoverage>=gradingMinEvaluatedPercentSetting;
   const totalScore=results.reduce((s,r)=>s+r.score,0);
@@ -2526,7 +2528,7 @@ function finishTest(){
   const gradeText="A modulzáró vizsga százalékos jegyének határai: "+gl.map(([m,g],i)=>`${g}: ${m}–${i<gl.length-1?gl[i+1][0]-1:100}%`).join(" · ")+".";
   $("gradeExplain").textContent=gradeText+" Az érdemjegy a feladatok százalékainak átlagából számolódik.";
   $("gradeNote").textContent=gradeText;
-  const maxTotal=results.reduce((s,r,i)=>s+(r.technicalSkip?0:(Number(tasks[i]&&tasks[i].points)||100)+(r.isDictation?(r.commaAvailable||0):0)),0);
+  const maxTotal=results.reduce((s,r,i)=>s+((r.technicalSkip&&!r.technicalZero)?0:(Number(tasks[i]&&tasks[i].points)||100)+(r.isDictation?(r.commaAvailable||0):0)),0);
   const totalExpected=evaluated.reduce((s,r)=>s+String(r.text||"").length,0);
   $("finalScore").textContent=totalScore+" / "+maxTotal;
   $("finalCorrect").textContent=totalCorrect+" / "+totalExpected;
@@ -2547,6 +2549,7 @@ function finishTest(){
   $("detail").innerHTML=results.map((r,i)=>{
     const a=analyses[i];
     const maxPoints=Number(tasks[i]&&tasks[i].points)||100;
+    if(r.technicalZero)return `<div class="task-res"><b>${i+1}. feladat · ${esc(r.type)}</b><p>🛠 Technikai okból kihagyva: 0% és 0 pont, a jegybe beleszámít.</p></div>`;
     if(r.technicalSkip)return `<div class="task-res"><b>${i+1}. feladat · ${esc(r.type)}</b><p>🛠 A diák technikai akadályt jelzett (például nincs fülhallgató vagy nem működik a felolvasás). Ez a feladat nem számít bele a százalékba, pontokba és jegybe.</p></div>`;
     if(skippedIdx.has(i)){
       return `<div class="task-res">
@@ -2611,7 +2614,7 @@ function finishTest(){
     studentName:studentNameVal,
     studentClass:studentClassVal,
     taskCount:results.length,
-    evaluatedTaskCount:evaluated.length,technicalSkippedCount:technicalCount,
+    evaluatedTaskCount:evaluated.length,technicalSkippedCount:technicalCount,technicalSkipCounts:technicalSkipCountsSetting,
     testStartedAt:startedAtIso,
     testFinishedAt:finishedAtIso,
     gradeLimits:GRADE_LIMITS.map(pair=>pair.slice()),
@@ -2880,7 +2883,7 @@ function exportRows(data){
     ["Leütés",data.totalTyped], ["Átlagsebesség (leütés/perc)",data.averageSpeed], [],
     ["Feladat","Típus","Eredmény (%)","Pont","Pontos karakter","Hibás","Rontás","Ékezethiba","Kis-/nagybetű hiba","Elütés","Kihagyott karakter","Felesleges karakter","Sebesség (leütés/perc)","Idő (mp)","Idő lejárt","Megszakítva","Írandó szöveg","Beírt szöveg","Értékelési státusz","Feladatbank"]
   ];
-  (data.tasks||[]).forEach((r,i)=>rows.push([i+1,r.type,r.technicalSkip?"nem értékelt":r.percent,r.technicalSkip?"–":r.score,r.correct,r.wrong,r.mistakes,r.accentErrors,r.caseErrors,r.typoErrors,r.missingChars,r.extraChars,r.speed,r.timeSpent,r.timedOut?"igen":"nem",r.interrupted?"igen":"nem",r.text,r.answer,r.technicalSkip?"Technikai okból kihagyva – nem értékelt":r.skipReason==='no-response'?"Nem indította el – 0%":r.skipReason==='student-skip'?"Kihagyva – 0%":"Értékelt",r.sourceBankLabel||r.sourceBank||"Feladatbank 1"]));
+  (data.tasks||[]).forEach((r,i)=>rows.push([i+1,r.type,(r.technicalSkip&&!r.technicalZero)?"nem értékelt":r.percent,(r.technicalSkip&&!r.technicalZero)?"–":r.score,r.correct,r.wrong,r.mistakes,r.accentErrors,r.caseErrors,r.typoErrors,r.missingChars,r.extraChars,r.speed,r.timeSpent,r.timedOut?"igen":"nem",r.interrupted?"igen":"nem",r.text,r.answer,r.technicalZero?"Technikai okból kihagyva – 0 ponttal értékelt":r.technicalSkip?"Technikai okból kihagyva – nem értékelt":r.skipReason==='no-response'?"Nem indította el – 0%":r.skipReason==='student-skip'?"Kihagyva – 0%":"Értékelt",r.sourceBankLabel||r.sourceBank||"Feladatbank 1"]));
   return rows;
 }
 function downloadCsv(){
@@ -3426,10 +3429,6 @@ function readTask(){
    if(!active())return;
    if(dictation){if(fullReading)progress.fullRepeat++;else progress.sentenceRepeat++;}
    if(dictation&&progress.fullRepeat>=2){progress.completed=true;speechLoopTimer=null;refreshSpeechSwitch();$('speechStatus').textContent='A tollbamondás és a két teljes ismétlés befejeződött.';return;}
-   if(false){
-    progress.completed=true;speechLoopTimer=null;refreshSpeechSwitch();
-    $('speechStatus').textContent='A tollbamondás felolvasása befejeződött. Új felolvasás a következő feladatnál indítható.';return;
-   }
    $('speechStatus').textContent=dictation?'A tollbamondás folytatódik.':'A felolvasás ismétlődik a feladat végéig.';speechLoopTimer=setTimeout(speak,dictation?(spokenText.trim().length<=5?430:spokenText.trim().length<=10?570:850):500);
   };
   $('speechStatus').textContent=hu?(dictation?(fullReading?`Teljes szöveg ismétlése: ${progress.fullRepeat+1}/2.`:`Tollbamondás: ${progress.sentenceIndex+1}. mondat, ${progress.sentenceRepeat+1}/${dictationRepeatCount}. felolvasás.`):'Felolvasás ismételve a feladat végéig.'):'Magyar hangot nem találtam; az alapértelmezett hanggal olvasok fel.';
@@ -3748,6 +3747,7 @@ function renderSettingsSyncStatus(message,warning=false){
 }
 function applyBankDefaults(settings){
  if(Number.isInteger(settings?.minEvaluatedPercent))gradingMinEvaluatedPercentSetting=settings.minEvaluatedPercent;
+ if(typeof settings?.technicalSkipCounts==='boolean')technicalSkipCountsSetting=settings.technicalSkipCounts;
  refreshContentBankControls(settings);
  if(settings&&$('testPanel').classList.contains('hidden')&&$('resultPanel').classList.contains('hidden')){typeRatioSettings={typeRatiosEnabled:settings.typeRatiosEnabled===true,typeWeights:Array.isArray(settings.typeWeights)?settings.typeWeights.slice():[25,25,25,25]};}
 
