@@ -3733,43 +3733,7 @@ body{-webkit-print-color-adjust:exact!important;print-color-adjust:exact!importa
  button,.export-actions{display:none!important}
 }`;
 
- popup.document.open();popup.document.write('<!doctype html><html lang="hu"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+safeTitle+'</title><style>'+styles+'\n'+compact+'</style></head><body><div class="pdf-toolbar">A nyomtatási ablakban válaszd a Mentés PDF-ként lehetőséget. A fejlécek/láblécek kikapcsolásával több hely marad.<br><button type="button" onclick="window.print()">PDF mentése / nyomtatás</button> <button type="button" id="returnToResults">Vissza az eredménylapra</button><span id="pdfReturnHint" role="status"></span></div><main class="wrap">'+root.outerHTML+'</main>
-<style id="v74-default-practice-style">
-#practiceDefaultBtn{display:block;width:100%;min-height:62px;margin:12px 0;padding:14px 20px;border:2px solid #287354;border-radius:12px;background:#d9f5e5;color:#174c36;font-size:19px;font-weight:800;cursor:pointer;box-shadow:0 2px 6px #0002}
-#practiceDefaultBtn:disabled{opacity:.65;cursor:wait}
-body.high-contrast #practiceDefaultBtn{background:#fff;color:#000;border:3px solid #000}
-</style>
-<script id="v74-default-practice-script">
-(function(){
- const panel=document.getElementById('practiceOptions');if(!panel)return;
- const btn=document.createElement('button');btn.type='button';btn.id='practiceDefaultBtn';btn.textContent='✓ Működő alapbeállítások visszaállítása';
- panel.prepend(btn);
- btn.addEventListener('click',async()=>{
-  btn.disabled=true;btn.textContent='Megfelelő feladatok ellenőrzése…';
-  try{
-   if(teacherSettingsPromise)await teacherSettingsPromise;
-   const bankSelect=document.getElementById('practiceBankStart');
-   const choices=[activeTestContentBank,...Array.from(bankSelect.options).filter(o=>!o.disabled).map(o=>o.value)].filter((v,i,a)=>v&&a.indexOf(v)===i);
-   const grade=parseInt(getClass(),10);
-   let found=null;
-   for(const bank of choices){
-    try{const tasks=await loadTasks(1000,{practice:true,bank});const matching=(tasks||[]).filter(t=>!Number.isFinite(grade)||gradeMatch(t.grades,grade));if(matching.length){found={bank,count:matching.length};break;}}catch(e){}
-   }
-   if(!found)throw new Error('A kiválasztott évfolyamhoz egyik elérhető feladatbankban sincs feladat. Ellenőrizd az osztályt és a tanári feladatbankot.');
-   bankSelect.value=found.bank;
-   document.getElementById('practiceTextKind').value='all';
-   document.getElementById('practiceDelivery').value='all';
-   document.getElementById('practiceTime').value='1';
-   document.getElementById('practiceSpeechRate').value='0';
-   for(const id of ['practiceBankStart','practiceTextKind','practiceDelivery','practiceTime','practiceSpeechRate'])document.getElementById(id)?.dispatchEvent(new Event('change',{bubbles:true}));
-   document.getElementById('practiceAvailability').textContent='✓ '+found.count+' feladat elérhető. A tanári bankból és időbeállításból kiinduló, működő gyakorlás készen áll.';
-   document.getElementById('startBtn').disabled=false;
-  }catch(e){document.getElementById('practiceAvailability').textContent='⚠ '+e.message;}
-  finally{btn.disabled=false;btn.textContent='✓ Működő alapbeállítások visszaállítása';}
- });
-})();
-</script>
-</body></html>');popup.document.close();
+ popup.document.open();popup.document.write('<!doctype html><html lang="hu"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>'+safeTitle+'</title><style>'+styles+'\n'+compact+'</style></head><body><div class="pdf-toolbar">A nyomtatási ablakban válaszd a Mentés PDF-ként lehetőséget. A fejlécek/láblécek kikapcsolásával több hely marad.<br><button type="button" onclick="window.print()">PDF mentése / nyomtatás</button> <button type="button" id="returnToResults">Vissza az eredménylapra</button><span id="pdfReturnHint" role="status"></span></div><main class="wrap">'+root.outerHTML+'</main></body></html>');popup.document.close();
  const returnToResults=()=>{
   try{window.focus();}catch(e){}
   try{popup.close();}catch(e){}
