@@ -1006,6 +1006,7 @@ const DEFAULT_LETTER = "ny";                     // alapértelmezett betűjel
 const GRACE_FIRST_MS = 7000;  // az első feladat előtt ennyit vár az időmérés (a betűméret beállításához is)
 const GRACE_NEXT_MS = 2000;   // feladatváltás után ennyit vár az időmérés
 let typeRatioSettings={typeRatiosEnabled:false,typeWeights:[25,25,25,25]};
+let dictationMinimumSettings={perTest:0,perFive:0};
 let GRADE_LIMITS = [[86,5],[76,4],[56,3],[36,2],[0,1]];  // modulzáró vizsga: [legalább ennyi %, érdemjegy]
 const SPEED_LIMIT = 900;     // ennél gyorsabb gépelés (leütés/perc) gyanús
 const AWAY_LIMIT = 3;        // ennyi ablakelhagyás fölött a teszt gyanús
@@ -1402,14 +1403,14 @@ function readNoRepeatHistory(name,cls){
 }
 function recordNoRepeatTest(name,cls,selected){
  const key=noRepeatScope(name,cls),history=readNoRepeatHistory(name,cls);
- history.push({at:Date.now(),testId:String(testId||""),keys:[...new Set(selected.map(varietyTextKey))]});
+ history.push({at:Date.now(),testId:String(testId||""),dictationCount:selected.filter(t=>enabledFlag(t.dictation)).length,keys:[...new Set(selected.map(varietyTextKey))]});
  try{localStorage.setItem(key,JSON.stringify(history.slice(-4)));}catch(_){}
 }
 async function serverNoRepeatHistory(){
  if(!studentCodeSession)return null;
  try{
   const r=await jsonpOnce({action:'recentLiveTaskTexts',session:studentCodeSession},18000);
-  if(r?.success&&Array.isArray(r.tests))return r.tests.map(test=>({testId:String(test.testId||''),keys:(test.texts||[]).map(text=>varietyHash(String(text||'').normalize('NFC').replace(/\s+/g,' ').trim()))})).slice(-4);
+  if(r?.success&&Array.isArray(r.tests))return r.tests.map(test=>({testId:String(test.testId||''),dictationCount:Number(test.dictationCount)||0,keys:(test.texts||[]).map(text=>varietyHash(String(text||'').normalize('NFC').replace(/\s+/g,' ').trim()))})).slice(-4);
  }catch(e){console.warn('Korábbi feladatok lekérése:',e);}
  return null;
 }
@@ -1419,6 +1420,25 @@ function noRepeatPool(all,history){
  // Ha kevés az új feladat, csendben visszaengedjük a korábban látottakat.
  // A friss feladatok mindig elsőbbséget élveznek, az eredeti feladattípus-arányok megmaradnak.
  return {fresh,used:new Set(fresh.map(varietyTextKey))};
+}
+function applyDictationMinimum(selection,all,wanted,history,order){
+ const per=Math.max(0,dictationMinimumSettings.perTest|0),five=Math.max(0,dictationMinimumSettings.perFive|0);
+ const past=(history||[]).slice(-4),used=past.reduce((sum,t)=>sum+(Number(t.dictationCount)||0),0);
+ const position=past.length%5,remaining=5-position;
+ const required=Math.min(wanted,Math.max(per,Math.ceil(Math.max(0,Math.max(five,5*per)-used-(remaining-1)*per))));
+ if(!required)return selection;
+ const pool=all.filter(t=>enabledFlag(t.dictation)),present=selection.list.filter(t=>enabledFlag(t.dictation));
+ if(!pool.length)return selection;
+ const target=Math.min(required,pool.length,wanted);
+ if(present.length>=target)return selection;
+ const keys=new Set(selection.list.map(varietyTextKey));
+ const previous=new Set((history||[]).flatMap(x=>x.keys||[]));
+ const options=pool.filter(t=>!keys.has(varietyTextKey(t)));
+ if(order!=='bank')options.sort((a,b)=>Number(previous.has(varietyTextKey(a)))-Number(previous.has(varietyTextKey(b))));
+ const out=selection.list.slice(),added=[];
+ for(const t of options){if(present.length+added.length>=target)break;const ix=out.findLastIndex?out.findLastIndex(x=>!enabledFlag(x.dictation)):(()=>{for(let i=out.length-1;i>=0;i--)if(!enabledFlag(out[i].dictation))return i;return -1;})();if(ix<0)break;out.splice(ix,1);out.push(t);added.push(t);}
+ const list=order==='bank'?all.filter(t=>out.includes(t)):shuffle(out);
+ const total=totalTime(list);return {list,total,fits:total<=MAX_TOTAL_SEC};
 }
 function selectNoRepeatTasks(all,n,order,history){
  if(order==='bank')return selectTasksInOrder(all,n,order);
@@ -1682,7 +1702,7 @@ async function startTest(){
       for(const item of localHistory){if(!item.testId||!combined.some(x=>x.testId===item.testId))combined.push(item);}
       return combined.slice(-4);
     })():localHistory;
-    let sel=practice?selectTasksInOrder(all,wanted,taskOrder):selectNoRepeatTasks(all,wanted,taskOrder,noRepeatHistory);
+    let sel=practice?selectTasksInOrder(all,wanted,taskOrder):applyDictationMinimum(selectNoRepeatTasks(all,wanted,taskOrder,noRepeatHistory),all,wanted,noRepeatHistory,taskOrder);
     let note=sel.list.length<wanted?'ℹ️ A beállított típusarányokhoz kevés feladat érhető el: '+sel.list.length+' feladat kerül a tesztbe.':'';
     note+=practice&&practiceTextKind!=="all"&&wanted<count?`ℹ️ Ebben a szövegcsoportban ${wanted} megfelelő feladat érhető el, ezért ennyi kerül a gyakorlásba.`:"";
 
@@ -1694,7 +1714,7 @@ async function startTest(){
         let n=wanted;
         while(!sel.fits&&n>1){
           n--;
-          sel=practice?selectTasksInOrder(all,n,taskOrder):selectNoRepeatTasks(all,n,taskOrder,noRepeatHistory);
+          sel=practice?selectTasksInOrder(all,n,taskOrder):applyDictationMinimum(selectNoRepeatTasks(all,n,taskOrder,noRepeatHistory),all,n,noRepeatHistory,taskOrder);
         }
         if(!sel.fits){
           const shortest=taskOrder==='bank'?all[0]:all.slice().sort((x,y)=>taskTime(x)-taskTime(y))[0];
@@ -2646,7 +2666,8 @@ function finishTest(){
     scoringVersion:"char80_word20_dictation_comma_bonus_v3",
     totalCorrectWords:results.reduce((sum,r)=>sum+(r.correctWords||0),0),
     totalWords:results.reduce((sum,r)=>sum+(r.totalWords||0),0),
-    tasks:results
+    tasks:results.map((r,i)=>({...r,dictation:enabledFlag(tasks[i]?.dictation)})),
+    dictationCount:tasks.filter(t=>enabledFlag(t.dictation)).length
   };
   exportResult=pendingResult;
   exportResult.practice=practiceMode; exportResult.timeMultiplier=practiceFactor;
@@ -3751,7 +3772,7 @@ function applyBankDefaults(settings){
  if(Number.isInteger(settings?.minEvaluatedPercent))gradingMinEvaluatedPercentSetting=settings.minEvaluatedPercent;
  if(typeof settings?.technicalSkipCounts==='boolean')technicalSkipCountsSetting=settings.technicalSkipCounts;
  refreshContentBankControls(settings);
- if(settings&&$('testPanel').classList.contains('hidden')&&$('resultPanel').classList.contains('hidden')){typeRatioSettings={typeRatiosEnabled:settings.typeRatiosEnabled===true,typeWeights:Array.isArray(settings.typeWeights)?settings.typeWeights.slice():[25,25,25,25]};}
+ if(settings&&$('testPanel').classList.contains('hidden')&&$('resultPanel').classList.contains('hidden')){dictationMinimumSettings={perTest:Number(settings.dictationMinimums?.perTest)||0,perFive:Number(settings.dictationMinimums?.perFive)||0};typeRatioSettings={typeRatiosEnabled:settings.typeRatiosEnabled===true,typeWeights:Array.isArray(settings.typeWeights)?settings.typeWeights.slice():[25,25,25,25]};}
 
  if(settings?.gradeLimits&&$('testPanel').classList.contains('hidden')&&$('resultPanel').classList.contains('hidden')){
   const limits=settings.gradeLimits;
