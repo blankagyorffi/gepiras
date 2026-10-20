@@ -1706,21 +1706,25 @@ async function startTest(){
     let note=sel.list.length<wanted?'ℹ️ A beállított típusarányokhoz kevés feladat érhető el: '+sel.list.length+' feladat kerül a tesztbe.':'';
     note+=practice&&practiceTextKind!=="all"&&wanted<count?`ℹ️ Ebben a szövegcsoportban ${wanted} megfelelő feladat érhető el, ezért ennyi kerül a gyakorlásba.`:"";
 
+    // Előbb a ténylegesen kiválasztott feladatsorral igazodunk a tanári időkerethez.
+    // Gyakorláskor nem kérünk újabb tanári jóváhagyást egy korábban javasolt beállításra.
     if(!sel.fits){
-      const ok=await askApproval(wanted,sel.total);
-      if(ok){
-        note=`✔ Tanári jóváhagyással a teszt hosszabb a(z) ${fmtDur(MAX_TOTAL_SEC)} időkeretnél: ${fmtDur(sel.total)}.`;
+      let fitted=null;
+      for(let n=wanted-1;n>=1;n--){
+        const candidate=practice?selectTasksInOrder(all,n,taskOrder):applyDictationMinimum(selectNoRepeatTasks(all,n,taskOrder,noRepeatHistory),all,n,noRepeatHistory,taskOrder);
+        if(candidate.fits){fitted=candidate;break;}
+      }
+      if(fitted){
+        sel=fitted;
+        note=`ℹ️ A kért ${wanted} feladat helyett ${sel.list.length} feladat lesz, hogy a teszt beleférjen a ${fmtDur(MAX_TOTAL_SEC)} időkeretbe.`;
+      }else if(practice){
+        // Egyetlen túl hosszú feladat sem indulhat el tévesen „belefér” jelzéssel.
+        throw new Error(`A kiválasztott feladatok közül egy sem fér bele a ${fmtDur(MAX_TOTAL_SEC)} időkeretbe. Válassz másik feladatbankot vagy feladatmódot.`);
       }else{
-        let n=wanted;
-        while(!sel.fits&&n>1){
-          n--;
-          sel=practice?selectTasksInOrder(all,n,taskOrder):applyDictationMinimum(selectNoRepeatTasks(all,n,taskOrder,noRepeatHistory),all,n,noRepeatHistory,taskOrder);
-        }
-        if(!sel.fits){
-          const shortest=taskOrder==='bank'?all[0]:all.slice().sort((x,y)=>taskTime(x)-taskTime(y))[0];
-          sel={list:[shortest],total:taskTime(shortest),fits:false};
-        }
-        note=`ℹ️ A kért ${wanted} feladat helyett ${sel.list.length} feladat lesz, hogy a teszt ne legyen hosszabb ${fmtDur(MAX_TOTAL_SEC)}nél.`.replace("percnél","percnél");
+        // Éles tesztnél az egyetlen feladatnál is túl hosszú eset megőrzi a tanári jóváhagyást.
+        const ok=await askApproval(wanted,sel.total);
+        if(!ok)throw new Error(`A feladatok nem férnek bele a ${fmtDur(MAX_TOTAL_SEC)} időkeretbe. A teszt nem indult el.`);
+        note=`✔ Tanári jóváhagyással a teszt hosszabb a(z) ${fmtDur(MAX_TOTAL_SEC)} időkeretnél: ${fmtDur(sel.total)}.`;
       }
     }
 
