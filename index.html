@@ -1441,22 +1441,57 @@ function applyDictationMinimum(selection,all,wanted,history,order){
  const total=totalTime(list);return {list,total,fits:total<=MAX_TOTAL_SEC};
 }
 function selectNoRepeatTasks(all,n,order,history){
- if(order==='bank')return selectTasksInOrder(all,n,order);
- const {fresh}=noRepeatPool(all,history);
- if(fresh.length>=n){
-  const selection=selectTasksInOrder(fresh,n,order);
-  if(selection.fits)return selection;
+ // Az előző négy éles teszt szövegei csak akkor kerülnek vissza,
+ // ha az új szövegekből nem állítható össze megfelelő hosszúságú teszt.
+ // A kiválasztásban az azonos szövegű feladatok is csak egyszer szerepelhetnek.
+ const previous=new Set((history||[]).flatMap(t=>t.keys||[]));
+ const unique=[],seen=new Set();
+ for(const t of all){const k=varietyTextKey(t);if(!seen.has(k)){seen.add(k);unique.push(t);}}
+ const requested=Math.min(n,unique.length);
+ const build=(allowPast)=>{
+   const eligible=allowPast?unique:unique.filter(t=>!previous.has(varietyTextKey(t)));
+   if(eligible.length<requested)return null;
+   let list;
+   if(typeRatioSettings.typeRatiosEnabled){
+     // A kvóták az összes érvényes feladatra épülnek; típusonként az új
+     // szövegekből választunk előbb, és csak hiány esetén ismétlünk.
+     const groups=plannerGroups(eligible,typeRatioSettings),quotas=plannerQuotas(groups,requested);
+     const picked=[];
+     groups.forEach((group,i)=>{
+       const pool=order==='bank'?group.pool:shuffle(group.pool);
+       pool.sort((x,y)=>Number(previous.has(varietyTextKey(x)))-Number(previous.has(varietyTextKey(y))));
+       picked.push(...pool.slice(0,quotas[i]));
+     });
+     list=order==='bank'?eligible.filter(t=>picked.includes(t)):shuffle(picked);
+   }else if(order==='bank'){
+     list=eligible.filter(t=>!previous.has(varietyTextKey(t))).concat(eligible.filter(t=>previous.has(varietyTextKey(t)))).slice(0,requested);
+     // Az eredeti feladatbank-sorrendet az ismétlésmentes előnyben részesítés után alkalmazzuk.
+   }else{
+     const fresh=shuffle(eligible.filter(t=>!previous.has(varietyTextKey(t))));
+     const old=shuffle(eligible.filter(t=>previous.has(varietyTextKey(t))));
+     list=balanceTasks(fresh.concat(old),requested);
+     // A kiegyenlítés is kiválaszthat régi szöveget; a jobb eredményért
+     // több összeállítást versenyeztetünk az alábbi értékeléssel.
+   }
+   if(list.length!==requested)return null;
+   const total=totalTime(list),repeats=list.filter(t=>previous.has(varietyTextKey(t))).length;
+   return {list,total,fits:total<=MAX_TOTAL_SEC,repeats};
+ };
+ let best=null;
+ // 1. Csak új szövegeket tartalmazó, időkeretbe illő feladatsort keresünk.
+ // 2. Ha ilyen nincs, a lehető legkevesebb ismétlést engedjük vissza.
+ for(const allowPast of [false,true]){
+   const tries=order==='bank'?1:24;
+   for(let i=0;i<tries;i++){
+     const candidate=build(allowPast);
+     if(!candidate)break;
+     if(candidate.fits&&(!best||!best.fits||candidate.repeats<best.repeats||candidate.repeats===best.repeats&&candidate.total<best.total))best=candidate;
+     if(!best||!best.fits&&candidate.total<best.total)best=candidate;
+     if(best.fits&&best.repeats===0)return best;
+   }
+   if(best?.fits)return best;
  }
- // Kevés új feladat esetén a keverés a frisseket előnyben részesíti.
- const recentKeys=new Set(history.flatMap(t=>t.keys||[]));
- const chosen=selectTasksInOrder(all,n,order);
- if(!recentKeys.size)return chosen;
- const pool=shuffle(fresh);
- const seen=new Set(),result=[];
- for(const t of pool){const key=varietyTextKey(t);if(!seen.has(key)&&result.length<n){result.push(t);seen.add(key);}}
- for(const t of chosen.list.concat(shuffle(all))){const key=varietyTextKey(t);if(!seen.has(key)&&result.length<n){result.push(t);seen.add(key);}}
- // A normál időkeret-vizsgálat továbbra is működik.
- const total=totalTime(result);return {list:shuffle(result),total,fits:total<=MAX_TOTAL_SEC};
+ return best||{list:[],total:0,fits:false,repeats:0};
 }
 
 // Ha a feladatbankban van "Nehézség" oszlop, a könnyű/közepes/nehéz feladatok egyenlően keverednek.
@@ -1703,7 +1738,8 @@ async function startTest(){
       return combined.slice(-4);
     })():localHistory;
     let sel=practice?selectTasksInOrder(all,wanted,taskOrder):applyDictationMinimum(selectNoRepeatTasks(all,wanted,taskOrder,noRepeatHistory),all,wanted,noRepeatHistory,taskOrder);
-    let note=sel.list.length<wanted?'ℹ️ A beállított típusarányokhoz kevés feladat érhető el: '+sel.list.length+' feladat kerül a tesztbe.':'';
+    let note=sel.list.length<wanted?'ℹ️ A választható különböző szövegekből '+sel.list.length+' feladat állítható össze.':'';
+    if(!practice&&sel.repeats>0)note+=(note?' ':'')+`ℹ️ A feladatbank korlátai miatt ${sel.repeats} korábban használt szöveg ismétlődik.`;
     note+=practice&&practiceTextKind!=="all"&&wanted<count?`ℹ️ Ebben a szövegcsoportban ${wanted} megfelelő feladat érhető el, ezért ennyi kerül a gyakorlásba.`:"";
 
     // Előbb a ténylegesen kiválasztott feladatsorral igazodunk a tanári időkerethez.
@@ -1716,7 +1752,7 @@ async function startTest(){
       }
       if(fitted){
         sel=fitted;
-        note=`ℹ️ A kért ${wanted} feladat helyett ${sel.list.length} feladat lesz, hogy a teszt beleférjen a ${fmtDur(MAX_TOTAL_SEC)} időkeretbe.`;
+        note=`ℹ️ A kért ${wanted} feladat helyett ${sel.list.length} feladat lesz, hogy a teszt beleférjen a ${fmtDur(MAX_TOTAL_SEC)} időkeretbe.`+(sel.repeats>0?` ${sel.repeats} szöveg korábban is szerepelt.`:'');
       }else if(practice){
         // Egyetlen túl hosszú feladat sem indulhat el tévesen „belefér” jelzéssel.
         throw new Error(`A kiválasztott feladatok közül egy sem fér bele a ${fmtDur(MAX_TOTAL_SEC)} időkeretbe. Válassz másik feladatbankot vagy feladatmódot.`);
@@ -1737,7 +1773,7 @@ async function startTest(){
     }
     enableSpeechForNewTest();
     tasks=dictationLast(sel.list);
-    if(!practice)recordNoRepeatTest(name,cls,tasks);
+    // A kiosztás előzménye csak a végleges tesztazonosítóval kerül rögzítésre.
     tasks.forEach(t=>delete t._dictationWaitStartedAt);
     autoRetryN=0;
     results=[];
@@ -1753,6 +1789,7 @@ async function startTest(){
     refreshContentBankControls();
     $("practiceTag").classList.toggle("hidden",!practice);
     testId=(window.crypto&&crypto.randomUUID)?crypto.randomUUID():(Date.now().toString(36)+Math.random().toString(36).slice(2));
+    if(!practice)recordNoRepeatTest(name,cls,tasks);
     testStartedAt=new Date();
     testFinishedAt=null;
     testActive=true;
