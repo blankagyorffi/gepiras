@@ -5708,22 +5708,64 @@ function preTestAudioCheck(){
   box=document.createElement('div');box.id='audioPreflight';box.setAttribute('role','dialog');box.setAttribute('aria-modal','true');box.setAttribute('aria-label','Fülhallgató és hang ellenőrzése');
   box.innerHTML='<div class="audio-card"><h2>🎧 Fülhallgató és hang ellenőrzése</h2><p>Ebben a tesztben felolvasás vagy tollbamondás is lesz. Csatlakoztasd a fülhallgatót, és ellenőrizd, hogy hallod-e a magyar próbaszöveget.</p><p id="audioCheckStatus" role="status">A teszt ideje még nem indult el.</p><div class="audio-buttons"><button id="audioCheckPlay" type="button">🔊 Próbahang lejátszása</button><button id="audioCheckProceed" type="button">✓ Hallom, teszt indítása</button><button id="audioCheckSkip" type="button">Hangpróba nélkül is indítom</button><button id="audioCheckCancel" type="button">Vissza</button></div></div>';
   document.body.append(box);
-  let played=false;
-  const cleanup=(ok)=>{try{speechSynthesis.cancel();}catch(e){}box.remove();resolve(ok);};
-  box.querySelector('#audioCheckPlay').onclick=()=>{
-   if(!('speechSynthesis' in window)){box.querySelector('#audioCheckStatus').textContent='Ez a böngésző nem támogatja a felolvasást.';return;}
-   try{speechSynthesis.cancel();const u=new SpeechSynthesisUtterance('Ez egy hangpróba. Ha hallod ezt a mondatot, a fülhallgatód működik.');u.lang='hu-HU';u.rate=.85;
-    const voices=speechSynthesis.getVoices().filter(v=>/^hu(?:-|$)/i.test(v.lang));if(voices.length)u.voice=voices[0];
-    u.onstart=()=>{played=true;box.querySelector('#audioCheckStatus').textContent='🔊 A próbahang most szól…';};
-    u.onend=()=>{box.querySelector('#audioCheckStatus').textContent='Vége a hangpróbának. Hallottad? Ha nem, ellenőrizd a hangerőt és a fülhallgatót.';};
-    u.onerror=()=>{box.querySelector('#audioCheckStatus').textContent='A próbahang nem indult el. Ellenőrizd a hangbeállításokat.';};
-    speechSynthesis.speak(u);
-   }catch(e){box.querySelector('#audioCheckStatus').textContent='Hanghiba: '+String(e.message||e);}
+  let played=false, attempt=0, watchdog=null, activeUtterance=null, closed=false;
+  const status=box.querySelector('#audioCheckStatus');
+  const playButton=box.querySelector('#audioCheckPlay');
+  const clearWatchdog=()=>{if(watchdog!==null){clearTimeout(watchdog);watchdog=null;}};
+  const cleanup=(ok)=>{
+   closed=true;attempt++;clearWatchdog();
+   if('speechSynthesis' in window){try{speechSynthesis.cancel();}catch(e){}}
+   activeUtterance=null;box.remove();resolve(ok);
   };
-  box.querySelector('#audioCheckProceed').onclick=()=>{if(!played){box.querySelector('#audioCheckStatus').textContent='Előbb nyomd meg a Próbahang lejátszása gombot!';return;}cleanup(true);};
-  box.querySelector('#audioCheckSkip').onclick=()=>{
+  playButton.onclick=()=>{
+   if(!('speechSynthesis' in window)||!('SpeechSynthesisUtterance' in window)){
+    status.textContent='Ez a böngésző nem támogatja a felolvasást.';return;
+   }
+   const current=++attempt;
+   clearWatchdog();played=false;
+   status.textContent='A próbahang indítása folyamatban…';
+   try{
+    // A korábbi teszt után a böngésző hangmotorja szüneteltetett állapotban maradhat.
+    speechSynthesis.cancel();
+    speechSynthesis.resume();
+    const u=new SpeechSynthesisUtterance('Ez egy hangpróba. Ha hallod ezt a mondatot, a fülhallgatód működik.');
+    activeUtterance=u;
+    u.lang='hu-HU';u.rate=.85;
+    const voices=speechSynthesis.getVoices().filter(v=>/^hu(?:-|$)/i.test(v.lang));
+    const selected=voices.find(v=>v.voiceURI===preferredVoiceURI);
+    if(selected||voices.length)u.voice=selected||voices[0];
+    u.onstart=()=>{
+     if(closed||current!==attempt)return;
+     clearWatchdog();played=true;
+     status.textContent='🔊 A próbahang most szól…';
+    };
+    u.onend=()=>{
+     if(closed||current!==attempt)return;
+     clearWatchdog();
+     status.textContent='Vége a hangpróbának. Hallottad? Ha nem, ellenőrizd a hangerőt és a fülhallgatót.';
+    };
+    u.onerror=(e)=>{
+     if(closed||current!==attempt)return;
+     clearWatchdog();
+     status.textContent='A próbahang nem indult el ('+(e.error||'hangmotorhiba')+'). Kattints ismét a Próbahang gombra, vagy ellenőrizd a böngésző hangbeállításait.';
+    };
+    // A hangpróba minden alkalommal új utterance objektumot kap.
+    speechSynthesis.speak(u);
+    watchdog=setTimeout(()=>{
+     if(closed||current!==attempt||played)return;
+     status.textContent='A böngésző hangmotorja nem válaszol. Kattints újra a Próbahang gombra; ha továbbra sem szól, frissítsd az oldalt, és ellenőrizd a magyar beszédhangot.';
+     try{speechSynthesis.cancel();}catch(e){}
+    },5000);
+   }catch(e){
+    clearWatchdog();
+    status.textContent='Hanghiba: '+String(e.message||e);
+   }
+  };
+  box.querySelector('#audioCheckProceed').onclick=()=>{
+   if(!played){status.textContent='Előbb nyomd meg a Próbahang lejátszása gombot, és ellenőrizd, hogy megszólalt!';return;}
    cleanup(true);
   };
+  box.querySelector('#audioCheckSkip').onclick=()=>cleanup(true);
   box.querySelector('#audioCheckCancel').onclick=()=>cleanup(false);
   box.querySelector('#audioCheckPlay').focus();
  });
