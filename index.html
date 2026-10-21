@@ -1060,6 +1060,7 @@ let awayCount=0;
 let pasteCount=0;
 let lastAway=0;
 let practiceMode=false;
+let audioPreflightConfirmed=false; // Csak az adott tesztre érvényes sikeres hangpróba
 let practiceTeacherSnapshot=null;
 let stopped=false;
 let testActive=false;
@@ -1687,6 +1688,7 @@ async function verifyCurrentRealBank(){
  teacherPinRequired=r.pinRequired;applyBankDefaults(r.settings);applyLock();renderSettingsSyncStatus(settingsSyncMessage(r),!r.settingsSource||r.settingsSource==='default');return true;
 }
 async function startTest(){
+ audioPreflightConfirmed=false;
  syncPracticeAccess();
  if(!allowLeavingResult())return;
  if(!selectedPractice()){
@@ -1879,13 +1881,13 @@ function confirmDictationSkip(onConfirm){
  dictationSkipPending=true;if(!wasPaused){practicePaused=true;practicePausedAt=began;}stopReading();
  const dialog=document.createElement('dialog');dialog.className='dictation-skip-confirm';dialog.setAttribute('aria-labelledby','dictationSkipTitle');
  const consequence=waiting?'A kihagyott részfeladat 0 pontot ér, és ronthatja a jegyedet.':'Az eddig beírt szöveg megmarad, de a kihagyott részért nem kapsz pontot, és ez ronthatja a jegyedet.';
- dialog.innerHTML='<h2 id="dictationSkipTitle">Biztosan kihagyod a tollbamondást?</h2><p>'+consequence+'</p><p>Technikai probléma esetén inkább a <b>Technikai okból kihagyom</b> lehetőséget válaszd: azt a részfeladatot a rendszer nem kezeli hibának.</p><p class="skip-confirm-countdown" role="status"></p><div class="skip-confirm-actions"><button type="button" data-choice="cancel">Mégsem – folytatom</button><button type="button" data-choice="skip">Igen, kihagyom</button>'+(waiting?'<button type="button" data-choice="technical">Technikai okból kihagyom</button>':'')+'</div>';
+ dialog.innerHTML='<h2 id="dictationSkipTitle">Biztosan kihagyod a tollbamondást?</h2><p>'+consequence+'</p><p>Technikai probléma esetén inkább a <b>Technikai okból kihagyom</b> lehetőséget válaszd: azt a részfeladatot a rendszer nem kezeli hibának.</p><p class="skip-confirm-countdown" role="status"></p><div class="skip-confirm-actions"><button type="button" data-choice="cancel">Mégsem – folytatom</button><button type="button" data-choice="skip">Igen, kihagyom</button>'+(waiting&&(practiceMode||!audioPreflightConfirmed)?'<button type="button" data-choice="technical">Technikai okból kihagyom</button>':'')+'</div>';
  document.body.append(dialog);let timer=null,done=false;
  function choose(choice){if(done)return;done=true;clearInterval(timer);const same=currentIndex===idx&&taskEpoch===epoch;dialog.close();dialog.remove();dictationSkipPending=false;
   if(!same)return;
   if(Number.isFinite(task._dictationWaitStartedAt))task._dictationWaitStartedAt+=Date.now()-wall;
   if(!wasPaused){startTime+=Math.max(0,performance.now()-began);practicePaused=false;practicePausedAt=0;}
-  if(choice==='skip'){onConfirm();return;}if(choice==='technical'){skipWaitingDictation('technical');return;}
+  if(choice==='skip'){onConfirm();return;}if(choice==='technical'){if(practiceMode||!audioPreflightConfirmed)skipWaitingDictation('technical');return;}
   if(resumeSpeech&&!wasPaused&&!finished&&!stopped)readTask();if(!finished&&!stopped)$('answer').focus({preventScroll:true});
  }
  dialog.querySelectorAll('[data-choice]').forEach(button=>button.addEventListener('click',()=>choose(button.dataset.choice)));
@@ -1895,6 +1897,7 @@ function confirmDictationSkip(onConfirm){
 }
 function skipWaitingDictation(reason,confirmed=false){
  if(!dictationWaiting||finished||stopped)return;
+ if(reason==='technical'&&!practiceMode&&audioPreflightConfirmed)return;
  if(reason==='student-skip'&&!confirmed){confirmDictationSkip(()=>skipWaitingDictation(reason,true));return;}
  clearDictationWait();dictationWaiting=false;dictationBegin=null;startTime=performance.now();
  finishCurrentTask(reason==='no-response');
@@ -4024,10 +4027,10 @@ function showDictationNotice(){
  let controls=$('dictationStartControls');if(!controls){controls=document.createElement('div');controls.id='dictationStartControls';$('typingWorkspace').before(controls);}
  const skip=document.createElement('button');skip.type='button';skip.textContent='Részfeladat kihagyása';skip.addEventListener('click',nextTask);
  const technical=document.createElement('button');technical.type='button';technical.className='dictation-technical-skip';technical.textContent='🛠 Technikai okból kihagyom – nem számít hibának';technical.addEventListener('click',()=>skipWaitingDictation('technical'));
- controls.classList.remove('hidden','dictation-wait-warning');controls.replaceChildren(start,technical,skip);box.append(notice);
+ controls.classList.remove('hidden','dictation-wait-warning');controls.replaceChildren(start,...((practiceMode||!audioPreflightConfirmed)?[technical]:[]),skip);box.append(notice);
  const help=document.createElement('details');help.className='dictation-extra-help';
  const summary=document.createElement('summary');summary.textContent='Segítség / technikai probléma';
- const explanation=document.createElement('p');explanation.textContent='Ha nem szól a felolvasó vagy nincs fülhallgatód, válaszd a „Technikai okból kihagyom” gombot: ez a részfeladat nem számít hibának. A sima kihagyás 0 pontot ér. Saját tempóbeállítás nélkül a felolvasás 10%-kal lassabb.';help.append(summary,explanation);box.append(help);
+ const explanation=document.createElement('p');explanation.textContent=(!practiceMode&&audioPreflightConfirmed?'A teszt előtt sikeres hangpróbát igazoltál, ezért éles tesztben a technikai okú, pontlevonás nélküli kihagyás nem érhető el. A sima kihagyás 0 pontot ér.':'Ha nem szól a felolvasó vagy nincs fülhallgatód, a „Technikai okból kihagyom” gombbal jelezheted; ez a részfeladat nem számít hibának. A sima kihagyás 0 pontot ér.')+' Saját tempóbeállítás nélkül a felolvasás 10%-kal lassabb.';help.append(summary,explanation);box.append(help);
 }
 function startDictationReading(){
  if(!dictationWaiting||finished||stopped)return;
@@ -5763,7 +5766,7 @@ function preTestAudioCheck(){
   };
   box.querySelector('#audioCheckProceed').onclick=()=>{
    if(!played){status.textContent='Előbb nyomd meg a Próbahang lejátszása gombot, és ellenőrizd, hogy megszólalt!';return;}
-   cleanup(true);
+   audioPreflightConfirmed=true;cleanup(true);
   };
   box.querySelector('#audioCheckSkip').onclick=()=>cleanup(true);
   box.querySelector('#audioCheckCancel').onclick=()=>cleanup(false);
