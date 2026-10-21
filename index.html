@@ -1061,6 +1061,7 @@ let pasteCount=0;
 let lastAway=0;
 let practiceMode=false;
 let audioPreflightConfirmed=false; // Csak az adott tesztre érvényes sikeres hangpróba
+let audioPreflightSkipped=false; // A diák kifejezetten hangpróba nélkül indított
 let practiceTeacherSnapshot=null;
 let stopped=false;
 let testActive=false;
@@ -1689,6 +1690,7 @@ async function verifyCurrentRealBank(){
 }
 async function startTest(){
  audioPreflightConfirmed=false;
+ audioPreflightSkipped=false;
  syncPracticeAccess();
  if(!allowLeavingResult())return;
  if(!selectedPractice()){
@@ -2712,6 +2714,7 @@ function finishTest(){
     studentClass:studentClassVal,
     taskCount:results.length,
     evaluatedTaskCount:evaluated.length,technicalSkippedCount:technicalCount,technicalSkipCounts:technicalSkipCountsSetting,
+    audioCheckSkipped:!practiceMode&&audioPreflightSkipped,audioCheckConfirmed:!practiceMode&&audioPreflightConfirmed,
     testStartedAt:startedAtIso,
     testFinishedAt:finishedAtIso,
     gradeLimits:GRADE_LIMITS.map(pair=>pair.slice()),
@@ -5679,6 +5682,14 @@ html body.screen-start:not(.high-contrast)[data-typing-mode="practice"] #appMode
 #audioPreflight #audioCheckProceed{background:#287254}
 #audioPreflight #audioCheckSkip{background:#f0d983;color:#273344;border:1px solid #bba64c;font-weight:700}
 #audioPreflight #audioCheckCancel{background:#65707a}
+#\u0061udioPreflight .audio-step{font-size:14px;font-weight:800;color:#334e60;margin:8px 0 5px}
+#audioPreflight #audioCheckPlay{background:#ba3038;color:white;border:2px solid #8f1d29;font-size:19px;font-weight:800;min-height:58px;flex:1 1 100%;box-shadow:0 3px 8px #8f1d2930}
+#audioPreflight #audioCheckProceed{font-size:17px;font-weight:800;flex:1 1 100%;min-height:52px}
+#audioPreflight #audioCheckSkip{font-size:13px;font-weight:600;min-height:36px;flex:0 1 auto;padding:7px 11px;background:#f4e6ae}
+#audioPreflight #audioCheckCancel{flex:0 1 auto;min-height:36px;font-size:13px;padding:7px 11px}
+#audioPreflight .audio-secondary{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:14px;border-top:1px solid #d8e0e3;padding-top:12px}
+#audioPreflight .audio-notice{font-size:13px;line-height:1.4;color:#7b3c18;background:#fff3e8;padding:9px 11px;border-radius:7px}
+
 /* v60: stabil méretű, beágyazott felolvasásjelző az időinformációs sorban. */
 #testPanel .total-line{overflow:visible;overflow-wrap:break-word}
 #testPanel #speechLiveIndicator{
@@ -5709,7 +5720,7 @@ function preTestAudioCheck(){
  return new Promise(resolve=>{
   let box=document.getElementById('audioPreflight');if(box)box.remove();
   box=document.createElement('div');box.id='audioPreflight';box.setAttribute('role','dialog');box.setAttribute('aria-modal','true');box.setAttribute('aria-label','Fülhallgató és hang ellenőrzése');
-  box.innerHTML='<div class="audio-card"><h2>🎧 Fülhallgató és hang ellenőrzése</h2><p>Ebben a tesztben felolvasás vagy tollbamondás is lesz. Csatlakoztasd a fülhallgatót, és ellenőrizd, hogy hallod-e a magyar próbaszöveget.</p><p id="audioCheckStatus" role="status">A teszt ideje még nem indult el.</p><div class="audio-buttons"><button id="audioCheckPlay" type="button">🔊 Próbahang lejátszása</button><button id="audioCheckProceed" type="button">✓ Hallom, teszt indítása</button><button id="audioCheckSkip" type="button">Hangpróba nélkül is indítom</button><button id="audioCheckCancel" type="button">Vissza</button></div></div>';
+  box.innerHTML='<div class="audio-card"><h2>🎧 Fülhallgató és hang ellenőrzése</h2><p>Ebben a tesztben felolvasás vagy tollbamondás is lesz. <b>Minden éles teszt előtt újra ellenőrizd a hangot</b>, akkor is, ha az előző tesztben működött. A teszt ideje még nem indult el.</p><p class="audio-step">1. lépés – Először kattints ide, és hallgasd meg a próbahangot!</p><div class="audio-buttons"><button id="audioCheckPlay" type="button">🔊 1. Próbahang lejátszása</button></div><p id="audioCheckStatus" role="status" aria-live="polite">Várakozás a próbahang indítására.</p><p class="audio-step">2. lépés – Ha hallottad, itt indítsd el a tesztet!</p><div class="audio-buttons"><button id="audioCheckProceed" type="button">✓ 2. Hallom, teszt indítása</button></div><div class="audio-secondary"><button id="audioCheckCancel" type="button">← Vissza</button><button id="audioCheckSkip" type="button">Hangpróba nélkül is indítom</button></div><p class="audio-notice">Fontos: ha a hangpróbát sikeresnek igazolod, éles teszt közben a tollbamondás technikai okú, pontlevonás nélküli kihagyása nem érhető el.</p></div>';
   document.body.append(box);
   let played=false, attempt=0, watchdog=null, activeUtterance=null, closed=false;
   const status=box.querySelector('#audioCheckStatus');
@@ -5766,9 +5777,12 @@ function preTestAudioCheck(){
   };
   box.querySelector('#audioCheckProceed').onclick=()=>{
    if(!played){status.textContent='Előbb nyomd meg a Próbahang lejátszása gombot, és ellenőrizd, hogy megszólalt!';return;}
-   audioPreflightConfirmed=true;cleanup(true);
+   audioPreflightConfirmed=true;audioPreflightSkipped=false;cleanup(true);
   };
-  box.querySelector('#audioCheckSkip').onclick=()=>cleanup(true);
+  box.querySelector('#audioCheckSkip').onclick=()=>{
+   const proceed=window.confirm('Figyelem! Minden éles teszt előtt újra el kell végezni a hangpróbát, akkor is, ha az előző tesztben működött.\n\nHa sikeres hangpróbát igazolsz, a tollbamondást később technikai okból nem hagyhatod ki pontlevonás nélkül.\n\nMost hangpróba nélkül szeretnéd elindítani a tesztet?');
+   if(proceed){audioPreflightSkipped=true;audioPreflightConfirmed=false;cleanup(true);}
+  };
   box.querySelector('#audioCheckCancel').onclick=()=>cleanup(false);
   box.querySelector('#audioCheckPlay').focus();
  });
