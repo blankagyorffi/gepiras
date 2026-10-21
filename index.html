@@ -1446,10 +1446,15 @@ function applyDictationMinimum(selection,all,wanted,history,order){
  const maxTest=Math.max(0,dictationMaximumSettings.perTest),maxFive=Math.max(0,dictationMaximumSettings.perFive);
  const h=history||[],position=Number.isInteger(liveSeriesPosition)?liveSeriesPosition:h.length%5,prior=position?h.slice(-position):[];
  const used=prior.reduce((sum,t)=>sum+(Number(t.dictationCount)||0),0),remaining=5-position;
- const required=Math.max(minTest,Math.ceil(Math.max(0,minFive-used-(remaining-1)*minTest)));
+ // A hátralévő tesztekben a TESZTENKÉNTI MAXIMUM alapján
+ // számoljuk, mennyi tollbamondás pótolható később.
+ // A korábbi képlet tévesen a minimumot használta, ezért
+ // 0–1 / 2–2 beállításnál már az első tesztet is blokkolta.
+ const futureCapacity=Math.max(0,remaining-1)*maxTest;
+ const required=Math.max(minTest,Math.max(0,minFive-used-futureCapacity));
  const allowed=Math.min(maxTest,maxFive-used);
  if(required>chosenLength_(selection))throw new Error('A tollbamondás-minimum nagyobb a kiválasztott feladatok számánál.');
- if(required>allowed)throw new Error('A tollbamondás-minimum és -maximum az eddigi tesztek alapján nem teljesíthető. Ellenőrizd a tanári beállításokat.');
+ if(required>allowed)throw new Error(`A tollbamondási korlátok ebben az ötös sorozatban nem teljesíthetők: eddig ${used} db volt, még ${remaining} teszt van hátra, a jelenlegi tesztben legalább ${required}, legfeljebb ${allowed} db lehet. Ellenőrizd az előző tesztek adatait és a tanári korlátokat.`);
  const previous=new Set(h.slice(-4).flatMap(x=>x.keys||[]));
  const key=varietyTextKey, chosen=selection.list.slice(),keys=new Set(chosen.map(key));
  const count=()=>chosen.filter(t=>enabledFlag(t.dictation)).length;
