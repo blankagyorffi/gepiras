@@ -759,7 +759,24 @@ body.screen-start.practice-start #startPanel .start-grid>.start-field.identity-c
  #mobilePrintPreview .mobile-print-controls{display:none!important}
  #mobilePrintPreview #resultPanel{display:block!important;max-height:none!important;overflow:visible!important}
 }
-</style></head>
+</style><style id="dictation-start-v80-style">
+/* A tollbamondás indítógombjának kiemelése – minden képernyőméreten. */
+#dictationStartControls #dictationStart,
+body.screen-test #dictationStartControls:not(.hidden) > #dictationStart {
+  background:#b42332 !important;
+  color:#fff !important;
+  border:2px solid #851827 !important;
+  font-size:1.12rem !important;
+  font-weight:800 !important;
+  line-height:1.35 !important;
+  padding:11px 16px !important;
+  min-height:48px !important;
+  box-shadow:0 2px 5px rgba(100,0,0,.18) !important;
+}
+#dictationStartControls #dictationStart:hover { background:#951a29 !important; }
+#dictationStartControls #dictationStart:focus-visible { outline:3px solid #ffb3b9 !important; outline-offset:2px !important; }
+</style>
+</head>
 <body>
 <div id="loadingOverlay" class="hidden" role="status" aria-live="polite">
   <div class="loading-card"><div class="loading-spinner" aria-hidden="true"></div><h2 id="loadingTitle">Feladatok betöltése</h2><p id="loadingText">Kapcsolódás a feladatbankhoz… Ez néhány másodpercig eltarthat.</p><div class="loading-track"><span></span></div></div>
@@ -1007,6 +1024,8 @@ const GRACE_FIRST_MS = 7000;  // az első feladat előtt ennyit vár az időmér
 const GRACE_NEXT_MS = 2000;   // feladatváltás után ennyit vár az időmérés
 let typeRatioSettings={typeRatiosEnabled:false,typeWeights:[25,25,25,25]};
 let dictationMinimumSettings={perTest:0,perFive:0};
+let dictationMaximumSettings={perTest:500,perFive:2500};
+let liveSeriesPosition=null;
 let GRADE_LIMITS = [[86,5],[76,4],[56,3],[36,2],[0,1]];  // modulzáró vizsga: [legalább ennyi %, érdemjegy]
 const SPEED_LIMIT = 900;     // ennél gyorsabb gépelés (leütés/perc) gyanús
 const AWAY_LIMIT = 3;        // ennyi ablakelhagyás fölött a teszt gyanús
@@ -1399,18 +1418,18 @@ function rememberPresentedTask(task){
 function noRepeatScope(name,cls){return 'gepiras_live_five_v1_'+varietyHash(nameChoiceKey(name)+'|'+normCls(cls));}
 function readNoRepeatHistory(name,cls){
  try{const value=JSON.parse(localStorage.getItem(noRepeatScope(name,cls))||'[]');
- return Array.isArray(value)?value.filter(x=>x&&Array.isArray(x.keys)).slice(-4):[];}catch(_){return [];}
+ return Array.isArray(value)?value.filter(x=>x&&Array.isArray(x.keys)&&new Date(x.at).toDateString()===new Date().toDateString()):[];}catch(_){return [];}
 }
 function recordNoRepeatTest(name,cls,selected){
  const key=noRepeatScope(name,cls),history=readNoRepeatHistory(name,cls);
  history.push({at:Date.now(),testId:String(testId||""),dictationCount:selected.filter(t=>enabledFlag(t.dictation)).length,keys:[...new Set(selected.map(varietyTextKey))]});
- try{localStorage.setItem(key,JSON.stringify(history.slice(-4)));}catch(_){}
+ try{localStorage.setItem(key,JSON.stringify(history.slice(-100)));}catch(_){}
 }
 async function serverNoRepeatHistory(){
  if(!studentCodeSession)return null;
  try{
   const r=await jsonpOnce({action:'recentLiveTaskTexts',session:studentCodeSession},18000);
-  if(r?.success&&Array.isArray(r.tests))return r.tests.map(test=>({testId:String(test.testId||''),dictationCount:Number(test.dictationCount)||0,keys:(test.texts||[]).map(text=>varietyHash(String(text||'').normalize('NFC').replace(/\s+/g,' ').trim()))})).slice(-4);
+  if(r?.success&&Array.isArray(r.tests)){liveSeriesPosition=Number(r.seriesPosition);return r.tests.map(test=>({testId:String(test.testId||''),dictationCount:Number(test.dictationCount)||0,keys:(test.texts||[]).map(text=>varietyHash(String(text||'').normalize('NFC').replace(/\s+/g,' ').trim()))})).slice(-4);}
  }catch(e){console.warn('Korábbi feladatok lekérése:',e);}
  return null;
 }
@@ -1421,24 +1440,32 @@ function noRepeatPool(all,history){
  // A friss feladatok mindig elsőbbséget élveznek, az eredeti feladattípus-arányok megmaradnak.
  return {fresh,used:new Set(fresh.map(varietyTextKey))};
 }
+function chosenLength_(selection){return selection.list.length;}
 function applyDictationMinimum(selection,all,wanted,history,order){
- const per=Math.max(0,dictationMinimumSettings.perTest|0),five=Math.max(0,dictationMinimumSettings.perFive|0);
- const past=(history||[]).slice(-4),used=past.reduce((sum,t)=>sum+(Number(t.dictationCount)||0),0);
- const position=past.length%5,remaining=5-position;
- const required=Math.min(wanted,Math.max(per,Math.ceil(Math.max(0,Math.max(five,5*per)-used-(remaining-1)*per))));
- if(!required)return selection;
- const pool=all.filter(t=>enabledFlag(t.dictation)),present=selection.list.filter(t=>enabledFlag(t.dictation));
- if(!pool.length)return selection;
- const target=Math.min(required,pool.length,wanted);
- if(present.length>=target)return selection;
- const keys=new Set(selection.list.map(varietyTextKey));
- const previous=new Set((history||[]).flatMap(x=>x.keys||[]));
- const options=pool.filter(t=>!keys.has(varietyTextKey(t)));
- if(order!=='bank')options.sort((a,b)=>Number(previous.has(varietyTextKey(a)))-Number(previous.has(varietyTextKey(b))));
- const out=selection.list.slice(),added=[];
- for(const t of options){if(present.length+added.length>=target)break;const ix=out.findLastIndex?out.findLastIndex(x=>!enabledFlag(x.dictation)):(()=>{for(let i=out.length-1;i>=0;i--)if(!enabledFlag(out[i].dictation))return i;return -1;})();if(ix<0)break;out.splice(ix,1);out.push(t);added.push(t);}
- const list=order==='bank'?all.filter(t=>out.includes(t)):shuffle(out);
- const total=totalTime(list);return {list,total,fits:total<=MAX_TOTAL_SEC};
+ const minTest=Math.max(0,dictationMinimumSettings.perTest|0),minFive=Math.max(0,dictationMinimumSettings.perFive|0);
+ const maxTest=Math.max(0,dictationMaximumSettings.perTest),maxFive=Math.max(0,dictationMaximumSettings.perFive);
+ const h=history||[],position=Number.isInteger(liveSeriesPosition)?liveSeriesPosition:h.length%5,prior=position?h.slice(-position):[];
+ const used=prior.reduce((sum,t)=>sum+(Number(t.dictationCount)||0),0),remaining=5-position;
+ const required=Math.max(minTest,Math.ceil(Math.max(0,minFive-used-(remaining-1)*minTest)));
+ const allowed=Math.min(maxTest,maxFive-used);
+ if(required>chosenLength_(selection))throw new Error('A tollbamondás-minimum nagyobb a kiválasztott feladatok számánál.');
+ if(required>allowed)throw new Error('A tollbamondás-minimum és -maximum az eddigi tesztek alapján nem teljesíthető. Ellenőrizd a tanári beállításokat.');
+ const previous=new Set(h.slice(-4).flatMap(x=>x.keys||[]));
+ const key=varietyTextKey, chosen=selection.list.slice(),keys=new Set(chosen.map(key));
+ const count=()=>chosen.filter(t=>enabledFlag(t.dictation)).length;
+ const options=(dict)=>all.filter(t=>enabledFlag(t.dictation)===dict&&!keys.has(key(t))).sort((a,b)=>Number(previous.has(key(a)))-Number(previous.has(key(b))));
+ while(count()>allowed){
+  const ix=chosen.findIndex(t=>enabledFlag(t.dictation));const opts=options(false);
+  if(ix<0||!opts.length)throw new Error('A tollbamondás-maximum nem teljesíthető: nincs elég más típusú feladat.');
+  const old=chosen[ix],replacement=opts[0];chosen.splice(ix,1,replacement);keys.delete(key(old));keys.add(key(replacement));
+ }
+ while(count()<required){
+  const ix=chosen.findIndex(t=>!enabledFlag(t.dictation));const opts=options(true);
+  if(ix<0||!opts.length)throw new Error('A kötelező tollbamondásokhoz nincs elég megfelelő feladat.');
+  const old=chosen[ix],replacement=opts[0];chosen.splice(ix,1,replacement);keys.delete(key(old));keys.add(key(replacement));
+ }
+ const list=order==='bank'?all.filter(t=>chosen.includes(t)):shuffle(chosen),total=totalTime(list);
+ return {...selection,list,total,fits:total<=MAX_TOTAL_SEC};
 }
 function selectNoRepeatTasks(all,n,order,history){
  // Az előző négy éles teszt szövegei csak akkor kerülnek vissza,
@@ -1729,6 +1756,7 @@ async function startTest(){
     }
     loadVarietyHistory(name,cls);
     const wanted=Math.min(count,all.length);
+    liveSeriesPosition=null;
     const localHistory=practice?[]:readNoRepeatHistory(name,cls);
     const serverHistory=practice?null:await serverNoRepeatHistory();
     // A szerverről lekért korábbi tesztek és a helyi, még nem mentett kiosztások egyaránt számítanak.
@@ -3813,7 +3841,7 @@ function applyBankDefaults(settings){
  if(Number.isInteger(settings?.minEvaluatedPercent))gradingMinEvaluatedPercentSetting=settings.minEvaluatedPercent;
  if(typeof settings?.technicalSkipCounts==='boolean')technicalSkipCountsSetting=settings.technicalSkipCounts;
  refreshContentBankControls(settings);
- if(settings&&$('testPanel').classList.contains('hidden')&&$('resultPanel').classList.contains('hidden')){dictationMinimumSettings={perTest:Number(settings.dictationMinimums?.perTest)||0,perFive:Number(settings.dictationMinimums?.perFive)||0};typeRatioSettings={typeRatiosEnabled:settings.typeRatiosEnabled===true,typeWeights:Array.isArray(settings.typeWeights)?settings.typeWeights.slice():[25,25,25,25]};}
+ if(settings&&$('testPanel').classList.contains('hidden')&&$('resultPanel').classList.contains('hidden')){dictationMinimumSettings={perTest:Number(settings.dictationMinimums?.perTest)||0,perFive:Number(settings.dictationMinimums?.perFive)||0};dictationMaximumSettings={perTest:Number(settings.dictationMaximums?.perTest??500),perFive:Number(settings.dictationMaximums?.perFive??2500)};typeRatioSettings={typeRatiosEnabled:settings.typeRatiosEnabled===true,typeWeights:Array.isArray(settings.typeWeights)?settings.typeWeights.slice():[25,25,25,25]};}
 
  if(settings?.gradeLimits&&$('testPanel').classList.contains('hidden')&&$('resultPanel').classList.contains('hidden')){
   const limits=settings.gradeLimits;
@@ -3987,7 +4015,7 @@ function showDictationNotice(){
  const box=$('taskText');box.replaceChildren();
  const notice=document.createElement('p');notice.id='dictationNotice';
  notice.textContent=dictationWaitingNotice();
- const start=document.createElement('button');start.type='button';start.id='dictationStart';start.textContent='🔊 Felolvasás bekapcsolása és kezdés';start.addEventListener('click',startDictationReading);
+ const start=document.createElement('button');start.type='button';start.id='dictationStart';start.textContent='🔊 Tollbamondás indítása';start.addEventListener('click',startDictationReading);
  let controls=$('dictationStartControls');if(!controls){controls=document.createElement('div');controls.id='dictationStartControls';$('typingWorkspace').before(controls);}
  const skip=document.createElement('button');skip.type='button';skip.textContent='Részfeladat kihagyása';skip.addEventListener('click',nextTask);
  const technical=document.createElement('button');technical.type='button';technical.className='dictation-technical-skip';technical.textContent='🛠 Technikai okból kihagyom – nem számít hibának';technical.addEventListener('click',()=>skipWaitingDictation('technical'));
