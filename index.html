@@ -807,6 +807,10 @@ body.screen-test #dictationStartControls:not(.hidden) > #dictationStart {
 </div>
 
 <div id="startPanel">
+<div id="globalAudioControls" role="group" aria-label="Hangbeállítások" style="position:fixed;right:12px;bottom:12px;z-index:8000;display:flex;gap:7px;flex-wrap:wrap;background:#f7f9f7f2;border:1px solid #a4b9af;border-radius:12px;padding:8px;box-shadow:0 2px 12px #0002">
+<button type="button" id="globalSpeechToggle" style="font-weight:700;padding:8px 12px">🔊 Felolvasás: be</button>
+<button type="button" id="globalCueToggle" style="font-weight:700;padding:8px 12px">🔔 Jelzőhangok: be</button>
+</div>
 <div id="browserRecommendation" class="browser-recommendation"><div><strong>Ajánlott böngésző: Microsoft Edge</strong><p>A természetesebb magyar felolvasásért válaszd az Edge-et, majd az elérhető Noémi vagy Tamás Online (Natural) hangot. Az online hangokhoz internetkapcsolat kell.</p></div><div><strong>Más böngészőben is használható</strong><p>Chrome-ban, Firefoxban és Safariban is megnyithatod a feladatokat. A választható magyar hangok és a hangminőség a böngészőtől és az eszköztől függnek.</p></div></div>
 <label for="studentCode">Titkos tanulói azonosító (nem kötelező)</label>
 <input id="studentCode" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="Például: K7M92-P4RX8">
@@ -1809,6 +1813,13 @@ async function startTest(){
       if(!ready){$('startBtn').disabled=false;$('startBtn').textContent='Teszt indítása';return;}
     }
     enableSpeechForNewTest();
+    speechChoiceAsked=false;
+    if(sel.list.some(t=>enabledFlag(t.readAloud)&&!enabledFlag(t.dictation))){
+      const accept=window.confirm('🔊 A tesztben szövegfelolvasás is lesz.\n\nSzeretnéd, hogy a program felolvassa a nem tollbamondásos feladatok szövegét?\n\nOK = Igen, kérem a felolvasást\nMégse = Nem, hang nélkül szeretném\n\nA választás a teszt közben is megváltoztatható. A tollbamondás hangja mindig kötelező.');
+      speechDisabledForTest=!accept;
+      speechChoiceAsked=true;
+    }
+    refreshSpeechSwitch();refreshGlobalAudioControls();
     tasks=dictationLast(sel.list);
     // A kiosztás előzménye csak a végleges tesztazonosítóval kerül rögzítésre.
     tasks.forEach(t=>delete t._dictationWaitStartedAt);
@@ -3296,9 +3307,11 @@ $("capInput").addEventListener("input",()=>{
 
 /* ---------- Hangjelzés ---------- */
 const SOUND_KEY="gepiras_sound";
+let cueSoundsAllowed=true;
 let audioCtx=null;
+queueMicrotask(()=>{cueSoundsAllowed=$("soundOn").checked;refreshGlobalAudioControls();});
 try{ $("soundOn").checked=localStorage.getItem(SOUND_KEY)==="1"; }catch(e){}
-$("soundOn").addEventListener("change",()=>{ try{localStorage.setItem(SOUND_KEY,$("soundOn").checked?"1":"0");}catch(e){} initAudio(); playSound("done"); });
+$("soundOn").addEventListener("change",()=>{ try{localStorage.setItem(SOUND_KEY,$("soundOn").checked?"1":"0");}catch(e){} cueSoundsAllowed=$("soundOn").checked;initAudio();refreshGlobalAudioControls(); });
 function initAudio(){
   if(!$("soundOn").checked) return;
   try{
@@ -3316,7 +3329,7 @@ function beep(freq,start,dur,vol){
   o.start(audioCtx.currentTime+start); o.stop(audioCtx.currentTime+start+dur+0.05);
 }
 function playSound(kind){
-  if(!$("soundOn").checked||!audioCtx) return;
+  if(!cueSoundsAllowed||!$("soundOn").checked||!audioCtx) return;
   try{
     if(kind==="done") beep(880,0,0.12,0.12);
     else if(kind==="timeout"){ beep(330,0,0.2,0.15); beep(250,0.25,0.3,0.15); }
@@ -3405,6 +3418,29 @@ let practiceFactor=1, practiceSpeechRate=0, taskEpoch=0;
 function selectedPractice(){return !!document.getElementById('practiceMode')?.checked;}
 function enabledFlag(v){return v===true||['igen','true','1','yes','x'].includes(String(v??'').trim().toLowerCase());}
 let speechDisabledForTest=false;
+let speechChoiceAsked=false;
+function dictationIsCurrent(){return !!(typeof tasks!=='undefined'&&tasks?.[currentIndex]&&enabledFlag(tasks[currentIndex].dictation));}
+function refreshGlobalAudioControls(){
+ const speech=document.getElementById('globalSpeechToggle'),cue=document.getElementById('globalCueToggle');
+ if(!speech||!cue)return;
+ const dict=dictationIsCurrent()&&!document.getElementById('testPanel').classList.contains('hidden')&&!finished;
+ speech.disabled=dict;speech.style.opacity=dict?'.45':'1';
+ speech.textContent=dict?'🎧 Tollbamondás: kötelező':(speechDisabledForTest?'🔇 Felolvasás: ki':'🔊 Felolvasás: be');
+ speech.title=dict?'A tollbamondás hangja nem kapcsolható ki.':'A felolvasás bármikor ki- vagy bekapcsolható.';
+ cue.textContent=cueSoundsAllowed?'🔔 Jelzőhangok: be':'🔕 Jelzőhangok: ki';
+}
+document.getElementById('globalSpeechToggle').addEventListener('click',()=>{
+ if(dictationIsCurrent()&&!document.getElementById('testPanel').classList.contains('hidden')&&!finished)return;
+ disableSpeechForTest();
+});
+document.getElementById('globalCueToggle').addEventListener('click',()=>{
+ cueSoundsAllowed=!cueSoundsAllowed;
+ $('soundOn').checked=cueSoundsAllowed;
+ try{localStorage.setItem(SOUND_KEY,cueSoundsAllowed?'1':'0');}catch(e){}
+ if(cueSoundsAllowed)initAudio();
+ refreshGlobalAudioControls();
+});
+
 let speechLoopTimer=null, speechGeneration=0;
 const PRACTICE_PREFS_KEY='typingPracticePrefsV1',PRACTICE_PREFS_TTL=60*60*1000;
 function loadPracticePrefs(){
@@ -3484,7 +3520,7 @@ function dictationSentences(text){
 }
 function readTask(){
  if(practicePaused)return;
- if(speechDisabledForTest)return;
+ if(speechDisabledForTest&&!dictationIsCurrent())return;
  if(typeof finished!=='undefined'&&finished) return;
  const t=tasks[currentIndex]; if(!t) return;
  if(enabledFlag(t.dictation)&&t._dictationSpeech?.completed){$('speechStatus').textContent='A tollbamondás felolvasása befejeződött. Új felolvasás a következő feladatnál indítható.';refreshSpeechSwitch();return;}
@@ -3492,7 +3528,7 @@ function readTask(){
  stopReading(); const generation=speechGeneration, index=currentIndex;
  const dictation=enabledFlag(t.dictation),sentences=dictation?dictationSentences(t.text):[String(t.text||'')];
  const progress=dictation?(t._dictationSpeech??={sentenceIndex:0,sentenceRepeat:0,fullRepeat:0,completed:false}):{sentenceIndex:0,sentenceRepeat:0};
- const active=()=>!speechDisabledForTest&&generation===speechGeneration&&index===currentIndex&&!finished&&(typeof stopped==='undefined'||!stopped);
+ const active=()=> (!speechDisabledForTest||dictationIsCurrent())&&generation===speechGeneration&&index===currentIndex&&!finished&&(typeof stopped==='undefined'||!stopped);
  const speak=()=>{
   if(!active())return;
   if(dictation&&progress.sentenceRepeat>=dictationRepeatCount){progress.sentenceRepeat=0;progress.sentenceIndex++;}
@@ -3547,7 +3583,8 @@ function prepareSpeech(t){
  $('skipDictationBtn').classList.toggle('hidden',!enabledFlag(t.dictation));
  $('speechTools').classList.toggle('hidden',!on); $('speechStatus').textContent='';
  refreshSpeechSwitch();
- if(speechDisabledForTest)$('speechStatus').textContent='Felolvasás kikapcsolva erre a tesztre.';
+ if(speechDisabledForTest&&!enabledFlag(t.dictation))$('speechStatus').textContent='Felolvasás kikapcsolva erre a tesztre.';
+ refreshGlobalAudioControls();
  $('taskText').scrollTop=0;taskScrollHoldUntil=0;
  $('taskText').textContent=enabledFlag(t.dictation)?'🎧 Tollbamondás: hallgasd meg a szöveget a Felolvasás gombbal.':String(t.text||'');
 }
@@ -4043,18 +4080,20 @@ function startDictationReading(){
 function refreshSpeechSwitch(){
  const done=enabledFlag(tasks[currentIndex]?.dictation)&&!!tasks[currentIndex]?._dictationSpeech?.completed;
  $('readTaskBtn').disabled=speechDisabledForTest||done;$('stopReadBtn').disabled=speechDisabledForTest||done;
- const button=$('disableSpeechTestBtn');button.disabled=false;button.setAttribute('aria-pressed',String(speechDisabledForTest));
+ const button=$('disableSpeechTestBtn');button.disabled=dictationIsCurrent();button.setAttribute('aria-pressed',String(speechDisabledForTest));
  button.textContent=speechDisabledForTest?'🔊 Felolvasás be':'🔇 Felolvasás ki';
  const hint=speechDisabledForTest?'Felolvasás visszakapcsolása erre a tesztre':'Felolvasás kikapcsolása erre a tesztre; később visszakapcsolható';
- button.title=hint;button.setAttribute('aria-label',hint);
+ button.title=dictationIsCurrent()?'Tollbamondás közben nem kapcsolható ki a hang.':hint;button.setAttribute('aria-label',button.title);
+ refreshGlobalAudioControls();
 }
 function disableSpeechForTest(){
+ if(dictationIsCurrent()&&!$('testPanel').classList.contains('hidden')&&!finished)return;
  speechDisabledForTest=!speechDisabledForTest;stopReading();refreshSpeechSwitch();
  $('speechStatus').textContent=speechDisabledForTest?'A felolvasás kikapcsolva erre a tesztre. Ezzel a gombbal visszakapcsolható.':'A felolvasás visszakapcsolva.';
- if(!speechDisabledForTest&&!finished&&!stopped){if(dictationWaiting)startDictationReading();else readTask();}
+ if(!speechDisabledForTest&&!finished&&!stopped&&!dictationWaiting&&!dictationIsCurrent())readTask();
  if(typeof saveDraft==='function')saveDraft();
 }
-function enableSpeechForNewTest(){speechDisabledForTest=false;refreshSpeechSwitch();}
+function enableSpeechForNewTest(){speechDisabledForTest=false;refreshSpeechSwitch();refreshGlobalAudioControls();}
 $('disableSpeechTestBtn').addEventListener('click',disableSpeechForTest);
 refreshSpeechSwitch();
 
